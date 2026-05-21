@@ -63,7 +63,6 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
     {
       label: 'Sekolah',
       value: counts.schools,
-      note: 'SRAI, SRA & KAFAI',
       breakdown: [
         { label: 'SRAI', value: counts.schoolCategories.SRAI ?? 0 },
         { label: 'SRA', value: counts.schoolCategories.SRA ?? 0 },
@@ -75,8 +74,8 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
       label: 'Murid Aktif',
       value: counts.students,
       breakdown: [
-        { label: 'L', value: counts.studentGender.lelaki },
-        { label: 'P', value: counts.studentGender.perempuan },
+        { label: 'Lelaki', value: counts.studentGender.lelaki },
+        { label: 'Perempuan', value: counts.studentGender.perempuan },
       ],
     },
     { label: 'Peperiksaan', value: counts.exams, note: 'UPSA & UASA' },
@@ -429,17 +428,21 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
               {metric.note && <small>{metric.note}</small>}
+            </div>
+            <div className="metric-side">
+              <span className="metric-accent" />
               {metric.breakdown && (
                 <div className="metric-breakdown">
                   {metric.breakdown.map((item) => (
                     <span key={item.label}>
-                      {item.label}: <b>{item.value}</b>
+                      <em>{item.label}</em>
+                      <i>:</i>
+                      <b>{item.value}</b>
                     </span>
                   ))}
                 </div>
               )}
             </div>
-            <span className="metric-accent" />
           </div>
         ))}
       </div>

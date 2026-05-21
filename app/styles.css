@@ -221,6 +221,13 @@ h1 {
   background: linear-gradient(135deg, #ffffff, #f2fbf2);
 }
 
+.metric-side {
+  display: grid;
+  justify-items: end;
+  align-content: space-between;
+  min-width: 118px;
+}
+
 .metric-accent {
   width: 52px;
   height: 52px;
@@ -245,22 +252,32 @@ h1 {
 }
 
 .metric-breakdown {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+  justify-items: stretch;
 }
 
 .metric-breakdown span {
-  padding: 4px 7px;
-  border-radius: 8px;
-  background: rgba(226, 244, 232, 0.9);
+  display: grid;
+  grid-template-columns: minmax(68px, auto) 8px minmax(28px, auto);
+  gap: 4px;
+  align-items: baseline;
   color: #244333;
   font-size: 12px;
 }
 
+.metric-breakdown em,
+.metric-breakdown i {
+  font-style: normal;
+}
+
+.metric-breakdown em {
+  text-align: right;
+}
+
 .metric-breakdown b {
   color: var(--green);
+  text-align: right;
 }
 
 .panel {
