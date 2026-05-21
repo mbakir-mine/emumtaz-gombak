@@ -7,7 +7,7 @@ export default async function MuridPage() {
   const [schools, classes, students] = await Promise.all([getSchools(), getClasses(), getStudents()]);
 
   return (
-    <AppFrame title="Daftar Murid" active="students">
+    <AppFrame title="Murid" subtitle="Daftar dan semak murid." active="students">
       <section className="panel">
         <div className="panel-head">
           <h2>Tambah Murid</h2>

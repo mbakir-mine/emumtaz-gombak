@@ -6,7 +6,9 @@ import { useAccessProfile } from './AuthGate';
 
 export default function SidebarNav({ active }: { active: string }) {
   const profile = useAccessProfile();
-  const items = profile ? navItems.filter((item) => item.roles.includes(profile.role)) : navItems;
+  const items = profile
+    ? navItems.filter((item) => item.roles.includes(profile.role) && !item.hidden)
+    : navItems.filter((item) => !item.hidden);
 
   return (
     <nav className="nav">

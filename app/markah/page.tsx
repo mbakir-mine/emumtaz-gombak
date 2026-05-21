@@ -38,7 +38,7 @@ export default async function MarkahPage({
       : [[], []];
 
   return (
-    <AppFrame title="Input Markah" active="marks">
+    <AppFrame title="Markah" subtitle="Kemasukan UPSA dan UASA." active="marks">
       <section className="panel">
         <div className="panel-head">
           <h2>Pilih Kelas dan Subjek</h2>

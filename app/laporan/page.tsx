@@ -19,7 +19,7 @@ export default async function LaporanPage() {
   const topStudents = studentSummaries.slice(0, 20);
 
   return (
-    <AppFrame title="Pusat Laporan" active="reports">
+    <AppFrame title="Laporan" subtitle="Analisis murid, kelas, sekolah dan daerah." active="reports">
       <div className="card-grid">
         {reports.map(([title, description, href]) => (
           <div className="card" key={title}>

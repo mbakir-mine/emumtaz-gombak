@@ -2,7 +2,7 @@ import AppFrame from '../ui/AppFrame';
 
 export default function SetupPage() {
   return (
-    <AppFrame title="Setup Data" active="setup">
+    <AppFrame title="Subjek" subtitle="Subjek dan peraturan purata." active="setup">
       <div className="card-grid">
         <div className="card">
           <h2>Tetapan Sistem</h2>

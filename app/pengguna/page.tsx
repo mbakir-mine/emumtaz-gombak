@@ -9,7 +9,7 @@ export default async function PenggunaPage() {
   const [users, schools] = await Promise.all([getAllAppUsers(), getSchools()]);
 
   return (
-    <AppFrame title="Pengesahan Pengguna" active="users">
+    <AppFrame title="Pengesahan" subtitle="Semak akaun dan status pengguna." active="users">
       <UserApprovalList users={users} schools={schools} />
     </AppFrame>
   );

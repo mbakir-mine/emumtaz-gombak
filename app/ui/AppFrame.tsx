@@ -4,10 +4,12 @@ import UserBadge from './UserBadge';
 
 export default function AppFrame({
   title,
+  subtitle,
   active,
   children,
 }: {
   title: string;
+  subtitle?: string;
   active: string;
   children: React.ReactNode;
 }) {
@@ -27,8 +29,8 @@ export default function AppFrame({
         <main className="main">
           <header className="topbar">
             <div>
-              <p className="eyebrow">Sistem Analisis Prestasi Murid</p>
               <h1>{title}</h1>
+              {subtitle && <p className="page-subtitle">{subtitle}</p>}
             </div>
             <UserBadge />
           </header>

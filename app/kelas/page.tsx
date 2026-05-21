@@ -7,7 +7,7 @@ export default async function KelasPage() {
   const [schools, classes] = await Promise.all([getSchools(), getClasses()]);
 
   return (
-    <AppFrame title="Daftar Kelas" active="classes">
+    <AppFrame title="Kelas" subtitle="Senarai kelas mengikut sekolah." active="classes">
       <section className="panel">
         <div className="panel-head">
           <h2>Tambah Kelas</h2>

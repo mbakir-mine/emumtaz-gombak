@@ -1,15 +1,16 @@
 :root {
-  --bg: #f5f7fb;
+  --bg: #f7faf4;
   --card: #ffffff;
-  --ink: #142033;
-  --muted: #64748b;
-  --line: #d9e1ea;
-  --nav: #102033;
-  --nav-2: #1c334d;
-  --green: #047857;
-  --green-2: #dff7ea;
+  --ink: #071426;
+  --muted: #5f6f83;
+  --line: #d8e1d8;
+  --nav: #022e19;
+  --nav-2: #0b4629;
+  --green: #0b6b3a;
+  --green-2: #e2f4e8;
   --blue: #2563eb;
   --amber: #b7791f;
+  --gold: #f4c94f;
 }
 
 * {
@@ -30,31 +31,34 @@ a {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 242px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
   background: var(--nav);
   color: white;
-  padding: 24px;
+  padding: 20px 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 34px;
+  padding: 0 8px 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .brand-mark {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   border-radius: 8px;
-  background: var(--green);
-  font-weight: 700;
+  background: var(--gold);
+  color: #052615;
+  font-weight: 800;
 }
 
 .brand small {
@@ -65,13 +69,14 @@ a {
 
 .nav {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav a {
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-radius: 8px;
   color: #dbe4ef;
+  font-weight: 700;
 }
 
 .nav a:hover,
@@ -81,7 +86,7 @@ a {
 }
 
 .main {
-  padding: 28px;
+  min-width: 0;
 }
 
 .topbar {
@@ -89,7 +94,14 @@ a {
   justify-content: space-between;
   gap: 20px;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+
+.main > :not(.topbar) {
+  margin-left: 32px;
+  margin-right: 32px;
 }
 
 .eyebrow {
@@ -109,7 +121,13 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: 30px;
+  font-size: 26px;
+  letter-spacing: 0;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
 }
 
 .pill {
@@ -126,7 +144,7 @@ h1 {
   align-items: center;
   gap: 12px;
   max-width: 320px;
-  padding: 8px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card);
@@ -154,8 +172,8 @@ h1 {
   padding: 0 10px;
   border: 0;
   border-radius: 8px;
-  background: #eef4ff;
-  color: var(--blue);
+  background: #edf7ee;
+  color: var(--green);
   font-weight: 700;
   cursor: pointer;
 }
@@ -165,6 +183,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+  margin-top: 32px;
 }
 
 .card-grid {
@@ -181,7 +200,7 @@ h1 {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(16, 32, 51, 0.06);
+  box-shadow: 0 8px 18px rgba(2, 46, 25, 0.07);
 }
 
 .metric {
@@ -189,7 +208,7 @@ h1 {
 }
 
 .dashboard-metrics .metric {
-  min-height: 118px;
+  min-height: 132px;
 }
 
 .metric span,
@@ -239,6 +258,62 @@ th {
 
 .card {
   padding: 22px;
+}
+
+.welcome-title {
+  margin: 26px 32px 0;
+  font-size: 20px;
+}
+
+.dashboard-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.compact-panel {
+  margin-top: 0;
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.detail-list span {
+  color: var(--muted);
+}
+
+.detail-list strong {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grade-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.grade-chip {
+  display: grid;
+  min-height: 66px;
+  place-items: center;
+  padding: 10px;
+  border: 1px solid #a8dec0;
+  border-radius: 8px;
+  background: #ebfbf1;
+  text-align: center;
+}
+
+.grade-chip small {
+  color: var(--green);
+  font-weight: 700;
 }
 
 .form-grid {
@@ -557,13 +632,19 @@ button:disabled {
   }
 
   .main {
-    padding: 18px;
+    padding: 0;
+  }
+
+  .main > :not(.topbar) {
+    margin-left: 18px;
+    margin-right: 18px;
   }
 
   .topbar {
     align-items: flex-start;
     flex-direction: column;
     gap: 14px;
+    padding: 18px;
   }
 
   .topbar h1 {
@@ -579,6 +660,10 @@ button:disabled {
   .metric-grid,
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-split {
+    grid-template-columns: 1fr;
   }
 
   .form-grid {
@@ -601,6 +686,15 @@ button:disabled {
 
 @media (max-width: 640px) {
   .main {
+    padding: 0;
+  }
+
+  .main > :not(.topbar) {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .topbar {
     padding: 14px;
   }
 
@@ -630,6 +724,22 @@ button:disabled {
   .metric-grid,
   .card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .welcome-title {
+    margin: 18px 14px 0;
+  }
+
+  .grade-scale {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-list strong {
+    text-align: left;
   }
 
   .metric,

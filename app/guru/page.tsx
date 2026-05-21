@@ -7,7 +7,7 @@ export default async function GuruPage() {
   const [schools, users] = await Promise.all([getSchools(), getSchoolUsers()]);
 
   return (
-    <AppFrame title="Daftar Guru" active="teachers">
+    <AppFrame title="Guru & Pengguna" subtitle="Akaun, peranan dan sekolah." active="teachers">
       <section className="panel">
         <div className="panel-head">
           <h2>Tambah Guru</h2>
