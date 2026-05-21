@@ -408,6 +408,15 @@ select {
   -webkit-overflow-scrolling: touch;
 }
 
+.search-row {
+  margin: 14px 0 18px;
+}
+
+.search-row input {
+  max-width: 560px;
+  background: white;
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
