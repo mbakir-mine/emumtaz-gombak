@@ -13,7 +13,8 @@ export default async function IbuBapaLaporanPage({
 }) {
   const params = await searchParams;
   const mykid = String(params.mykid ?? '').replace(/\D/g, '');
-  const summaries = mykid ? await getStudentSummariesByMykid(mykid) : [];
+  const kodSekolah = String(params.kod_sekolah ?? '').trim().toUpperCase();
+  const summaries = mykid && kodSekolah ? await getStudentSummariesByMykid(mykid, kodSekolah) : [];
   const student = summaries[0];
 
   return (
@@ -35,12 +36,12 @@ export default async function IbuBapaLaporanPage({
           </div>
         </div>
 
-        {!mykid ? (
-          <p className="empty">Sila masukkan MyKid murid dahulu.</p>
+        {!mykid || !kodSekolah ? (
+          <p className="empty">Sila masukkan MyKid dan kod sekolah murid dahulu.</p>
         ) : summaries.length === 0 ? (
           <div className="empty-state">
             <strong>Tiada laporan ditemui.</strong>
-            <span>Semak nombor MyKid atau hubungi pihak sekolah.</span>
+            <span>Semak nombor MyKid, kod sekolah atau hubungi pihak sekolah.</span>
           </div>
         ) : (
           <>

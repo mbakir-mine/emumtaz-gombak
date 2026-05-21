@@ -364,12 +364,18 @@ export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
   return data ?? [];
 }
 
-export async function getStudentSummariesByMykid(mykid: string): Promise<StudentSummaryRecord[]> {
+export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: string): Promise<StudentSummaryRecord[]> {
   if (!supabase || !mykid) return [];
-  const { data, error } = await supabase
+  let query = supabase
     .from('v_student_exam_summary')
     .select('*')
-    .eq('mykid', mykid)
+    .eq('mykid', mykid);
+
+  if (kodSekolah) {
+    query = query.eq('kod_sekolah', kodSekolah);
+  }
+
+  const { data, error } = await query
     .order('tahun_akademik', { ascending: false })
     .order('kod_peperiksaan');
 
