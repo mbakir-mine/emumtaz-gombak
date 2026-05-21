@@ -2,6 +2,9 @@ import AppFrame from '../ui/AppFrame';
 import { getAllAppUsers, getSchools, type UserRecord } from '@/lib/data';
 import UserStatusForm from './UserStatusForm';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 function roleLabel(role: string) {
   const labels: Record<string, string> = {
     OWNER: 'Owner',

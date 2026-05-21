@@ -75,6 +75,30 @@ export default function DaftarPage() {
     const schoolCode = needsSchool ? kodSekolah : null;
     const zoneCode = needsZone ? zon : null;
 
+    const { data: existingProfiles, error: existingError } = await supabase
+      .from('app_users')
+      .select('id,status')
+      .eq('email', cleanEmail);
+
+    if (existingError) {
+      setLoading(false);
+      setMessage(`Semakan profil pengguna gagal: ${existingError.message}`);
+      return;
+    }
+
+    if ((existingProfiles ?? []).some((profile) => profile.status === 'AKTIF')) {
+      setLoading(false);
+      setMessage('Email ini sudah mempunyai akaun aktif. Sila kembali ke Login.');
+      return;
+    }
+
+    if ((existingProfiles ?? []).some((profile) => profile.status === 'MENUNGGU')) {
+      setLoading(false);
+      setSuccess(true);
+      setMessage('Permohonan akaun ini sudah diterima dan sedang menunggu pengesahan Pentadbir.');
+      return;
+    }
+
     const authResult = await supabase.auth.signUp({
       email: cleanEmail,
       password,
@@ -86,19 +110,14 @@ export default function DaftarPage() {
       return;
     }
 
-    const { error } = await supabase.from('app_users').upsert(
-      {
-        email: cleanEmail,
-        nama: cleanName,
-        role: userRole,
-        kod_sekolah: schoolCode,
-        zon: zoneCode,
-        status: 'MENUNGGU',
-      },
-      {
-        onConflict: 'email,role,kod_sekolah',
-      },
-    );
+    const { error } = await supabase.from('app_users').insert({
+      email: cleanEmail,
+      nama: cleanName,
+      role: userRole,
+      kod_sekolah: schoolCode,
+      zon: zoneCode,
+      status: 'MENUNGGU',
+    });
 
     setLoading(false);
 
