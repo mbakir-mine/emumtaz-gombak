@@ -81,6 +81,7 @@ function UserTable({
                   currentRole={user.role}
                   currentZon={user.zon}
                   currentStatus={user.status}
+                  currentAllowedNav={user.allowed_nav}
                   locked={user.role === 'OWNER'}
                 />
               </td>

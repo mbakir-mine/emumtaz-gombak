@@ -575,6 +575,43 @@ select {
   padding: 0 12px;
 }
 
+.access-checks {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.access-checks legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.access-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.access-checks input {
+  width: auto;
+  min-height: 0;
+}
+
+.access-checks small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
 .zone-form {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) auto;
@@ -777,6 +814,10 @@ button:disabled {
     grid-template-columns: 1fr 1fr;
   }
 
+  .access-checks {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -862,6 +903,10 @@ button:disabled {
   }
 
   .exam-access-form {
+    grid-template-columns: 1fr;
+  }
+
+  .access-checks {
     grid-template-columns: 1fr;
   }
 

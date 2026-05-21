@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { navItems } from '@/lib/access';
 import { updateUserStatus } from './actions';
 
 const statusOptions = [
@@ -24,6 +25,8 @@ const zoneOptions = [
   { value: 'TENGAH', label: 'Zon Tengah' },
 ];
 
+const accessOptions = navItems.filter((item) => !item.hidden && item.key !== 'dashboard');
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
@@ -39,12 +42,14 @@ export default function UserStatusForm({
   currentRole,
   currentZon,
   currentStatus,
+  currentAllowedNav,
   locked = false,
 }: {
   userId: string;
   currentRole: string;
   currentZon?: string | null;
   currentStatus: string;
+  currentAllowedNav?: string[] | null;
   locked?: boolean;
 }) {
   const [role, setRole] = useState(currentRole);
@@ -89,6 +94,21 @@ export default function UserStatusForm({
           </option>
         ))}
       </select>
+      <fieldset className="access-checks">
+        <legend>Akses Modul</legend>
+        {accessOptions.map((item) => (
+          <label key={item.key}>
+            <input
+              name="allowed_nav"
+              type="checkbox"
+              value={item.key}
+              defaultChecked={currentAllowedNav?.includes(item.key) ?? false}
+            />
+            {item.label}
+          </label>
+        ))}
+        <small>Kosongkan semua untuk guna akses default role.</small>
+      </fieldset>
       <SubmitButton />
     </form>
   );

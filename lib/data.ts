@@ -46,6 +46,7 @@ export type UserRecord = {
   kod_sekolah: string | null;
   zon: string | null;
   status: string;
+  allowed_nav?: string[] | null;
 };
 
 export type SubjectRecord = {
@@ -249,7 +250,7 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status')
+    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
     .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
     .neq('role', 'OWNER')
     .order('role')
@@ -264,7 +265,7 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status')
+    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
     .order('status')
     .order('kod_sekolah')
     .order('role')

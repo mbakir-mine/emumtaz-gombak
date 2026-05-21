@@ -8,6 +8,7 @@ export type AccessProfile = {
   kod_sekolah: string | null;
   zon: string | null;
   status: string;
+  allowed_nav?: string[] | null;
 };
 
 export type NavItem = {
@@ -62,9 +63,17 @@ export function roleLabel(role: string) {
   return labels[role] ?? role;
 }
 
-export function canAccessPath(role: UserRole, pathname: string) {
-  if (role === 'OWNER' || role === 'ADMIN_DAERAH') return true;
+export function visibleNavItems(role: UserRole, allowedNav?: string[] | null) {
+  const allowedSet = allowedNav && allowedNav.length > 0 ? new Set(allowedNav) : null;
+  return navItems.filter((item) => {
+    if (item.hidden) return false;
+    if (!item.roles.includes(role)) return false;
+    if (!allowedSet) return true;
+    return item.key === 'dashboard' || allowedSet.has(item.key);
+  });
+}
 
+export function canAccessPath(role: UserRole, pathname: string, allowedNav?: string[] | null) {
   const cleanPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   const matchedItem = navItems
     .filter((item) => item.href !== '/')
@@ -74,5 +83,17 @@ export function canAccessPath(role: UserRole, pathname: string) {
     return cleanPath === '/';
   }
 
-  return matchedItem.roles.includes(role);
+  if (!matchedItem.roles.includes(role)) {
+    return false;
+  }
+
+  if (role === 'OWNER') {
+    return true;
+  }
+
+  if (!allowedNav || allowedNav.length === 0) {
+    return true;
+  }
+
+  return allowedNav.includes(matchedItem.key);
 }

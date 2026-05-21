@@ -58,7 +58,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         const profileResult = await withTimeout(
           Promise.resolve(supabase
             .from('app_users')
-            .select('id,email,nama,role,kod_sekolah,zon,status')
+            .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
             .eq('email', email.toLowerCase())
             .eq('status', 'AKTIF')
             .limit(10)),
@@ -84,7 +84,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (!canAccessPath(activeProfile.role, pathname)) {
+        if (!canAccessPath(activeProfile.role, pathname, activeProfile.allowed_nav)) {
           setMessage('Anda tidak mempunyai akses kepada modul ini.');
           setReady(true);
           return;
