@@ -557,6 +557,18 @@ select {
   padding: 0 12px;
 }
 
+.text-link {
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.table-action {
+  min-height: 34px;
+  padding: 8px 12px;
+}
+
 .status-form {
   display: grid;
   grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto;
@@ -610,6 +622,40 @@ select {
 .access-checks small {
   grid-column: 1 / -1;
   color: var(--muted);
+}
+
+.profile-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.profile-summary div {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.profile-summary span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.profile-summary strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.profile-form-wrap {
+  max-width: 940px;
+}
+
+.profile-form-wrap .status-form {
+  min-width: 0;
 }
 
 .zone-form {
@@ -816,6 +862,10 @@ button:disabled {
 
   .access-checks {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .profile-summary {
+    grid-template-columns: 1fr;
   }
 
   .form-grid {

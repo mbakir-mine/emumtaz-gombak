@@ -275,6 +275,18 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
   return data ?? [];
 }
 
+export async function getAppUserById(id: string): Promise<UserRecord | null> {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) return null;
+  return data ?? null;
+}
+
 export async function getTeacherClassAssignments(): Promise<TeacherClassAssignment[]> {
   if (!supabase) return [];
   const { data, error } = await supabase

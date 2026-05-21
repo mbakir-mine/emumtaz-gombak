@@ -60,6 +60,7 @@ export async function updateUserStatus(formData: FormData) {
   await supabase.from('app_users').update(updates).eq('id', id);
 
   revalidatePath('/pengguna');
+  revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
 }

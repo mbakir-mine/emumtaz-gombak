@@ -1,8 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { School, UserRecord } from '@/lib/data';
-import UserStatusForm from './UserStatusForm';
 
 function roleLabel(role: string) {
   const labels: Record<string, string> = {
@@ -68,7 +68,11 @@ function UserTable({
         <tbody>
           {users.map((user) => (
             <tr key={user.id}>
-              <td>{user.nama}</td>
+              <td>
+                <Link className="text-link" href={`/pengguna/${user.id}`}>
+                  {user.nama}
+                </Link>
+              </td>
               <td>{user.email}</td>
               <td>{roleLabel(user.role)}</td>
               <td>{accessLabel(user, schoolNames)}</td>
@@ -76,14 +80,9 @@ function UserTable({
                 <span className={`status-badge status-${user.status.toLowerCase()}`}>{statusLabel(user.status)}</span>
               </td>
               <td>
-                <UserStatusForm
-                  userId={user.id}
-                  currentRole={user.role}
-                  currentZon={user.zon}
-                  currentStatus={user.status}
-                  currentAllowedNav={user.allowed_nav}
-                  locked={user.role === 'OWNER'}
-                />
+                <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
+                  Profil
+                </Link>
               </td>
             </tr>
           ))}
