@@ -332,7 +332,7 @@ function MarkCompletionPanel({
   schools: MarkCompletionSchool[];
   classes: MarkCompletionClass[];
 }) {
-  const [view, setView] = useState<'done' | 'pending'>('pending');
+  const [view, setView] = useState<'done' | 'pending' | null>(null);
   const isSchoolAdmin = role === 'ADMIN_SEKOLAH';
   const isZoneAdmin = role === 'ADMIN_ZON';
   const scopedSchools = schools.filter((row) => {
@@ -344,7 +344,7 @@ function MarkCompletionPanel({
   const rows = isSchoolAdmin ? scopedClasses : scopedSchools;
   const doneRows = rows.filter((row) => row.complete);
   const pendingRows = rows.filter((row) => !row.complete);
-  const visibleRows = view === 'done' ? doneRows : pendingRows;
+  const visibleRows = view === 'done' ? doneRows : view === 'pending' ? pendingRows : [];
   const unitLabel = isSchoolAdmin ? 'kelas' : 'sekolah';
 
   return (
@@ -361,21 +361,23 @@ function MarkCompletionPanel({
           count={doneRows.length}
           tone="done"
           active={view === 'done'}
-          onClick={() => setView('done')}
+          onClick={() => setView(view === 'done' ? null : 'done')}
         />
         <CompletionButton
           label={`${unitLabel} belum selesai`}
           count={pendingRows.length}
           tone="pending"
           active={view === 'pending'}
-          onClick={() => setView('pending')}
+          onClick={() => setView(view === 'pending' ? null : 'pending')}
         />
       </div>
       {!isSchoolAdmin && <ZoneCompletionSummary rows={scopedSchools} />}
-      <CompletionList
-        title={view === 'done' ? `Senarai ${unitLabel} lengkap` : `Senarai ${unitLabel} belum selesai`}
-        rows={visibleRows}
-      />
+      {view && (
+        <CompletionList
+          title={view === 'done' ? `Senarai ${unitLabel} lengkap` : `Senarai ${unitLabel} belum selesai`}
+          rows={visibleRows}
+        />
+      )}
     </section>
   );
 }
