@@ -2,6 +2,9 @@ import AppFrame from '../ui/AppFrame';
 import { getSchools } from '@/lib/data';
 import SchoolList from './SchoolList';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function SekolahPage() {
   const schools = await getSchools();
 

@@ -521,6 +521,24 @@ select {
   padding: 0 12px;
 }
 
+.zone-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  max-width: 300px;
+}
+
+.zone-form select {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.zone-form .button {
+  min-height: 36px;
+  padding: 0 10px;
+}
+
 .status-badge {
   display: inline-flex;
   min-width: 88px;

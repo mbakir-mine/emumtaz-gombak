@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { School } from '@/lib/data';
-
-function zoneLabel(zon: string | null) {
-  if (!zon) return 'Belum ditetapkan';
-  return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
-}
+import SchoolZoneForm from './SchoolZoneForm';
 
 export default function SchoolList({ schools }: { schools: School[] }) {
   const [query, setQuery] = useState('');
@@ -64,9 +60,7 @@ export default function SchoolList({ schools }: { schools: School[] }) {
                   <td data-label="Kategori">{school.kategori}</td>
                   <td data-label="Daerah">{school.daerah}</td>
                   <td data-label="Zon">
-                    <span className={school.zon ? 'status-badge status-aktif' : 'status-badge status-menunggu'}>
-                      {zoneLabel(school.zon)}
-                    </span>
+                    <SchoolZoneForm kodSekolah={school.kod_sekolah} currentZone={school.zon} />
                   </td>
                   <td data-label="Status">{school.status}</td>
                 </tr>
