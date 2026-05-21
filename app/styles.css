@@ -188,6 +188,10 @@ h1 {
   padding: 20px;
 }
 
+.dashboard-metrics .metric {
+  min-height: 118px;
+}
+
 .metric span,
 .metric small,
 .card p,
