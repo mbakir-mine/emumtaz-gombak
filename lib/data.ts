@@ -248,9 +248,10 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   const { data, error } = await supabase
     .from('app_users')
     .select('id,email,nama,role,kod_sekolah,zon,status')
-    .in('role', ['ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
-    .order('kod_sekolah')
+    .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
+    .neq('role', 'OWNER')
     .order('role')
+    .order('kod_sekolah')
     .order('nama');
 
   if (error) return [];

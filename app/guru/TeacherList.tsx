@@ -2,6 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import type { UserRecord } from '@/lib/data';
+import { roleLabel } from '@/lib/access';
+
+function accessLabel(user: UserRecord) {
+  if (user.role === 'ADMIN_DAERAH') return 'Semua sekolah';
+  if (user.role === 'ADMIN_ZON') {
+    return user.zon ? `Zon ${user.zon.charAt(0) + user.zon.slice(1).toLowerCase()}` : 'Zon belum ditetapkan';
+  }
+  return user.kod_sekolah ?? '-';
+}
 
 export default function TeacherList({ users }: { users: UserRecord[] }) {
   const [query, setQuery] = useState('');
@@ -10,7 +19,7 @@ export default function TeacherList({ users }: { users: UserRecord[] }) {
     if (!term) return users;
 
     return users.filter((user) =>
-      [user.kod_sekolah, user.nama, user.email, user.role, user.status]
+      [accessLabel(user), user.nama, user.email, roleLabel(user.role), user.role, user.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -31,7 +40,7 @@ export default function TeacherList({ users }: { users: UserRecord[] }) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari sekolah, nama guru, email, role atau status"
+          placeholder="Cari akses, nama guru, email, role atau status"
           aria-label="Cari guru"
         />
       </div>
@@ -42,7 +51,7 @@ export default function TeacherList({ users }: { users: UserRecord[] }) {
           <table>
             <thead>
               <tr>
-                <th>Sekolah</th>
+                <th>Akses</th>
                 <th>Nama</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -52,10 +61,10 @@ export default function TeacherList({ users }: { users: UserRecord[] }) {
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id}>
-                  <td>{user.kod_sekolah}</td>
+                  <td>{accessLabel(user)}</td>
                   <td>{user.nama}</td>
                   <td>{user.email}</td>
-                  <td>{user.role}</td>
+                  <td>{roleLabel(user.role)}</td>
                   <td>{user.status}</td>
                 </tr>
               ))}

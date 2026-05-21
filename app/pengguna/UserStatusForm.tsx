@@ -48,6 +48,7 @@ export default function UserStatusForm({
   locked?: boolean;
 }) {
   const [role, setRole] = useState(currentRole);
+  const [zone, setZone] = useState(currentZon ?? '');
 
   if (locked) {
     return <span className="table-note">Dikunci</span>;
@@ -63,8 +64,14 @@ export default function UserStatusForm({
           </option>
         ))}
       </select>
-      {role === 'ADMIN_ZON' && (
-        <select name="zon" defaultValue={currentZon ?? ''} aria-label="Zon admin">
+      {role === 'ADMIN_ZON' ? (
+        <select
+          name="zon"
+          value={zone}
+          onChange={(event) => setZone(event.target.value)}
+          aria-label="Zon admin"
+          required
+        >
           <option value="">Pilih zon</option>
           {zoneOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -72,6 +79,8 @@ export default function UserStatusForm({
             </option>
           ))}
         </select>
+      ) : (
+        <input name="zon" type="hidden" value="" />
       )}
       <select name="status" defaultValue={currentStatus} aria-label="Status pengguna">
         {statusOptions.map((option) => (
