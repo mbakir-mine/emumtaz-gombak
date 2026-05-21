@@ -116,6 +116,36 @@ export type SubjectSummaryRecord = {
   bil_gagal: number;
 };
 
+export type DashboardSchoolRank = {
+  kod_sekolah: string;
+  nama_sekolah: string;
+  kategori: string;
+  zon: string | null;
+  jumlah_murid: number;
+  purata: number | null;
+  gps: number | null;
+  kod_peperiksaan: string;
+  tahun_akademik: number;
+};
+
+export type DashboardClassRank = {
+  class_id: string;
+  kod_sekolah: string;
+  tahun: number;
+  nama_kelas: string;
+  bil_murid: number;
+  purata: number | null;
+  gps: number | null;
+  kod_peperiksaan: string;
+  tahun_akademik: number;
+};
+
+export type DashboardInsights = {
+  latestExamLabel: string;
+  schoolRanks: DashboardSchoolRank[];
+  classRanks: DashboardClassRank[];
+};
+
 export type MarkDetailRecord = {
   id: string;
   markah: number | null;
@@ -178,6 +208,56 @@ async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
     if (data.length < pageSize) return rows;
     from += pageSize;
   }
+}
+
+async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]> {
+  if (!supabase) return [];
+
+  const pageSize = 1000;
+  let from = 0;
+  const rows: StudentSummaryRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('v_student_exam_summary')
+      .select('*')
+      .order('tahun_akademik', { ascending: false })
+      .order('kod_peperiksaan')
+      .order('kod_sekolah')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
+}
+
+function gradePointFromAverage(purata: number | null | undefined) {
+  if (purata === null || purata === undefined) return null;
+  if (purata >= 90) return 1;
+  if (purata >= 75) return 2;
+  if (purata >= 60) return 3;
+  if (purata >= 40) return 4;
+  return 5;
+}
+
+function examSortValue(item: { tahun_akademik: number; kod_peperiksaan: string }) {
+  const examWeight = item.kod_peperiksaan === 'UASA' ? 2 : item.kod_peperiksaan === 'UPSA' ? 1 : 0;
+  return item.tahun_akademik * 10 + examWeight;
+}
+
+function latestExamKey(items: Array<{ tahun_akademik: number; kod_peperiksaan: string }>) {
+  const latest = [...items].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
+  if (!latest) return null;
+  return `${latest.tahun_akademik}-${latest.kod_peperiksaan}`;
+}
+
+function matchesExamKey(item: { tahun_akademik: number; kod_peperiksaan: string }, key: string) {
+  return `${item.tahun_akademik}-${item.kod_peperiksaan}` === key;
 }
 
 export async function getSetupCounts(): Promise<SetupCounts> {
@@ -367,16 +447,12 @@ export async function getMarksForSelection(
 }
 
 export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('v_student_exam_summary')
-    .select('*')
-    .order('kod_sekolah')
-    .order('kod_peperiksaan')
-    .order('purata', { ascending: false });
-
-  if (error) return [];
-  return data ?? [];
+  const rows = await fetchStudentSummariesInBatches();
+  return rows.sort((a, b) => {
+    if (a.kod_sekolah !== b.kod_sekolah) return a.kod_sekolah.localeCompare(b.kod_sekolah);
+    if (a.kod_peperiksaan !== b.kod_peperiksaan) return a.kod_peperiksaan.localeCompare(b.kod_peperiksaan);
+    return (b.purata ?? -1) - (a.purata ?? -1);
+  });
 }
 
 export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: string): Promise<StudentSummaryRecord[]> {
@@ -409,6 +485,97 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
 
   if (error) return [];
   return data ?? [];
+}
+
+export async function getDashboardInsights(): Promise<DashboardInsights> {
+  const [schools, classes, schoolSummaries, studentSummaries] = await Promise.all([
+    getSchools(),
+    getClasses(),
+    getSchoolSummaries(),
+    fetchStudentSummariesInBatches(),
+  ]);
+
+  const key = latestExamKey([...schoolSummaries, ...studentSummaries]);
+  if (!key) {
+    return { latestExamLabel: 'Belum ada markah', schoolRanks: [], classRanks: [] };
+  }
+
+  const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
+  const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
+
+  const schoolRanks = schoolSummaries
+    .filter((summary) => matchesExamKey(summary, key) && summary.purata_sekolah !== null)
+    .map((summary) => {
+      const school = schoolMap.get(summary.kod_sekolah);
+      return {
+        kod_sekolah: summary.kod_sekolah,
+        nama_sekolah: school?.nama_sekolah ?? summary.kod_sekolah,
+        kategori: school?.kategori ?? '-',
+        zon: school?.zon ?? null,
+        jumlah_murid: summary.jumlah_murid,
+        purata: summary.purata_sekolah,
+        gps: gradePointFromAverage(summary.purata_sekolah),
+        kod_peperiksaan: summary.kod_peperiksaan,
+        tahun_akademik: summary.tahun_akademik,
+      };
+    })
+    .sort((a, b) => (a.gps ?? 99) - (b.gps ?? 99) || (b.purata ?? -1) - (a.purata ?? -1));
+
+  const classGroups = new Map<
+    string,
+    {
+      classRecord: ClassRecord;
+      kod_peperiksaan: string;
+      tahun_akademik: number;
+      total: number;
+      count: number;
+    }
+  >();
+
+  studentSummaries
+    .filter((summary) => matchesExamKey(summary, key) && summary.purata !== null)
+    .forEach((summary) => {
+      const classRecord = classMap.get(summary.class_id);
+      if (!classRecord) return;
+      const groupKey = `${summary.class_id}-${summary.tahun_akademik}-${summary.kod_peperiksaan}`;
+      const current =
+        classGroups.get(groupKey) ??
+        {
+          classRecord,
+          kod_peperiksaan: summary.kod_peperiksaan,
+          tahun_akademik: summary.tahun_akademik,
+          total: 0,
+          count: 0,
+        };
+
+      current.total += summary.purata ?? 0;
+      current.count += 1;
+      classGroups.set(groupKey, current);
+    });
+
+  const classRanks = [...classGroups.values()]
+    .map((group) => {
+      const purata = group.count > 0 ? Number((group.total / group.count).toFixed(2)) : null;
+      return {
+        class_id: group.classRecord.id,
+        kod_sekolah: group.classRecord.kod_sekolah,
+        tahun: group.classRecord.tahun,
+        nama_kelas: group.classRecord.nama_kelas,
+        bil_murid: group.count,
+        purata,
+        gps: gradePointFromAverage(purata),
+        kod_peperiksaan: group.kod_peperiksaan,
+        tahun_akademik: group.tahun_akademik,
+      };
+    })
+    .sort((a, b) => (a.gps ?? 99) - (b.gps ?? 99) || (b.purata ?? -1) - (a.purata ?? -1));
+
+  const [tahun, exam] = key.split('-');
+  return {
+    latestExamLabel: `${exam} ${tahun}`,
+    schoolRanks,
+    classRanks,
+  };
 }
 
 export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
