@@ -8,7 +8,7 @@ import { canAccessPath, choosePrimaryProfile, type AccessProfile } from '@/lib/a
 const publicPaths = ['/login', '/daftar'];
 const AccessProfileContext = createContext<AccessProfile | null>(null);
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 20000): Promise<T> {
   return await Promise.race([
     promise,
     new Promise<T>((_, reject) => {
@@ -60,7 +60,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             .from('app_users')
             .select('id,email,nama,role,kod_sekolah,zon,status')
             .eq('email', email.toLowerCase())
-            .eq('status', 'AKTIF')),
+            .eq('status', 'AKTIF')
+            .limit(10)),
         );
         const { data, error } = profileResult as {
           data: unknown[] | null;
