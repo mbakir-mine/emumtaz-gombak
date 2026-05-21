@@ -6,7 +6,7 @@ export default async function DashboardPage() {
   const counts = await getSetupCounts();
 
   return (
-    <AppFrame title="Papan Pemuka" subtitle="Ringkasan e-Mumtaz Gombak." active="dashboard">
+    <AppFrame title="Dashboard" subtitle="Ringkasan e-Mumtaz Gombak." active="dashboard">
       <DashboardContent counts={counts} />
     </AppFrame>
   );

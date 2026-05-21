@@ -21,7 +21,7 @@ export type NavItem = {
 export const allRoles: UserRole[] = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
 
 export const navItems: NavItem[] = [
-  { key: 'dashboard', label: 'Papan Pemuka', href: '/', roles: allRoles },
+  { key: 'dashboard', label: 'Dashboard', href: '/', roles: allRoles },
   { key: 'schools', label: 'Sekolah', href: '/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'teachers', label: 'Guru & Pengguna', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
