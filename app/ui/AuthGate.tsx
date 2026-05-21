@@ -8,6 +8,15 @@ import { canAccessPath, choosePrimaryProfile, type AccessProfile } from '@/lib/a
 const publicPaths = ['/login', '/daftar'];
 const AccessProfileContext = createContext<AccessProfile | null>(null);
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error('Semakan akses mengambil masa terlalu lama.')), timeoutMs);
+    }),
+  ]);
+}
+
 export function useAccessProfile() {
   return useContext(AccessProfileContext);
 }
@@ -20,60 +29,80 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AccessProfile | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function checkAccess() {
-      setReady(false);
-      setMessage('');
-      setProfile(null);
+      try {
+        setReady(false);
+        setMessage('');
+        setProfile(null);
 
-      if (publicPaths.includes(pathname)) {
+        if (publicPaths.includes(pathname)) {
+          if (!cancelled) setReady(true);
+          return;
+        }
+
+        if (!hasSupabaseEnv || !supabase) {
+          if (!cancelled) setReady(true);
+          return;
+        }
+
+        const { data: sessionData } = await withTimeout(supabase.auth.getSession());
+        const email = sessionData.session?.user.email;
+
+        if (!email) {
+          router.replace('/login');
+          return;
+        }
+
+        const profileResult = await withTimeout(
+          Promise.resolve(supabase
+            .from('app_users')
+            .select('id,email,nama,role,kod_sekolah,zon,status')
+            .eq('email', email.toLowerCase())
+            .eq('status', 'AKTIF')),
+        );
+        const { data, error } = profileResult as {
+          data: unknown[] | null;
+          error: { message: string } | null;
+        };
+
+        if (cancelled) return;
+
+        if (error) {
+          setMessage('Ralat menyemak akses pengguna. Sila log masuk semula.');
+          setReady(true);
+          return;
+        }
+
+        const activeProfile = choosePrimaryProfile((data ?? []) as AccessProfile[]);
+
+        if (!activeProfile) {
+          setMessage('Akaun anda belum diaktifkan oleh Pentadbir.');
+          setReady(true);
+          return;
+        }
+
+        if (!canAccessPath(activeProfile.role, pathname)) {
+          setMessage('Anda tidak mempunyai akses kepada modul ini.');
+          setReady(true);
+          return;
+        }
+
+        setProfile(activeProfile);
         setReady(true);
-        return;
-      }
-
-      if (!hasSupabaseEnv || !supabase) {
+      } catch {
+        if (cancelled) return;
+        setMessage('Semakan akses terganggu. Sila log masuk semula.');
         setReady(true);
-        return;
       }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const email = sessionData.session?.user.email;
-
-      if (!email) {
-        router.replace('/login');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('app_users')
-        .select('id,email,nama,role,kod_sekolah,zon,status')
-        .eq('email', email.toLowerCase())
-        .eq('status', 'AKTIF');
-
-      if (error) {
-        setMessage('Ralat menyemak akses pengguna. Sila cuba semula.');
-        setReady(true);
-        return;
-      }
-
-      const activeProfile = choosePrimaryProfile((data ?? []) as AccessProfile[]);
-
-      if (!activeProfile) {
-        setMessage('Akaun anda belum diaktifkan oleh Pentadbir.');
-        setReady(true);
-        return;
-      }
-
-      if (!canAccessPath(activeProfile.role, pathname)) {
-        setMessage('Anda tidak mempunyai akses kepada modul ini.');
-        setReady(true);
-        return;
-      }
-
-      setProfile(activeProfile);
-      setReady(true);
     }
 
     checkAccess();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router]);
 
   if (!ready) {
