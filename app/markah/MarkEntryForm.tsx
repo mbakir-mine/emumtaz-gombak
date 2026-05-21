@@ -38,7 +38,6 @@ export default function MarkEntryForm({
       <table>
         <thead>
           <tr>
-            <th>MyKid</th>
             <th>Nama Murid</th>
             <th>Jantina</th>
             <th>Markah</th>
@@ -52,9 +51,8 @@ export default function MarkEntryForm({
               <tr key={student.id}>
                 <td>
                   <input type="hidden" name="student_id" value={student.id} />
-                  {student.mykid}
+                  {student.nama_murid}
                 </td>
-                <td>{student.nama_murid}</td>
                 <td>{student.jantina}</td>
                 <td>
                   <input
@@ -84,4 +82,3 @@ export default function MarkEntryForm({
     </form>
   );
 }
-

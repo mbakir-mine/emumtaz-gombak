@@ -19,7 +19,7 @@ export default function StudentList({
     return students.filter((student) => {
       const classRecord = student.class_id ? classById.get(student.class_id) : null;
       const classLabel = classRecord ? `Tahun ${classRecord.tahun} ${classRecord.nama_kelas}` : 'Tiada kelas';
-      return [student.mykid, student.nama_murid, student.kod_sekolah, classLabel, student.jantina, student.status]
+      return [student.nama_murid, student.kod_sekolah, classLabel, student.jantina, student.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -40,7 +40,7 @@ export default function StudentList({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari MyKid, nama murid, sekolah, kelas atau status"
+          placeholder="Cari nama murid, sekolah, kelas atau status"
           aria-label="Cari murid"
         />
       </div>
@@ -51,7 +51,6 @@ export default function StudentList({
           <table>
             <thead>
               <tr>
-                <th>MyKid</th>
                 <th>Nama Murid</th>
                 <th>Sekolah</th>
                 <th>Kelas</th>
@@ -64,7 +63,6 @@ export default function StudentList({
                 const classRecord = student.class_id ? classById.get(student.class_id) : null;
                 return (
                   <tr key={student.id}>
-                    <td>{student.mykid}</td>
                     <td>{student.nama_murid}</td>
                     <td>{student.kod_sekolah}</td>
                     <td>{classRecord ? `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}` : 'Tiada kelas'}</td>

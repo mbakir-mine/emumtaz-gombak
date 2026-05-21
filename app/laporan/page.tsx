@@ -82,7 +82,6 @@ export default async function LaporanPage() {
               <tr>
                 <th>Peperiksaan</th>
                 <th>Sekolah</th>
-                <th>MyKid</th>
                 <th>Nama Murid</th>
                 <th>Bil Subjek</th>
                 <th>Purata</th>
@@ -94,7 +93,6 @@ export default async function LaporanPage() {
                 <tr key={`${item.kod_peperiksaan}-${item.student_id}`}>
                   <td>{item.kod_peperiksaan}</td>
                   <td>{item.kod_sekolah}</td>
-                  <td>{item.mykid}</td>
                   <td>{item.nama_murid}</td>
                   <td>{item.bil_subjek_dikira}</td>
                   <td>{item.purata ?? '-'}</td>
