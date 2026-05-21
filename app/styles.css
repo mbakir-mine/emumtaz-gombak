@@ -568,7 +568,7 @@ button:disabled {
   }
 
   table {
-    min-width: 680px;
+    min-width: 720px;
   }
 }
 
@@ -637,51 +637,16 @@ button:disabled {
   }
 
   .table-scroll {
-    overflow-x: visible;
+    overflow-x: auto;
   }
 
   .table-scroll table {
-    min-width: 0;
+    min-width: 720px;
   }
 
-  .table-scroll thead {
-    display: none;
-  }
-
-  .table-scroll table,
-  .table-scroll tbody,
-  .table-scroll tr,
-  .table-scroll td {
-    display: block;
-    width: 100%;
-  }
-
-  .table-scroll tr {
-    margin-bottom: 10px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: white;
-  }
-
-  .table-scroll td {
-    display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 0;
+  th,
+  td {
+    padding: 9px 10px;
     font-size: 14px;
-  }
-
-  .table-scroll td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .table-scroll td:empty {
-    display: none;
   }
 }
