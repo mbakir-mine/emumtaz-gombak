@@ -1,22 +1,6 @@
-import Link from 'next/link';
 import AuthGate from './AuthGate';
+import SidebarNav from './SidebarNav';
 import UserBadge from './UserBadge';
-
-const navItems = [
-  { key: 'dashboard', label: 'Dashboard', href: '/' },
-  { key: 'schools', label: 'Sekolah', href: '/sekolah' },
-  { key: 'classes', label: 'Kelas', href: '/kelas' },
-  { key: 'students', label: 'Murid', href: '/murid' },
-  { key: 'teachers', label: 'Guru', href: '/guru' },
-  { key: 'marks', label: 'Markah', href: '/markah' },
-  { key: 'analysis', label: 'Analisis', href: '/analisis' },
-  { key: 'comparison', label: 'Perbandingan', href: '/perbandingan' },
-  { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas' },
-  { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek' },
-  { key: 'users', label: 'Pengesahan Pengguna', href: '/pengguna' },
-  { key: 'setup', label: 'Setup Data', href: '/setup' },
-  { key: 'reports', label: 'Laporan', href: '/laporan' },
-];
 
 export default function AppFrame({
   title,
@@ -38,13 +22,7 @@ export default function AppFrame({
               <small>Gombak</small>
             </div>
           </div>
-          <nav className="nav">
-            {navItems.map((item) => (
-              <Link className={active === item.key ? 'active' : ''} href={item.href} key={item.key}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <SidebarNav active={active} />
         </aside>
         <main className="main">
           <header className="topbar">

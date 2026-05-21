@@ -1,19 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { canAccessPath, choosePrimaryProfile, type AccessProfile } from '@/lib/access';
 
 const publicPaths = ['/login', '/daftar'];
+const AccessProfileContext = createContext<AccessProfile | null>(null);
+
+export function useAccessProfile() {
+  return useContext(AccessProfileContext);
+}
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState('');
+  const [profile, setProfile] = useState<AccessProfile | null>(null);
 
   useEffect(() => {
     async function checkAccess() {
+      setReady(false);
+      setMessage('');
+      setProfile(null);
+
       if (publicPaths.includes(pathname)) {
         setReady(true);
         return;
@@ -34,9 +45,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('app_users')
-        .select('status')
+        .select('id,email,nama,role,kod_sekolah,status')
         .eq('email', email.toLowerCase())
-        .limit(1);
+        .eq('status', 'AKTIF');
 
       if (error) {
         setMessage('Ralat menyemak akses pengguna. Sila cuba semula.');
@@ -44,7 +55,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const activeProfile = (data ?? []).find((item) => item.status === 'AKTIF');
+      const activeProfile = choosePrimaryProfile((data ?? []) as AccessProfile[]);
 
       if (!activeProfile) {
         setMessage('Akaun anda belum diaktifkan oleh Pentadbir.');
@@ -52,6 +63,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      if (!canAccessPath(activeProfile.role, pathname)) {
+        setMessage('Anda tidak mempunyai akses kepada modul ini.');
+        setReady(true);
+        return;
+      }
+
+      setProfile(activeProfile);
       setReady(true);
     }
 
@@ -102,5 +120,5 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return children;
+  return <AccessProfileContext.Provider value={profile}>{children}</AccessProfileContext.Provider>;
 }
