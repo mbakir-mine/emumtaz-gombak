@@ -333,6 +333,50 @@ function ZoneCompletionSummary({ rows }: { rows: MarkCompletionSchool[] }) {
   );
 }
 
+function CompletionChart({
+  schools,
+  classes,
+  isSchoolAdmin,
+}: {
+  schools: MarkCompletionSchool[];
+  classes: MarkCompletionClass[];
+  isSchoolAdmin: boolean;
+}) {
+  const chartRows = isSchoolAdmin
+    ? [1, 2, 3, 4, 5, 6].map((tahun) => {
+        const rows = classes.filter((row) => row.tahun === tahun);
+        const total = rows.length;
+        const done = rows.filter((row) => row.complete).length;
+        return { label: `T${tahun}`, total, done };
+      })
+    : ['BARAT', 'TIMUR', 'TENGAH'].map((zon) => {
+        const rows = schools.filter((row) => row.zon === zon);
+        const total = rows.length;
+        const done = rows.filter((row) => row.complete).length;
+        return { label: zon.charAt(0) + zon.slice(1).toLowerCase(), total, done };
+      });
+
+  return (
+    <div className="completion-chart">
+      <h3>{isSchoolAdmin ? 'Status Ikut Tahun' : 'Status Ikut Zon'}</h3>
+      <div className="chart-bars">
+        {chartRows.map((row) => {
+          const percent = row.total > 0 ? Math.round((row.done / row.total) * 100) : 0;
+          return (
+            <div className="chart-row" key={row.label}>
+              <span>{row.label}</span>
+              <div className="chart-track">
+                <i style={{ width: `${percent}%` }} />
+              </div>
+              <b>{percent}%</b>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MarkCompletionPanel({
   role,
   zon,
@@ -365,29 +409,34 @@ function MarkCompletionPanel({
 
   return (
     <section className="panel completion-panel">
-      <div className="panel-head">
+      <div className="completion-layout">
         <div>
-          <h2>Status Pengisian Markah</h2>
-          <p className="table-note">Pemantauan lengkap/belum selesai untuk {latestExamLabel}.</p>
+          <div className="panel-head compact-head">
+            <div>
+              <h2>Status Pengisian Markah</h2>
+              <p className="table-note">Pemantauan lengkap/belum selesai untuk {latestExamLabel}.</p>
+            </div>
+          </div>
+          <div className="completion-summary">
+            <CompletionButton
+              label={`${unitLabel} lengkap`}
+              count={doneRows.length}
+              tone="done"
+              active={view === 'done'}
+              onClick={() => setView(view === 'done' ? null : 'done')}
+            />
+            <CompletionButton
+              label={`${unitLabel} belum selesai`}
+              count={pendingRows.length}
+              tone="pending"
+              active={view === 'pending'}
+              onClick={() => setView(view === 'pending' ? null : 'pending')}
+            />
+          </div>
+          {!isSchoolAdmin && <ZoneCompletionSummary rows={scopedSchools} />}
         </div>
+        <CompletionChart schools={scopedSchools} classes={scopedClasses} isSchoolAdmin={isSchoolAdmin} />
       </div>
-      <div className="completion-summary">
-        <CompletionButton
-          label={`${unitLabel} lengkap`}
-          count={doneRows.length}
-          tone="done"
-          active={view === 'done'}
-          onClick={() => setView(view === 'done' ? null : 'done')}
-        />
-        <CompletionButton
-          label={`${unitLabel} belum selesai`}
-          count={pendingRows.length}
-          tone="pending"
-          active={view === 'pending'}
-          onClick={() => setView(view === 'pending' ? null : 'pending')}
-        />
-      </div>
-      {!isSchoolAdmin && <ZoneCompletionSummary rows={scopedSchools} />}
       {view && (
         <CompletionList
           title={view === 'done' ? `Senarai ${unitLabel} lengkap` : `Senarai ${unitLabel} belum selesai`}
@@ -447,24 +496,26 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         ))}
       </div>
 
-      {isSchoolAdmin ? (
-        <SchoolFocus schoolRank={schoolOwnRank} classRanks={schoolClassRanks} />
-      ) : (
-        <SchoolLeaderboard
-          rows={scopedSchoolRanks}
-          title={isZoneAdmin ? `5 Sekolah Terbaik ${zoneLabel(profile?.zon)}` : '5 Sekolah Terbaik Daerah'}
-          subtitle={`Mengikut kategori sekolah berdasarkan ${insights.latestExamLabel}.`}
-        />
-      )}
+      <div className="dashboard-feature-grid">
+        {isSchoolAdmin ? (
+          <SchoolFocus schoolRank={schoolOwnRank} classRanks={schoolClassRanks} />
+        ) : (
+          <SchoolLeaderboard
+            rows={scopedSchoolRanks}
+            title={isZoneAdmin ? `5 Sekolah Terbaik ${zoneLabel(profile?.zon)}` : '5 Sekolah Terbaik Daerah'}
+            subtitle={`Mengikut kategori sekolah berdasarkan ${insights.latestExamLabel}.`}
+          />
+        )}
 
-      <MarkCompletionPanel
-        role={profile?.role}
-        zon={profile?.zon}
-        kodSekolah={profile?.kod_sekolah}
-        latestExamLabel={insights.latestExamLabel}
-        schools={insights.completionSchools}
-        classes={insights.completionClasses}
-      />
+        <MarkCompletionPanel
+          role={profile?.role}
+          zon={profile?.zon}
+          kodSekolah={profile?.kod_sekolah}
+          latestExamLabel={insights.latestExamLabel}
+          schools={insights.completionSchools}
+          classes={insights.completionClasses}
+        />
+      </div>
 
       <div className="dashboard-split">
         <section className="panel compact-panel">
