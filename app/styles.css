@@ -171,6 +171,10 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dashboard-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .card,
 .metric,
 .panel {
