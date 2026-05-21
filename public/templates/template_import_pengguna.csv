@@ -1,0 +1,6 @@
+nama,email,role,kod_sekolah,zon,status
+CONTOH GURU SUBJEK,guru.subjek@email.com,GURU_SUBJEK,BYP7010,,MENUNGGU
+CONTOH GURU KELAS,guru.kelas@email.com,GURU_KELAS,BYP7010,,MENUNGGU
+CONTOH ADMIN SEKOLAH,admin.sekolah@email.com,ADMIN_SEKOLAH,BYP7010,,MENUNGGU
+CONTOH ADMIN ZON,admin.zon@email.com,ADMIN_ZON,,BARAT,MENUNGGU
+CONTOH ADMIN DAERAH,admin.daerah@email.com,ADMIN_DAERAH,,,MENUNGGU

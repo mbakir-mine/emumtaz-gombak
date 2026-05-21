@@ -701,6 +701,14 @@ th {
   margin-bottom: 6px;
 }
 
+.template-link {
+  width: fit-content;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .import-form .form-actions {
   grid-column: 1 / -1;
 }

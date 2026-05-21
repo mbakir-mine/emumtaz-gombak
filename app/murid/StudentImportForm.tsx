@@ -20,6 +20,9 @@ export default function StudentImportForm({ schools }: { schools: School[] }) {
           CSV: mykid, nama_murid, jantina, kod_sekolah, tahun, nama_kelas. Jika semua murid satu sekolah, pilih sekolah
           default di bawah.
         </p>
+        <a className="button soft template-link" href="/templates/template_import_murid.csv" download>
+          Download Template CSV
+        </a>
       </div>
       <label>
         Sekolah default

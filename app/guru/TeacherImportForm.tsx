@@ -18,6 +18,9 @@ export default function TeacherImportForm() {
         <p className="table-note">
           CSV: nama, email, role, kod_sekolah, zon, status. Untuk Admin Zon, isi zon BARAT/TIMUR/TENGAH.
         </p>
+        <a className="button soft template-link" href="/templates/template_import_pengguna.csv" download>
+          Download Template CSV
+        </a>
       </div>
       <label>
         Status default
