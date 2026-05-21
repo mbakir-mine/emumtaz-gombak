@@ -15,7 +15,6 @@ export default function DaftarPage() {
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [nama, setNama] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState('GURU_SUBJEK');
   const [kodSekolah, setKodSekolah] = useState('');
   const [zon, setZon] = useState('');
@@ -49,11 +48,6 @@ export default function DaftarPage() {
 
     if (!hasSupabaseEnv || !supabase) {
       setMessage('Tetapan Supabase belum lengkap. Sila isi .env.local dahulu.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessage('Password mesti sekurang-kurangnya 6 aksara.');
       return;
     }
 
@@ -99,17 +93,6 @@ export default function DaftarPage() {
       return;
     }
 
-    const authResult = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-    });
-
-    if (authResult.error) {
-      setLoading(false);
-      setMessage(`Pendaftaran auth gagal: ${authResult.error.message}`);
-      return;
-    }
-
     const { error } = await supabase.from('app_users').insert({
       email: cleanEmail,
       nama: cleanName,
@@ -122,7 +105,7 @@ export default function DaftarPage() {
     setLoading(false);
 
     if (error) {
-      setMessage(`Akaun auth sudah dibuat, tetapi profil sistem gagal disimpan: ${error.message}`);
+      setMessage(`Permohonan gagal disimpan: ${error.message}`);
       return;
     }
 
@@ -130,7 +113,6 @@ export default function DaftarPage() {
     setMessage('Pendaftaran berjaya dihantar. Sila tunggu Admin mengaktifkan akaun.');
     setNama('');
     setEmail('');
-    setPassword('');
     setRole('GURU_SUBJEK');
     setKodSekolah('');
     setZon('');
@@ -149,7 +131,7 @@ export default function DaftarPage() {
 
         <h1>Daftar Pengguna Baru</h1>
         <p className="login-copy">
-          Isi maklumat pengguna. Akaun akan direkod sebagai MENUNGGU sehingga disemak oleh Admin.
+          Isi maklumat pengguna. Permohonan akan direkod sebagai MENUNGGU sehingga disemak oleh Admin.
         </p>
 
         {!hasSupabaseEnv && (
@@ -176,17 +158,6 @@ export default function DaftarPage() {
               placeholder="contoh@email.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Password
-            <input
-              type="password"
-              placeholder="Minimum 6 aksara"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
               required
             />
           </label>
