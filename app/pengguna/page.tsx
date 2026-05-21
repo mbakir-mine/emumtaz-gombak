@@ -1,7 +1,6 @@
 import AppFrame from '../ui/AppFrame';
 import { getAllAppUsers, getSchools, type UserRecord } from '@/lib/data';
-import { updateUserStatus } from './actions';
-import UserStatusButton from './UserStatusButton';
+import UserStatusForm from './UserStatusForm';
 
 function roleLabel(role: string) {
   const labels: Record<string, string> = {
@@ -69,31 +68,7 @@ function UserTable({
                 <span className={`status-badge status-${user.status.toLowerCase()}`}>{statusLabel(user.status)}</span>
               </td>
               <td>
-                <div className="row-actions">
-                  {user.status !== 'AKTIF' && (
-                    <form action={updateUserStatus}>
-                      <input name="id" type="hidden" value={user.id} />
-                      <input name="status" type="hidden" value="AKTIF" />
-                      <UserStatusButton label="Aktifkan" />
-                    </form>
-                  )}
-
-                  {user.status === 'AKTIF' && user.role !== 'OWNER' && (
-                    <form action={updateUserStatus}>
-                      <input name="id" type="hidden" value={user.id} />
-                      <input name="status" type="hidden" value="DIGANTUNG" />
-                      <UserStatusButton label="Gantung" variant="danger" />
-                    </form>
-                  )}
-
-                  {user.status === 'MENUNGGU' && (
-                    <form action={updateUserStatus}>
-                      <input name="id" type="hidden" value={user.id} />
-                      <input name="status" type="hidden" value="DIGANTUNG" />
-                      <UserStatusButton label="Tolak" variant="soft" />
-                    </form>
-                  )}
-                </div>
+                <UserStatusForm userId={user.id} currentStatus={user.status} locked={user.role === 'OWNER'} />
               </td>
             </tr>
           ))}

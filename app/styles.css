@@ -419,6 +419,24 @@ select {
   padding: 0 12px;
 }
 
+.status-form {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 240px;
+}
+
+.status-form select {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.status-form .button {
+  min-height: 38px;
+  padding: 0 12px;
+}
+
 .status-badge {
   display: inline-flex;
   min-width: 88px;
