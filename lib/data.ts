@@ -152,6 +152,31 @@ async function countTable(table: string) {
   return count ?? 0;
 }
 
+async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
+  if (!supabase) return [];
+
+  const pageSize = 1000;
+  let from = 0;
+  const rows: StudentRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('students')
+      .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
+      .order('kod_sekolah')
+      .order('nama_murid')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
+}
+
 export async function getSetupCounts(): Promise<SetupCounts> {
   if (!hasSupabaseEnv) {
     return {
@@ -215,15 +240,7 @@ export async function getClasses(): Promise<ClassRecord[]> {
 }
 
 export async function getStudents(): Promise<StudentRecord[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('students')
-    .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
-    .order('kod_sekolah')
-    .order('nama_murid');
-
-  if (error) return [];
-  return data ?? [];
+  return fetchStudentsInBatches();
 }
 
 export async function getSchoolUsers(): Promise<UserRecord[]> {
