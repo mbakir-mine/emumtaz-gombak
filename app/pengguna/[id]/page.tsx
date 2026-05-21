@@ -3,6 +3,7 @@ import AppFrame from '../../ui/AppFrame';
 import { getAppUserById, getSchools } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
 import UserStatusForm from '../UserStatusForm';
+import DeleteUserButton from '../DeleteUserButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -70,6 +71,14 @@ export default async function PenggunaProfilPage({
                 locked={user.role === 'OWNER'}
               />
             </div>
+
+            <section className="danger-zone">
+              <div>
+                <h2>Zon Bahaya</h2>
+                <p className="table-note">Padam hanya membuang profil akses sistem. Data murid dan markah tidak dipadam.</p>
+              </div>
+              <DeleteUserButton userId={user.id} userName={user.nama} locked={user.role === 'OWNER'} />
+            </section>
           </>
         )}
       </section>

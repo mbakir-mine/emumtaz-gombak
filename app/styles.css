@@ -379,6 +379,47 @@ select {
   color: #b91c1c;
 }
 
+.danger-zone {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff7f7;
+}
+
+.danger-zone h2 {
+  margin-bottom: 4px;
+  color: #991b1b;
+  font-size: 18px;
+}
+
+.danger-zone p {
+  margin-bottom: 0;
+}
+
+.danger-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.danger-button:hover {
+  background: #991b1b;
+}
+
 .notice {
   padding: 14px;
   border-left: 4px solid var(--amber);
@@ -961,6 +1002,11 @@ button:disabled {
 
   .access-checks {
     grid-template-columns: 1fr;
+  }
+
+  .danger-zone {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .detail-list {

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { navItems } from '@/lib/access';
 
@@ -63,4 +64,29 @@ export async function updateUserStatus(formData: FormData) {
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
+}
+
+export async function deleteUserProfile(formData: FormData) {
+  if (!supabase) {
+    return;
+  }
+
+  const id = String(formData.get('id') ?? '').trim();
+
+  if (!id) {
+    return;
+  }
+
+  const { data: user } = await supabase.from('app_users').select('role').eq('id', id).maybeSingle();
+
+  if (user?.role === 'OWNER') {
+    return;
+  }
+
+  await supabase.from('app_users').delete().eq('id', id);
+
+  revalidatePath('/pengguna');
+  revalidatePath('/guru');
+  revalidatePath('/');
+  redirect('/pengguna');
 }
