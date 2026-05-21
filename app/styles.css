@@ -1349,8 +1349,55 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-metrics .metric {
+    min-height: 112px;
+  }
+
+  .dashboard-metrics .metric:nth-child(1),
+  .dashboard-metrics .metric:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-metric {
+    padding: 14px;
+  }
+
+  .dashboard-metric:not(:has(.metric-breakdown)) {
+    min-height: 96px;
+  }
+
+  .metric-side {
+    min-width: 96px;
+  }
+
+  .metric-accent {
+    width: 42px;
+    height: 42px;
+  }
+
+  .metric-breakdown {
+    min-width: 138px;
+    min-height: 72px;
+    padding: 9px;
+  }
+
+  .metric-breakdown span {
+    grid-template-columns: minmax(72px, auto) 8px minmax(28px, auto);
+    font-size: 12px;
+  }
+
+  .metric-breakdown b {
+    font-size: 13px;
+  }
+
   .welcome-title {
     margin: 18px 14px 0;
+    font-size: 18px;
   }
 
   .grade-scale {
@@ -1358,9 +1405,40 @@ button:disabled {
   }
 
   .leaderboard-grid,
-  .year-rank-grid,
-  .completion-summary {
+  .year-rank-grid {
     grid-template-columns: 1fr;
+  }
+
+  .completion-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .completion-button {
+    min-height: 72px;
+    padding: 12px;
+  }
+
+  .completion-button strong {
+    font-size: 28px;
+  }
+
+  .zone-completion-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .zone-completion-card {
+    padding: 9px;
+  }
+
+  .zone-completion-card span,
+  .zone-completion-card small {
+    font-size: 12px;
+  }
+
+  .completion-chart {
+    padding: 12px;
   }
 
   .rank-item {
