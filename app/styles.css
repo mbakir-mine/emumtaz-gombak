@@ -558,8 +558,8 @@ select {
 }
 
 .text-link {
-  color: var(--green);
-  font-weight: 800;
+  color: #0f6840;
+  font-weight: 600;
   text-decoration: none;
 }
 
