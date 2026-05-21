@@ -71,7 +71,12 @@ function UserTable({
                 <span className={`status-badge status-${user.status.toLowerCase()}`}>{statusLabel(user.status)}</span>
               </td>
               <td>
-                <UserStatusForm userId={user.id} currentStatus={user.status} locked={user.role === 'OWNER'} />
+                <UserStatusForm
+                  userId={user.id}
+                  currentRole={user.role}
+                  currentStatus={user.status}
+                  locked={user.role === 'OWNER'}
+                />
               </td>
             </tr>
           ))}

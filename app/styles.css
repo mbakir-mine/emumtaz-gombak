@@ -421,10 +421,10 @@ select {
 
 .status-form {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) auto;
   gap: 8px;
   align-items: center;
-  min-width: 240px;
+  min-width: 420px;
 }
 
 .status-form select {
