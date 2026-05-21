@@ -1,4 +1,4 @@
-export type UserRole = 'OWNER' | 'ADMIN_DAERAH' | 'ADMIN_SEKOLAH' | 'GURU_KELAS' | 'GURU_SUBJEK';
+export type UserRole = 'OWNER' | 'ADMIN_DAERAH' | 'ADMIN_ZON' | 'ADMIN_SEKOLAH' | 'GURU_KELAS' | 'GURU_SUBJEK';
 
 export type AccessProfile = {
   id: string;
@@ -6,6 +6,7 @@ export type AccessProfile = {
   nama: string;
   role: UserRole;
   kod_sekolah: string | null;
+  zon: string | null;
   status: string;
 };
 
@@ -16,17 +17,17 @@ export type NavItem = {
   roles: UserRole[];
 };
 
-export const allRoles: UserRole[] = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
+export const allRoles: UserRole[] = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
 
 export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/', roles: allRoles },
-  { key: 'schools', label: 'Sekolah', href: '/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'schools', label: 'Sekolah', href: '/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
-  { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
+  { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
   { key: 'teachers', label: 'Guru', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
-  { key: 'marks', label: 'Markah', href: '/markah', roles: allRoles },
+  { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },
   { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },
-  { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan Pengguna', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
@@ -37,9 +38,10 @@ export const navItems: NavItem[] = [
 const roleRank: Record<UserRole, number> = {
   OWNER: 1,
   ADMIN_DAERAH: 2,
-  ADMIN_SEKOLAH: 3,
-  GURU_KELAS: 4,
-  GURU_SUBJEK: 5,
+  ADMIN_ZON: 3,
+  ADMIN_SEKOLAH: 4,
+  GURU_KELAS: 5,
+  GURU_SUBJEK: 6,
 };
 
 export function choosePrimaryProfile(profiles: AccessProfile[]) {
@@ -50,6 +52,7 @@ export function roleLabel(role: string) {
   const labels: Record<string, string> = {
     OWNER: 'Pentadbir Utama',
     ADMIN_DAERAH: 'Pentadbir Daerah',
+    ADMIN_ZON: 'Pentadbir Zon',
     ADMIN_SEKOLAH: 'Pentadbir Sekolah',
     GURU_KELAS: 'Guru Kelas',
     GURU_SUBJEK: 'Guru Subjek',

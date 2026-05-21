@@ -45,7 +45,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('app_users')
-        .select('id,email,nama,role,kod_sekolah,status')
+        .select('id,email,nama,role,kod_sekolah,zon,status')
         .eq('email', email.toLowerCase())
         .eq('status', 'AKTIF');
 

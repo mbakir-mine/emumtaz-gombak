@@ -7,6 +7,7 @@ function roleLabel(role: string) {
   const labels: Record<string, string> = {
     OWNER: 'Owner',
     ADMIN_DAERAH: 'Admin Daerah',
+    ADMIN_ZON: 'Pentadbir Zon',
     ADMIN_SEKOLAH: 'Admin Sekolah',
     GURU_KELAS: 'Guru Kelas',
     GURU_SUBJEK: 'Guru Subjek',
@@ -46,7 +47,7 @@ function UserTable({
             <th>Nama</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Sekolah</th>
+            <th>Akses</th>
             <th>Status</th>
             <th>Tindakan</th>
           </tr>
@@ -60,7 +61,9 @@ function UserTable({
               <td>
                 {user.kod_sekolah
                   ? `${user.kod_sekolah} - ${schoolNames.get(user.kod_sekolah) ?? 'Sekolah'}`
-                  : 'Semua sekolah'}
+                  : user.zon
+                    ? `Zon ${user.zon.charAt(0) + user.zon.slice(1).toLowerCase()}`
+                    : 'Semua sekolah'}
               </td>
               <td>
                 <span className={`status-badge status-${user.status.toLowerCase()}`}>{statusLabel(user.status)}</span>

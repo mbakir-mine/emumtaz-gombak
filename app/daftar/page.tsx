@@ -9,6 +9,8 @@ type SchoolOption = {
   nama_sekolah: string;
 };
 
+const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
+
 export default function DaftarPage() {
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [nama, setNama] = useState('');
@@ -16,6 +18,7 @@ export default function DaftarPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('GURU_SUBJEK');
   const [kodSekolah, setKodSekolah] = useState('');
+  const [zon, setZon] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
@@ -36,7 +39,8 @@ export default function DaftarPage() {
     loadSchools();
   }, []);
 
-  const needsSchool = useMemo(() => role !== 'ADMIN_DAERAH', [role]);
+  const needsSchool = useMemo(() => !['ADMIN_DAERAH', 'ADMIN_ZON'].includes(role), [role]);
+  const needsZone = role === 'ADMIN_ZON';
 
   async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,12 +62,18 @@ export default function DaftarPage() {
       return;
     }
 
+    if (needsZone && !zon) {
+      setMessage('Sila pilih zon.');
+      return;
+    }
+
     setLoading(true);
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = nama.trim().toUpperCase();
     const userRole = role.trim();
     const schoolCode = needsSchool ? kodSekolah : null;
+    const zoneCode = needsZone ? zon : null;
 
     const authResult = await supabase.auth.signUp({
       email: cleanEmail,
@@ -82,6 +92,7 @@ export default function DaftarPage() {
         nama: cleanName,
         role: userRole,
         kod_sekolah: schoolCode,
+        zon: zoneCode,
         status: 'MENUNGGU',
       },
       {
@@ -97,12 +108,13 @@ export default function DaftarPage() {
     }
 
     setSuccess(true);
-    setMessage('Pendaftaran berjaya dihantar. Sila tunggu Owner/Admin mengaktifkan akaun.');
+    setMessage('Pendaftaran berjaya dihantar. Sila tunggu Pentadbir mengaktifkan akaun.');
     setNama('');
     setEmail('');
     setPassword('');
     setRole('GURU_SUBJEK');
     setKodSekolah('');
+    setZon('');
   }
 
   return (
@@ -173,9 +185,24 @@ export default function DaftarPage() {
               <option value="GURU_SUBJEK">Guru Subjek</option>
               <option value="GURU_KELAS">Guru Kelas</option>
               <option value="ADMIN_SEKOLAH">Admin Sekolah</option>
+              <option value="ADMIN_ZON">Pentadbir Zon</option>
               <option value="ADMIN_DAERAH">Admin Daerah</option>
             </select>
           </label>
+
+          {needsZone && (
+            <label>
+              Zon
+              <select value={zon} onChange={(event) => setZon(event.target.value)} required>
+                <option value="">Pilih zon</option>
+                {zoneOptions.map((zone) => (
+                  <option key={zone} value={zone}>
+                    Zon {zone.charAt(0) + zone.slice(1).toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           {needsSchool && (
             <label>

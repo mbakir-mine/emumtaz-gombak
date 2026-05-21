@@ -15,6 +15,7 @@ export type School = {
   nama_sekolah: string;
   kategori: string;
   daerah: string;
+  zon: string | null;
   status: string;
 };
 
@@ -43,6 +44,7 @@ export type UserRecord = {
   nama: string;
   role: string;
   kod_sekolah: string | null;
+  zon: string | null;
   status: string;
 };
 
@@ -192,7 +194,7 @@ export async function getSchools(): Promise<School[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('schools')
-    .select('kod_sekolah,nama_sekolah,kategori,daerah,status')
+    .select('kod_sekolah,nama_sekolah,kategori,daerah,zon,status')
     .order('kod_sekolah');
 
   if (error) return [];
@@ -228,7 +230,7 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,status')
+    .select('id,email,nama,role,kod_sekolah,zon,status')
     .in('role', ['ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
     .order('kod_sekolah')
     .order('role')
@@ -242,7 +244,7 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,status')
+    .select('id,email,nama,role,kod_sekolah,zon,status')
     .order('status')
     .order('kod_sekolah')
     .order('role')
