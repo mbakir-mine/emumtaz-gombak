@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { roleLabel } from '@/lib/access';
 import type {
   DashboardClassRank,
   DashboardInsights,
@@ -80,26 +79,6 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
     },
     { label: 'Peperiksaan', value: counts.exams, note: 'UPSA & UASA' },
   ];
-}
-
-function introText(role?: string, zon?: string | null) {
-  if (role === 'ADMIN_ZON') {
-    return zoneLabel(zon);
-  }
-
-  if (role === 'ADMIN_SEKOLAH') {
-    return 'Fokus sekolah';
-  }
-
-  if (role === 'GURU_KELAS') {
-    return 'Fokus kelas';
-  }
-
-  if (role === 'GURU_SUBJEK') {
-    return 'Fokus subjek';
-  }
-
-  return 'Paparan daerah';
 }
 
 function formatNumber(value: number | null | undefined) {
@@ -459,14 +438,6 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
   });
   const schoolOwnRank = scopedSchoolRanks.find((row) => row.kod_sekolah === profile?.kod_sekolah);
   const schoolClassRanks = insights.classRanks.filter((row) => row.kod_sekolah === profile?.kod_sekolah);
-  const gradeScale = [
-    ['90-100', 'Mumtaz'],
-    ['75-89', 'Jayyid Jiddan'],
-    ['60-74', 'Jayyid'],
-    ['40-59', 'Maqbul'],
-    ['0-39', "Musa'adah"],
-  ];
-
   return (
     <>
       {profile?.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
@@ -517,36 +488,6 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         />
       </div>
 
-      <div className="dashboard-split">
-        <section className="panel compact-panel">
-          <div className="panel-head">
-            <h2>Akses Anda</h2>
-            <span>{introText(profile?.role, profile?.zon)}</span>
-          </div>
-          <div className="detail-list">
-            <span>Peranan</span>
-            <strong>{profile ? roleLabel(profile.role) : '-'}</strong>
-            <span>Sekolah</span>
-            <strong>{profile?.kod_sekolah ?? 'Semua sekolah'}</strong>
-            <span>Emel</span>
-            <strong>{profile?.email ?? '-'}</strong>
-          </div>
-        </section>
-
-        <section className="panel compact-panel">
-          <div className="panel-head">
-            <h2>Skala Gred</h2>
-          </div>
-          <div className="grade-scale">
-            {gradeScale.map(([range, grade]) => (
-              <div className="grade-chip" key={range}>
-                <small>{range}</small>
-                <strong>{grade}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
     </>
   );
 }
