@@ -78,7 +78,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         const activeProfile = choosePrimaryProfile((data ?? []) as AccessProfile[]);
 
         if (!activeProfile) {
-          setMessage('Akaun anda belum diaktifkan oleh Pentadbir.');
+          setMessage('Akaun anda belum diaktifkan oleh Admin.');
           setReady(true);
           return;
         }

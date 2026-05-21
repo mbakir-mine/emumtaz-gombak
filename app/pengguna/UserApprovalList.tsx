@@ -8,7 +8,7 @@ function roleLabel(role: string) {
   const labels: Record<string, string> = {
     OWNER: 'Owner',
     ADMIN_DAERAH: 'Admin Daerah',
-    ADMIN_ZON: 'Pentadbir Zon',
+    ADMIN_ZON: 'Admin Zon',
     ADMIN_SEKOLAH: 'Admin Sekolah',
     GURU_KELAS: 'Guru Kelas',
     GURU_SUBJEK: 'Guru Subjek',

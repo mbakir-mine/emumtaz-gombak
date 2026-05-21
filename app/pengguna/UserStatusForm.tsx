@@ -11,7 +11,7 @@ const statusOptions = [
 
 const roleOptions = [
   { value: 'ADMIN_DAERAH', label: 'Admin Daerah' },
-  { value: 'ADMIN_ZON', label: 'Pentadbir Zon' },
+  { value: 'ADMIN_ZON', label: 'Admin Zon' },
   { value: 'ADMIN_SEKOLAH', label: 'Admin Sekolah' },
   { value: 'GURU_KELAS', label: 'Guru Kelas' },
   { value: 'GURU_SUBJEK', label: 'Guru Subjek' },

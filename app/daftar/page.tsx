@@ -95,7 +95,7 @@ export default function DaftarPage() {
     if ((existingProfiles ?? []).some((profile) => profile.status === 'MENUNGGU')) {
       setLoading(false);
       setSuccess(true);
-      setMessage('Permohonan akaun ini sudah diterima dan sedang menunggu pengesahan Pentadbir.');
+      setMessage('Permohonan akaun ini sudah diterima dan sedang menunggu pengesahan Admin.');
       return;
     }
 
@@ -127,7 +127,7 @@ export default function DaftarPage() {
     }
 
     setSuccess(true);
-    setMessage('Pendaftaran berjaya dihantar. Sila tunggu Pentadbir mengaktifkan akaun.');
+    setMessage('Pendaftaran berjaya dihantar. Sila tunggu Admin mengaktifkan akaun.');
     setNama('');
     setEmail('');
     setPassword('');
@@ -149,7 +149,7 @@ export default function DaftarPage() {
 
         <h1>Daftar Pengguna Baru</h1>
         <p className="login-copy">
-          Isi maklumat pengguna. Akaun akan direkod sebagai MENUNGGU sehingga disemak oleh Pentadbir.
+          Isi maklumat pengguna. Akaun akan direkod sebagai MENUNGGU sehingga disemak oleh Admin.
         </p>
 
         {!hasSupabaseEnv && (
@@ -204,7 +204,7 @@ export default function DaftarPage() {
               <option value="GURU_SUBJEK">Guru Subjek</option>
               <option value="GURU_KELAS">Guru Kelas</option>
               <option value="ADMIN_SEKOLAH">Admin Sekolah</option>
-              <option value="ADMIN_ZON">Pentadbir Zon</option>
+              <option value="ADMIN_ZON">Admin Zon</option>
               <option value="ADMIN_DAERAH">Admin Daerah</option>
             </select>
           </label>
