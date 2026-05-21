@@ -1,6 +1,8 @@
 -- e-Mumtaz Gombak zone access support
 -- Run this before deploying code that uses ADMIN_ZON.
 
+alter type public.user_role add value if not exists 'ADMIN_ZON';
+
 alter table public.schools
   add column if not exists zon text;
 
