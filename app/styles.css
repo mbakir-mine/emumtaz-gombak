@@ -560,8 +560,11 @@ select {
 .text-link {
   color: var(--green);
   font-weight: 800;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  color: #064e2d;
 }
 
 .table-action {
