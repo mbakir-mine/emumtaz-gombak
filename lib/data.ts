@@ -364,6 +364,19 @@ export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
   return data ?? [];
 }
 
+export async function getStudentSummariesByMykid(mykid: string): Promise<StudentSummaryRecord[]> {
+  if (!supabase || !mykid) return [];
+  const { data, error } = await supabase
+    .from('v_student_exam_summary')
+    .select('*')
+    .eq('mykid', mykid)
+    .order('tahun_akademik', { ascending: false })
+    .order('kod_peperiksaan');
+
+  if (error) return [];
+  return data ?? [];
+}
+
 export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase

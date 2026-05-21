@@ -49,7 +49,7 @@ export default function LoginPage() {
 
         <h1>Log Masuk</h1>
         <p className="login-copy">
-          Gunakan akaun yang didaftarkan untuk owner, admin sekolah, guru kelas atau guru subjek.
+          Gunakan akaun admin atau guru yang telah disahkan.
         </p>
 
         {!hasSupabaseEnv && (
@@ -94,6 +94,10 @@ export default function LoginPage() {
 
           <Link className="button secondary login-register-link" href="/daftar">
             Daftar Pengguna Baru
+          </Link>
+
+          <Link className="button secondary login-register-link" href="/ibu-bapa">
+            Akses Ibu Bapa
           </Link>
         </form>
       </section>

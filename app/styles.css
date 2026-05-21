@@ -454,6 +454,58 @@ select {
   width: 100%;
 }
 
+.parent-page {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    linear-gradient(135deg, rgba(4, 120, 87, 0.08), rgba(244, 201, 79, 0.12)),
+    var(--bg);
+}
+
+.parent-card {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 12px 28px rgba(2, 46, 25, 0.08);
+}
+
+.parent-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.student-report-head {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.student-report-head div {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.student-report-head span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.student-report-head strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
 .form-message {
   margin: 0;
   color: #be123c;
@@ -727,6 +779,22 @@ button:disabled {
 
   .login-brand {
     align-items: flex-start;
+  }
+
+  .parent-page {
+    padding: 14px;
+  }
+
+  .parent-card {
+    padding: 18px;
+  }
+
+  .parent-head {
+    flex-direction: column;
+  }
+
+  .student-report-head {
+    grid-template-columns: 1fr;
   }
 
   h1,
