@@ -140,10 +140,34 @@ export type DashboardClassRank = {
   tahun_akademik: number;
 };
 
+export type MarkCompletionSchool = {
+  kod_sekolah: string;
+  nama_sekolah: string;
+  kategori: string;
+  zon: string | null;
+  expected: number;
+  completed: number;
+  percent: number;
+  complete: boolean;
+};
+
+export type MarkCompletionClass = {
+  class_id: string;
+  kod_sekolah: string;
+  tahun: number;
+  nama_kelas: string;
+  expected: number;
+  completed: number;
+  percent: number;
+  complete: boolean;
+};
+
 export type DashboardInsights = {
   latestExamLabel: string;
   schoolRanks: DashboardSchoolRank[];
   classRanks: DashboardClassRank[];
+  completionSchools: MarkCompletionSchool[];
+  completionClasses: MarkCompletionClass[];
 };
 
 export type MarkDetailRecord = {
@@ -176,6 +200,12 @@ export type TeacherSubjectAssignment = {
   users?: UserRecord;
   classes?: ClassRecord;
   subjects?: SubjectRecord;
+};
+
+type SubjectGradeRule = {
+  tahun: number;
+  kod_subjek: string;
+  wajib_isi: boolean;
 };
 
 async function countTable(table: string) {
@@ -234,6 +264,43 @@ async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]>
     if (data.length < pageSize) return rows;
     from += pageSize;
   }
+}
+
+async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> {
+  if (!supabase || !examId) return [];
+
+  const pageSize = 1000;
+  let from = 0;
+  const rows: MarkRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('marks')
+      .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
+      .eq('exam_id', examId)
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
+}
+
+async function getSubjectGradeRules(): Promise<SubjectGradeRule[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('subject_grade_rules')
+    .select('tahun,kod_subjek,wajib_isi')
+    .eq('wajib_isi', true)
+    .order('tahun')
+    .order('susunan');
+
+  if (error) return [];
+  return data ?? [];
 }
 
 function gradePointFromAverage(purata: number | null | undefined) {
@@ -488,20 +555,43 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
 }
 
 export async function getDashboardInsights(): Promise<DashboardInsights> {
-  const [schools, classes, schoolSummaries, studentSummaries] = await Promise.all([
+  const [schools, classes, exams, rules, schoolSummaries, studentSummaries, students] = await Promise.all([
     getSchools(),
     getClasses(),
+    getExams(),
+    getSubjectGradeRules(),
     getSchoolSummaries(),
     fetchStudentSummariesInBatches(),
+    fetchStudentsInBatches(),
   ]);
 
-  const key = latestExamKey([...schoolSummaries, ...studentSummaries]);
+  const latestExam = [...exams].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
+  const key = latestExam
+    ? `${latestExam.tahun_akademik}-${latestExam.kod_peperiksaan}`
+    : latestExamKey([...schoolSummaries, ...studentSummaries]);
+
   if (!key) {
-    return { latestExamLabel: 'Belum ada markah', schoolRanks: [], classRanks: [] };
+    return {
+      latestExamLabel: 'Belum ada markah',
+      schoolRanks: [],
+      classRanks: [],
+      completionSchools: [],
+      completionClasses: [],
+    };
   }
 
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
   const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
+  const marks = latestExam ? await fetchMarksByExamInBatches(latestExam.id) : [];
+  const rulesByTahun = new Map<number, string[]>();
+  rules.forEach((rule) => {
+    rulesByTahun.set(rule.tahun, [...(rulesByTahun.get(rule.tahun) ?? []), rule.kod_subjek]);
+  });
+  const completedMarkKeys = new Set(
+    marks
+      .filter((mark) => mark.markah !== null && mark.markah !== undefined)
+      .map((mark) => `${mark.student_id}-${mark.kod_subjek}`),
+  );
 
   const schoolRanks = schoolSummaries
     .filter((summary) => matchesExamKey(summary, key) && summary.purata_sekolah !== null)
@@ -570,11 +660,66 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
     })
     .sort((a, b) => (a.gps ?? 99) - (b.gps ?? 99) || (b.purata ?? -1) - (a.purata ?? -1));
 
+  const classCompletionMap = new Map<string, MarkCompletionClass>();
+
+  classes
+    .filter((classRecord) => !latestExam || classRecord.tahun_akademik === latestExam.tahun_akademik)
+    .forEach((classRecord) => {
+    const requiredSubjects = rulesByTahun.get(classRecord.tahun) ?? [];
+    const classStudents = students.filter(
+      (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
+    );
+    const expected = classStudents.length * requiredSubjects.length;
+    let completed = 0;
+
+    classStudents.forEach((student) => {
+      requiredSubjects.forEach((kodSubjek) => {
+        if (completedMarkKeys.has(`${student.id}-${kodSubjek}`)) {
+          completed += 1;
+        }
+      });
+    });
+
+    const percent = expected > 0 ? Math.round((completed / expected) * 100) : 0;
+    classCompletionMap.set(classRecord.id, {
+      class_id: classRecord.id,
+      kod_sekolah: classRecord.kod_sekolah,
+      tahun: classRecord.tahun,
+      nama_kelas: classRecord.nama_kelas,
+      expected,
+      completed,
+      percent,
+      complete: expected > 0 && completed >= expected,
+    });
+  });
+
+  const schoolCompletionMap = new Map<string, MarkCompletionSchool>();
+  schools.forEach((school) => {
+    const schoolClasses = [...classCompletionMap.values()].filter((item) => item.kod_sekolah === school.kod_sekolah);
+    const expected = schoolClasses.reduce((total, item) => total + item.expected, 0);
+    const completed = schoolClasses.reduce((total, item) => total + item.completed, 0);
+    const percent = expected > 0 ? Math.round((completed / expected) * 100) : 0;
+    schoolCompletionMap.set(school.kod_sekolah, {
+      kod_sekolah: school.kod_sekolah,
+      nama_sekolah: school.nama_sekolah,
+      kategori: school.kategori,
+      zon: school.zon,
+      expected,
+      completed,
+      percent,
+      complete: expected > 0 && completed >= expected,
+    });
+  });
+
   const [tahun, exam] = key.split('-');
   return {
     latestExamLabel: `${exam} ${tahun}`,
     schoolRanks,
     classRanks,
+    completionSchools: [...schoolCompletionMap.values()].sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah)),
+    completionClasses: [...classCompletionMap.values()].sort(
+      (a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah) || a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas),
+    ),
   };
 }
 

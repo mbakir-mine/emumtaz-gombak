@@ -1,7 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { roleLabel } from '@/lib/access';
-import type { DashboardClassRank, DashboardInsights, DashboardSchoolRank, SetupCounts } from '@/lib/data';
+import type {
+  DashboardClassRank,
+  DashboardInsights,
+  DashboardSchoolRank,
+  MarkCompletionClass,
+  MarkCompletionSchool,
+  SetupCounts,
+} from '@/lib/data';
 import { useAccessProfile } from './ui/AuthGate';
 
 type MetricItem = {
@@ -168,7 +176,7 @@ function SchoolLeaderboard({
                     key={item.kod_sekolah}
                     rank={index + 1}
                     title={item.nama_sekolah}
-                    meta={`${item.kod_sekolah} · ${item.jumlah_murid} murid`}
+                    meta={`${item.kod_sekolah} - ${item.jumlah_murid} murid`}
                     purata={item.purata}
                     gps={item.gps}
                   />
@@ -205,7 +213,7 @@ function SchoolFocus({ schoolRank, classRanks }: { schoolRank?: DashboardSchoolR
             {item ? (
               <>
                 <strong>{item.nama_kelas}</strong>
-                <small>GPS {formatNumber(item.gps)} · Purata {formatNumber(item.purata)}</small>
+                <small>GPS {formatNumber(item.gps)} - Purata {formatNumber(item.purata)}</small>
               </>
             ) : (
               <small>Belum ada markah</small>
@@ -213,6 +221,161 @@ function SchoolFocus({ schoolRank, classRanks }: { schoolRank?: DashboardSchoolR
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function CompletionButton({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  tone: 'done' | 'pending';
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className={`completion-button ${tone} ${active ? 'active' : ''}`} type="button" onClick={onClick}>
+      <span>{label}</span>
+      <strong>{count}</strong>
+    </button>
+  );
+}
+
+function CompletionList({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<MarkCompletionSchool | MarkCompletionClass>;
+}) {
+  return (
+    <div className="completion-list">
+      <h3>{title}</h3>
+      {rows.length === 0 ? (
+        <p className="empty">Tiada rekod untuk status ini.</p>
+      ) : (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Zon/Tahun</th>
+                <th>Siap</th>
+                <th>Peratus</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const isSchool = 'nama_sekolah' in row;
+                return (
+                  <tr key={isSchool ? row.kod_sekolah : row.class_id}>
+                    <td>{isSchool ? `${row.kod_sekolah} - ${row.nama_sekolah}` : row.nama_kelas}</td>
+                    <td>{isSchool ? zoneLabel(row.zon) : `Tahun ${row.tahun}`}</td>
+                    <td>
+                      {row.completed} / {row.expected}
+                    </td>
+                    <td>
+                      <span className={row.complete ? 'status-badge status-aktif' : 'status-badge status-menunggu'}>
+                        {row.percent}%
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ZoneCompletionSummary({ rows }: { rows: MarkCompletionSchool[] }) {
+  const zones = ['BARAT', 'TIMUR', 'TENGAH'];
+
+  return (
+    <div className="zone-completion-grid">
+      {zones.map((zon) => {
+        const zoneRows = rows.filter((row) => row.zon === zon);
+        const done = zoneRows.filter((row) => row.complete).length;
+        const pending = zoneRows.length - done;
+
+        return (
+          <div className="zone-completion-card" key={zon}>
+            <span>Zon {zon.charAt(0) + zon.slice(1).toLowerCase()}</span>
+            <strong>{done} siap</strong>
+            <small>{pending} belum selesai</small>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MarkCompletionPanel({
+  role,
+  zon,
+  kodSekolah,
+  latestExamLabel,
+  schools,
+  classes,
+}: {
+  role?: string;
+  zon?: string | null;
+  kodSekolah?: string | null;
+  latestExamLabel: string;
+  schools: MarkCompletionSchool[];
+  classes: MarkCompletionClass[];
+}) {
+  const [view, setView] = useState<'done' | 'pending'>('pending');
+  const isSchoolAdmin = role === 'ADMIN_SEKOLAH';
+  const isZoneAdmin = role === 'ADMIN_ZON';
+  const scopedSchools = schools.filter((row) => {
+    if (isZoneAdmin) return row.zon === zon;
+    if (isSchoolAdmin) return row.kod_sekolah === kodSekolah;
+    return true;
+  });
+  const scopedClasses = classes.filter((row) => (isSchoolAdmin ? row.kod_sekolah === kodSekolah : false));
+  const rows = isSchoolAdmin ? scopedClasses : scopedSchools;
+  const doneRows = rows.filter((row) => row.complete);
+  const pendingRows = rows.filter((row) => !row.complete);
+  const visibleRows = view === 'done' ? doneRows : pendingRows;
+  const unitLabel = isSchoolAdmin ? 'kelas' : 'sekolah';
+
+  return (
+    <section className="panel completion-panel">
+      <div className="panel-head">
+        <div>
+          <h2>Status Pengisian Markah</h2>
+          <p className="table-note">Pemantauan lengkap/belum selesai untuk {latestExamLabel}.</p>
+        </div>
+      </div>
+      <div className="completion-summary">
+        <CompletionButton
+          label={`${unitLabel} lengkap`}
+          count={doneRows.length}
+          tone="done"
+          active={view === 'done'}
+          onClick={() => setView('done')}
+        />
+        <CompletionButton
+          label={`${unitLabel} belum selesai`}
+          count={pendingRows.length}
+          tone="pending"
+          active={view === 'pending'}
+          onClick={() => setView('pending')}
+        />
+      </div>
+      {!isSchoolAdmin && <ZoneCompletionSummary rows={scopedSchools} />}
+      <CompletionList
+        title={view === 'done' ? `Senarai ${unitLabel} lengkap` : `Senarai ${unitLabel} belum selesai`}
+        rows={visibleRows}
+      />
     </section>
   );
 }
@@ -262,6 +425,15 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
           subtitle={`Mengikut kategori sekolah berdasarkan ${insights.latestExamLabel}.`}
         />
       )}
+
+      <MarkCompletionPanel
+        role={profile?.role}
+        zon={profile?.zon}
+        kodSekolah={profile?.kod_sekolah}
+        latestExamLabel={insights.latestExamLabel}
+        schools={insights.completionSchools}
+        classes={insights.completionClasses}
+      />
 
       <div className="dashboard-split">
         <section className="panel compact-panel">
