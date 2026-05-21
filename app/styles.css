@@ -95,8 +95,9 @@ a {
   gap: 20px;
   align-items: center;
   padding: 24px 32px;
-  border-bottom: 1px solid var(--line);
-  background: var(--card);
+  border-bottom: 1px solid #bfd8c4;
+  background: linear-gradient(90deg, #edf8ef, #ffffff);
+  box-shadow: 0 8px 18px rgba(2, 46, 25, 0.05);
 }
 
 .main > :not(.topbar) {
@@ -251,7 +252,8 @@ td {
 }
 
 th {
-  color: var(--muted);
+  background: #eaf5ec;
+  color: #244333;
   font-size: 13px;
   text-transform: uppercase;
 }
