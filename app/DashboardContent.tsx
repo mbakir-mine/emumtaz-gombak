@@ -430,7 +430,6 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
               {metric.note && <small>{metric.note}</small>}
             </div>
             <div className="metric-side">
-              <span className="metric-accent" />
               {metric.breakdown && (
                 <div className="metric-breakdown">
                   {metric.breakdown.map((item) => (
@@ -442,6 +441,7 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
                   ))}
                 </div>
               )}
+              {!metric.breakdown && <span className="metric-accent" />}
             </div>
           </div>
         ))}
