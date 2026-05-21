@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ms">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>e-Mumtaz Gombak</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">eM</div>
+        <div>
+          <strong>e-Mumtaz</strong>
+          <span>Gombak</span>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav-item active" data-page="dashboard">Dashboard</button>
+        <button class="nav-item" data-page="akses">Akses</button>
+        <button class="nav-item" data-page="markah">Input Markah</button>
+        <button class="nav-item" data-page="laporan">Laporan</button>
+        <button class="nav-item" data-page="tetapan">Tetapan</button>
+      </nav>
+    </aside>
+
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sistem Analisis Prestasi Murid</p>
+          <h1 id="page-title">Dashboard Daerah</h1>
+        </div>
+        <div class="user-pill">
+          <span class="dot"></span>
+          Owner
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active">
+        <div class="metric-grid">
+          <article class="metric">
+            <span>Sekolah</span>
+            <strong>115</strong>
+            <small>15 SRA, lebih kurang 100 KAFAI</small>
+          </article>
+          <article class="metric">
+            <span>Calon Direkod</span>
+            <strong>3,450</strong>
+            <small>anggaran tahun semasa</small>
+          </article>
+          <article class="metric">
+            <span>Purata Daerah</span>
+            <strong>78.4</strong>
+            <small>UPSA 2026</small>
+          </article>
+          <article class="metric">
+            <span>Murid Cemerlang</span>
+            <strong>41%</strong>
+            <small>purata 80 ke atas</small>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Prestasi Sekolah</h2>
+              <span>UPSA 2026</span>
+            </div>
+            <div class="bar-list" id="school-bars"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Fokus Intervensi</h2>
+              <span>Keutamaan</span>
+            </div>
+            <div class="insight-list">
+              <div class="insight warning">
+                <strong>Bahasa Arab</strong>
+                <span>Purata daerah rendah berbanding subjek lain.</span>
+              </div>
+              <div class="insight">
+                <strong>SRA Taman Permata</strong>
+                <span>Trend meningkat daripada UPSA ke UASA perlu dipantau.</span>
+              </div>
+              <div class="insight success">
+                <strong>Calon Mumtaz</strong>
+                <span>Senarai murid sasaran boleh dijana dari laporan individu.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="akses" class="page">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Matrix Akses Pengguna</h2>
+            <span>Role rasmi sistem</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Peranan</th>
+                <th>Skop</th>
+                <th>Boleh Isi Markah</th>
+                <th>Boleh Lihat Laporan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>OWNER</td>
+                <td>Semua sekolah</td>
+                <td>Ya</td>
+                <td>Semua laporan</td>
+              </tr>
+              <tr>
+                <td>ADMIN_SEKOLAH</td>
+                <td>Sekolah sendiri</td>
+                <td>Ya</td>
+                <td>Sekolah sendiri</td>
+              </tr>
+              <tr>
+                <td>GURU_KELAS</td>
+                <td>Kelas ditugaskan</td>
+                <td>Semak dan bantu</td>
+                <td>Laporan kelas</td>
+              </tr>
+              <tr>
+                <td>GURU_SUBJEK</td>
+                <td>Subjek dan kelas ditugaskan</td>
+                <td>Subjek sendiri</td>
+                <td>Laporan subjek sendiri</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+
+      <section id="markah" class="page">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Input Markah Guru Subjek</h2>
+            <span>Contoh aliran</span>
+          </div>
+          <div class="form-grid">
+            <label>
+              Peperiksaan
+              <select>
+                <option>UPSA 2026</option>
+                <option>UASA 2026</option>
+              </select>
+            </label>
+            <label>
+              Sekolah
+              <select>
+                <option>SRA TAMAN PERMATA</option>
+              </select>
+            </label>
+            <label>
+              Kelas
+              <select>
+                <option>5 Amanah</option>
+              </select>
+            </label>
+            <label>
+              Subjek
+              <select>
+                <option>Tauhid</option>
+              </select>
+            </label>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>MyKid</th>
+                <th>Nama Murid</th>
+                <th>Markah</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>150101100001</td>
+                <td>Aisyah Humaira</td>
+                <td><input class="mark-input" value="88" /></td>
+                <td><span class="badge ok">Lengkap</span></td>
+              </tr>
+              <tr>
+                <td>150101100002</td>
+                <td>Muhammad Danish</td>
+                <td><input class="mark-input" value="76" /></td>
+                <td><span class="badge ok">Lengkap</span></td>
+              </tr>
+              <tr>
+                <td>150101100003</td>
+                <td>Nur Balqis</td>
+                <td><input class="mark-input" placeholder="-" /></td>
+                <td><span class="badge pending">Belum isi</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </section>
+
+      <section id="laporan" class="page">
+        <div class="report-grid">
+          <article class="report-card">
+            <h2>Laporan Individu</h2>
+            <p>Slip prestasi murid, purata, gred, dan perbandingan UPSA/UASA.</p>
+          </article>
+          <article class="report-card">
+            <h2>Laporan Kelas</h2>
+            <p>Ranking murid, purata kelas, taburan gred, dan subjek lemah.</p>
+          </article>
+          <article class="report-card">
+            <h2>Laporan Sekolah</h2>
+            <p>Prestasi keseluruhan sekolah, peratus lulus, dan bilangan cemerlang.</p>
+          </article>
+          <article class="report-card">
+            <h2>Laporan Subjek</h2>
+            <p>Analisis setiap subjek mengikut kelas, sekolah, dan daerah.</p>
+          </article>
+          <article class="report-card">
+            <h2>UPSA vs UASA</h2>
+            <p>Perbandingan peperiksaan tahun semasa secara individu, kelas, dan sekolah.</p>
+          </article>
+          <article class="report-card">
+            <h2>Perbandingan Tahunan</h2>
+            <p>Trend prestasi merentas tahun untuk pemantauan jangka panjang.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="tetapan" class="page">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Langkah Setup</h2>
+            <span>Supabase</span>
+          </div>
+          <ol class="steps">
+            <li>Run `supabase/001_emumtaz_schema.sql` di Supabase SQL Editor.</li>
+            <li>Run `supabase/002_seed_minimal.sql` untuk data permulaan.</li>
+            <li>Import senarai sekolah sebenar ke table `schools`.</li>
+            <li>Daftar owner, admin sekolah, guru kelas, dan guru subjek.</li>
+            <li>Sambungkan prototype ini kepada Supabase selepas schema stabil.</li>
+          </ol>
+        </section>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
+

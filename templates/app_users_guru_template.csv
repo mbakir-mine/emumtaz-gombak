@@ -1,0 +1,4 @@
+email,nama,role,kod_sekolah,status
+guru.kelas@example.com,USTAZAH GURU KELAS,GURU_KELAS,BYP7002,AKTIF
+guru.tauhid@example.com,USTAZ GURU TAUHID,GURU_SUBJEK,BYP7002,AKTIF
+
