@@ -36,6 +36,7 @@ a {
 }
 
 .sidebar {
+  position: relative;
   background: var(--nav);
   color: white;
   padding: 20px 12px;
@@ -83,6 +84,42 @@ a {
 .nav a.active {
   background: var(--nav-2);
   color: white;
+}
+
+.date-clock {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 2px;
+  width: 196px;
+  padding: 10px 12px;
+  border: 1px solid rgba(244, 201, 79, 0.28);
+  border-radius: 8px;
+  background: rgba(1, 35, 19, 0.88);
+  color: #eef8ef;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.date-clock strong {
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.date-clock span,
+.date-clock small {
+  overflow: hidden;
+  color: #c8d8ce;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date-clock span {
+  font-size: 12px;
+}
+
+.date-clock small {
+  font-size: 11px;
 }
 
 .main {
@@ -1207,6 +1244,19 @@ button:disabled {
     flex: 0 0 auto;
     padding: 10px 12px;
     white-space: nowrap;
+  }
+
+  .date-clock {
+    position: static;
+    width: auto;
+    margin-top: 10px;
+    padding: 8px 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+  }
+
+  .date-clock small {
+    grid-column: 1 / -1;
   }
 
   .main {

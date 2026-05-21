@@ -1,4 +1,5 @@
 import AuthGate from './AuthGate';
+import DateClock from './DateClock';
 import SidebarNav from './SidebarNav';
 import UserBadge from './UserBadge';
 
@@ -25,6 +26,7 @@ export default function AppFrame({
             </div>
           </div>
           <SidebarNav active={active} />
+          <DateClock />
         </aside>
         <main className="main">
           <header className="topbar">
