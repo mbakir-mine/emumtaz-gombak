@@ -505,10 +505,10 @@ select {
 
 .status-form {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto;
   gap: 8px;
   align-items: center;
-  min-width: 420px;
+  min-width: 560px;
 }
 
 .status-form select {

@@ -79,6 +79,7 @@ function UserTable({
                 <UserStatusForm
                   userId={user.id}
                   currentRole={user.role}
+                  currentZon={user.zon}
                   currentStatus={user.status}
                   locked={user.role === 'OWNER'}
                 />
