@@ -10,9 +10,17 @@ const allowedRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'
 const allowedZones = ['BARAT', 'TIMUR', 'TENGAH'];
 const allowedNavKeys = navItems.filter((item) => !item.hidden && item.key !== 'dashboard').map((item) => item.key);
 
-export async function updateUserStatus(formData: FormData) {
+export type UserStatusActionState = {
+  ok: boolean;
+  message: string;
+};
+
+export async function updateUserStatus(
+  _previousState: UserStatusActionState,
+  formData: FormData,
+): Promise<UserStatusActionState> {
   if (!supabase) {
-    return;
+    return { ok: false, message: 'Supabase belum disambungkan.' };
   }
 
   const id = String(formData.get('id') ?? '').trim();
@@ -25,17 +33,17 @@ export async function updateUserStatus(formData: FormData) {
     .filter((value) => allowedNavKeys.includes(value));
 
   if (!id || !allowedStatuses.includes(status) || !allowedRoles.includes(role)) {
-    return;
+    return { ok: false, message: 'Role atau status tidak sah.' };
   }
 
   if (role === 'ADMIN_ZON' && !allowedZones.includes(zon)) {
-    return;
+    return { ok: false, message: 'Sila pilih zon untuk Admin Zon.' };
   }
 
   const { data: user } = await supabase.from('app_users').select('role').eq('id', id).maybeSingle();
 
   if (user?.role === 'OWNER') {
-    return;
+    return { ok: false, message: 'Akaun Pentadbir Utama tidak boleh diubah.' };
   }
 
   const updates: {
@@ -58,12 +66,17 @@ export async function updateUserStatus(formData: FormData) {
 
   updates.allowed_nav = allowedNav.length > 0 ? allowedNav : null;
 
-  await supabase.from('app_users').update(updates).eq('id', id);
+  const { error } = await supabase.from('app_users').update(updates).eq('id', id);
+
+  if (error) {
+    return { ok: false, message: `Gagal simpan pengguna: ${error.message}` };
+  }
 
   revalidatePath('/pengguna');
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
+  return { ok: true, message: 'Profil pengguna berjaya dikemaskini.' };
 }
 
 export async function deleteUserProfile(formData: FormData) {

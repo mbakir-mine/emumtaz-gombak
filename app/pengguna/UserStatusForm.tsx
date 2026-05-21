@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { navItems } from '@/lib/access';
 import { updateUserStatus } from './actions';
+
+const initialState = {
+  ok: false,
+  message: '',
+};
 
 const statusOptions = [
   { value: 'MENUNGGU', label: 'Menunggu' },
@@ -54,13 +60,14 @@ export default function UserStatusForm({
 }) {
   const [role, setRole] = useState(currentRole);
   const [zone, setZone] = useState(currentZon ?? '');
+  const [state, action] = useActionState(updateUserStatus, initialState);
 
   if (locked) {
     return <span className="table-note">Dikunci</span>;
   }
 
   return (
-    <form action={updateUserStatus} className="status-form">
+    <form action={action} className="status-form">
       <input name="id" type="hidden" value={userId} />
       <select name="role" value={role} onChange={(event) => setRole(event.target.value)} aria-label="Role pengguna">
         {roleOptions.map((option) => (
@@ -110,6 +117,7 @@ export default function UserStatusForm({
         <small>Kosongkan semua untuk guna akses default role.</small>
       </fieldset>
       <SubmitButton />
+      {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
     </form>
   );
 }
