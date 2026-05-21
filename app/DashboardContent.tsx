@@ -16,6 +16,7 @@ type MetricItem = {
   label: string;
   value: number | string;
   note?: string;
+  breakdown?: Array<{ label: string; value: number }>;
 };
 
 function zoneLabel(zon: string | null | undefined) {
@@ -59,9 +60,25 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
   }
 
   return [
-    { label: 'Sekolah', value: counts.schools, note: 'SRA & KAFAI' },
+    {
+      label: 'Sekolah',
+      value: counts.schools,
+      note: 'SRAI, SRA & KAFAI',
+      breakdown: [
+        { label: 'SRAI', value: counts.schoolCategories.SRAI ?? 0 },
+        { label: 'SRA', value: counts.schoolCategories.SRA ?? 0 },
+        { label: 'KAFAI', value: counts.schoolCategories.KAFAI ?? 0 },
+      ],
+    },
     { label: 'Kelas', value: counts.classes },
-    { label: 'Murid Aktif', value: counts.students },
+    {
+      label: 'Murid Aktif',
+      value: counts.students,
+      breakdown: [
+        { label: 'L', value: counts.studentGender.lelaki },
+        { label: 'P', value: counts.studentGender.perempuan },
+      ],
+    },
     { label: 'Peperiksaan', value: counts.exams, note: 'UPSA & UASA' },
   ];
 }
@@ -412,6 +429,15 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
               {metric.note && <small>{metric.note}</small>}
+              {metric.breakdown && (
+                <div className="metric-breakdown">
+                  {metric.breakdown.map((item) => (
+                    <span key={item.label}>
+                      {item.label}: <b>{item.value}</b>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <span className="metric-accent" />
           </div>

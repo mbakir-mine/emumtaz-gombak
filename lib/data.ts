@@ -8,6 +8,11 @@ export type SetupCounts = {
   classes: number;
   students: number;
   marks: number;
+  schoolCategories: Record<string, number>;
+  studentGender: {
+    lelaki: number;
+    perempuan: number;
+  };
 };
 
 export type School = {
@@ -215,6 +220,32 @@ async function countTable(table: string) {
   return count ?? 0;
 }
 
+async function getSchoolCategoryCounts() {
+  const counts: Record<string, number> = {};
+  const schools = await getSchools();
+  schools.forEach((school) => {
+    const key = school.kategori || 'LAIN';
+    counts[key] = (counts[key] ?? 0) + 1;
+  });
+  return counts;
+}
+
+async function getStudentGenderCounts() {
+  const students = await fetchStudentsInBatches();
+  return students.reduce(
+    (total, student) => {
+      if (student.status !== 'AKTIF') return total;
+      if (student.jantina === 'P') {
+        total.perempuan += 1;
+      } else if (student.jantina === 'L') {
+        total.lelaki += 1;
+      }
+      return total;
+    },
+    { lelaki: 0, perempuan: 0 },
+  );
+}
+
 async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
   if (!supabase) return [];
 
@@ -337,6 +368,8 @@ export async function getSetupCounts(): Promise<SetupCounts> {
       classes: 0,
       students: 0,
       marks: 0,
+      schoolCategories: {},
+      studentGender: { lelaki: 0, perempuan: 0 },
     };
   }
 
@@ -347,9 +380,11 @@ export async function getSetupCounts(): Promise<SetupCounts> {
   let classes = 0;
   let students = 0;
   let marks = 0;
+  let schoolCategories: Record<string, number> = {};
+  let studentGender = { lelaki: 0, perempuan: 0 };
 
   try {
-    [schools, users, subjects, exams, classes, students, marks] = await Promise.all([
+    [schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender] = await Promise.all([
       countTable('schools'),
       countTable('app_users'),
       countTable('subjects'),
@@ -357,12 +392,14 @@ export async function getSetupCounts(): Promise<SetupCounts> {
       countTable('classes'),
       countTable('students'),
       countTable('marks'),
+      getSchoolCategoryCounts(),
+      getStudentGenderCounts(),
     ]);
   } catch {
-    return { schools, users, subjects, exams, classes, students, marks };
+    return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender };
   }
 
-  return { schools, users, subjects, exams, classes, students, marks };
+  return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender };
 }
 
 export async function getSchools(): Promise<School[]> {

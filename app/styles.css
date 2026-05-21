@@ -244,6 +244,25 @@ h1 {
   font-size: 32px;
 }
 
+.metric-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.metric-breakdown span {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: rgba(226, 244, 232, 0.9);
+  color: #244333;
+  font-size: 12px;
+}
+
+.metric-breakdown b {
+  color: var(--green);
+}
+
 .panel {
   margin-top: 18px;
   padding: 22px;
