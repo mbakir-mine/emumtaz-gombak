@@ -13,6 +13,7 @@ const navItems = [
   { key: 'comparison', label: 'Perbandingan', href: '/perbandingan' },
   { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas' },
   { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek' },
+  { key: 'users', label: 'Pengesahan Pengguna', href: '/pengguna' },
   { key: 'setup', label: 'Setup Data', href: '/setup' },
   { key: 'reports', label: 'Laporan', href: '/laporan' },
 ];

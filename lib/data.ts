@@ -238,6 +238,20 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   return data ?? [];
 }
 
+export async function getAllAppUsers(): Promise<UserRecord[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('id,email,nama,role,kod_sekolah,status')
+    .order('status')
+    .order('kod_sekolah')
+    .order('role')
+    .order('nama');
+
+  if (error) return [];
+  return data ?? [];
+}
+
 export async function getTeacherClassAssignments(): Promise<TeacherClassAssignment[]> {
   if (!supabase) return [];
   const { data, error } = await supabase

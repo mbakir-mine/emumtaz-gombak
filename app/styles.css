@@ -284,6 +284,16 @@ select {
   color: var(--blue);
 }
 
+.button.soft {
+  background: #f1f5f9;
+  color: var(--muted);
+}
+
+.button.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .notice {
   padding: 14px;
   border-left: 4px solid var(--amber);
@@ -383,6 +393,46 @@ select {
 
 .mark-notice {
   margin-top: 16px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.row-actions .button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  min-width: 88px;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-aktif {
+  background: var(--green-2);
+  color: var(--green);
+}
+
+.status-menunggu {
+  background: #fff6df;
+  color: #8a5a08;
+}
+
+.status-digantung {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 @media print {
