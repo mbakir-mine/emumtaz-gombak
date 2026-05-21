@@ -588,6 +588,21 @@ th {
   gap: 14px;
 }
 
+.import-form {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 0.7fr) minmax(220px, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.import-form h3 {
+  margin-bottom: 6px;
+}
+
+.import-form .form-actions {
+  grid-column: 1 / -1;
+}
+
 .form-actions {
   display: flex;
   align-items: center;
@@ -1185,6 +1200,10 @@ button:disabled {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .import-form {
     grid-template-columns: 1fr;
   }
 

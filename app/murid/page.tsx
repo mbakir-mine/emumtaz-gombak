@@ -1,5 +1,6 @@
 import AppFrame from '../ui/AppFrame';
 import StudentForm from './StudentForm';
+import StudentImportForm from './StudentImportForm';
 import { getClasses, getSchools, getStudents } from '@/lib/data';
 import StudentList from './StudentList';
 
@@ -21,6 +22,10 @@ export default async function MuridPage() {
         ) : (
           <StudentForm schools={schools} classes={classes} />
         )}
+      </section>
+
+      <section className="panel">
+        <StudentImportForm schools={schools} />
       </section>
 
       <section className="panel">

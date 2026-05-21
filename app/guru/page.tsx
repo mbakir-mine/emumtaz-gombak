@@ -1,5 +1,6 @@
 import AppFrame from '../ui/AppFrame';
 import TeacherForm from './TeacherForm';
+import TeacherImportForm from './TeacherImportForm';
 import { getSchoolUsers, getSchools } from '@/lib/data';
 import TeacherList from './TeacherList';
 
@@ -14,6 +15,10 @@ export default async function GuruPage() {
           <span>Profil akses sekolah</span>
         </div>
         <TeacherForm schools={schools} />
+      </section>
+
+      <section className="panel">
+        <TeacherImportForm />
       </section>
 
       <section className="panel">
