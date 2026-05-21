@@ -63,6 +63,8 @@ export type ExamRecord = {
   nama_peperiksaan: string;
   tahun_akademik: number;
   status: string;
+  buka_markah?: string | null;
+  tutup_markah?: string | null;
 };
 
 export type MarkRecord = {
@@ -313,7 +315,7 @@ export async function getExams(): Promise<ExamRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('exams')
-    .select('id,kod_peperiksaan,nama_peperiksaan,tahun_akademik,status')
+    .select('*')
     .order('tahun_akademik', { ascending: false })
     .order('kod_peperiksaan');
 

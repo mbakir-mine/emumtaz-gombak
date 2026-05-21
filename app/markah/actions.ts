@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
+import { examAccessStatus } from '@/lib/examAccess';
 
 export type MarkActionState = {
   ok: boolean;
@@ -24,6 +25,18 @@ export async function saveMarks(
 
   if (!examId || !classId || !kodSekolah || !kodSubjek || studentIds.length === 0) {
     return { ok: false, message: 'Pilihan peperiksaan, kelas, subjek atau murid tidak lengkap.' };
+  }
+
+  const { data: exam, error: examError } = await supabase.from('exams').select('*').eq('id', examId).maybeSingle();
+
+  if (examError) {
+    return { ok: false, message: `Gagal semak tempoh akses markah: ${examError.message}` };
+  }
+
+  const access = examAccessStatus(exam);
+
+  if (!access.open) {
+    return { ok: false, message: access.label };
   }
 
   const rows = studentIds.map((studentId) => {
@@ -59,4 +72,3 @@ export async function saveMarks(
   revalidatePath('/laporan');
   return { ok: true, message: 'Markah berjaya disimpan.' };
 }
-

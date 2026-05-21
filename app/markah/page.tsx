@@ -9,6 +9,7 @@ import {
   getStudentsByClass,
   getSubjects,
 } from '@/lib/data';
+import { examAccessStatus } from '@/lib/examAccess';
 
 export default async function MarkahPage({
   searchParams,
@@ -28,6 +29,8 @@ export default async function MarkahPage({
   const selectedExamId = params.exam_id ?? '';
   const selectedSubject = params.kod_subjek ?? '';
   const selectedClass = classes.find((item) => item.id === selectedClassId);
+  const selectedExam = exams.find((exam) => exam.id === selectedExamId);
+  const markAccess = examAccessStatus(selectedExam);
 
   const [students, marks] =
     selectedExamId && selectedClassId && selectedSubject
@@ -60,6 +63,11 @@ export default async function MarkahPage({
             untuk mengaktifkan subjek Tahun 1 hingga Tahun 6.
           </p>
         )}
+        {selectedExamId && (
+          <p className={markAccess.open ? 'form-success mark-notice' : 'notice mark-notice'}>
+            {markAccess.label}
+          </p>
+        )}
       </section>
 
       <section className="panel">
@@ -71,6 +79,8 @@ export default async function MarkahPage({
           <p className="empty">Pilih peperiksaan, sekolah, kelas dan subjek untuk mula isi markah.</p>
         ) : students.length === 0 ? (
           <p className="empty">Tiada murid aktif ditemui untuk kelas ini.</p>
+        ) : !markAccess.open ? (
+          <p className="empty">{markAccess.label}</p>
         ) : (
           <MarkEntryForm
             examId={selectedExamId}

@@ -1,8 +1,31 @@
 import AppFrame from '../ui/AppFrame';
+import { getExams } from '@/lib/data';
+import ExamAccessForm from './ExamAccessForm';
 
-export default function SetupPage() {
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function SetupPage() {
+  const exams = await getExams();
+
   return (
     <AppFrame title="Subjek" subtitle="Subjek dan peraturan purata." active="setup">
+      <section className="panel">
+        <div className="panel-head">
+          <h2>Akses Key In Markah</h2>
+          <span>{exams.length} peperiksaan</span>
+        </div>
+        {exams.length === 0 ? (
+          <p className="empty">Belum ada peperiksaan.</p>
+        ) : (
+          <div className="exam-access-list">
+            {exams.map((exam) => (
+              <ExamAccessForm key={exam.id} exam={exam} />
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="card-grid">
         <div className="card">
           <h2>Tetapan Sistem</h2>

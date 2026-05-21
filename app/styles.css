@@ -591,6 +591,41 @@ select {
   padding: 0 10px;
 }
 
+.exam-access-list {
+  display: grid;
+  gap: 12px;
+}
+
+.exam-access-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(140px, 0.7fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.exam-access-form div,
+.exam-access-form label {
+  min-width: 0;
+}
+
+.exam-access-form span {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exam-access-form .button {
+  min-height: 44px;
+  padding: 0 14px;
+}
+
 .status-badge {
   display: inline-flex;
   min-width: 88px;
@@ -736,6 +771,10 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .exam-access-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -818,6 +857,10 @@ button:disabled {
 
   .grade-scale {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exam-access-form {
+    grid-template-columns: 1fr;
   }
 
   .detail-list {
