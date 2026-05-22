@@ -48,7 +48,10 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
       {
         label: 'Kelas',
         value: counts.classes,
-        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({
+          label: `Tahun ${tahun}`,
+          value: counts.classesByYear[tahun] ?? 0,
+        })),
       },
       { label: 'Guru', value: counts.users },
       { label: 'Markah', value: counts.marks },
@@ -61,7 +64,10 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
       {
         label: 'Kelas',
         value: counts.classes,
-        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({
+          label: `Tahun ${tahun}`,
+          value: counts.classesByYear[tahun] ?? 0,
+        })),
       },
       { label: 'Murid', value: counts.students },
       { label: 'Markah', value: counts.marks },
@@ -81,7 +87,10 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
     {
       label: 'Kelas',
       value: counts.classes,
-      breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+      breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({
+        label: `Tahun ${tahun}`,
+        value: counts.classesByYear[tahun] ?? 0,
+      })),
     },
     {
       label: 'Murid Aktif',

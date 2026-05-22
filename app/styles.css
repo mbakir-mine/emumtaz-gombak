@@ -303,9 +303,12 @@ h1 {
 
 .metric-breakdown {
   display: grid;
-  gap: 6px;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto);
+  column-gap: 14px;
+  row-gap: 6px;
   justify-items: stretch;
-  min-width: 150px;
+  min-width: 156px;
   min-height: 92px;
   align-content: center;
   padding: 12px;
@@ -316,7 +319,7 @@ h1 {
 
 .metric-breakdown span {
   display: grid;
-  grid-template-columns: minmax(78px, auto) 8px minmax(34px, auto);
+  grid-template-columns: minmax(58px, auto) 8px minmax(24px, auto);
   gap: 6px;
   align-items: baseline;
   color: #263b2e;
@@ -1609,13 +1612,13 @@ button:disabled {
   }
 
   .metric-breakdown {
-    min-width: 138px;
+    min-width: 150px;
     min-height: 72px;
     padding: 9px;
   }
 
   .metric-breakdown span {
-    grid-template-columns: minmax(72px, auto) 8px minmax(28px, auto);
+    grid-template-columns: minmax(52px, auto) 8px minmax(24px, auto);
     font-size: 12px;
   }
 
