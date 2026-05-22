@@ -133,15 +133,16 @@ a {
 
 .nav-logout {
   width: 100%;
-  border: 1px solid rgba(244, 201, 79, 0.22);
-  background: rgba(244, 201, 79, 0.08);
+  border: 1px solid rgba(244, 201, 79, 0.52);
+  background: linear-gradient(135deg, rgba(255, 245, 211, 0.98), rgba(244, 201, 79, 0.72));
+  color: #5b3a05;
   text-align: left;
   cursor: pointer;
 }
 
 .nav-logout:hover {
-  background: rgba(244, 201, 79, 0.18);
-  color: white;
+  background: linear-gradient(135deg, rgba(244, 201, 79, 0.98), rgba(255, 245, 211, 0.9));
+  color: #052615;
 }
 
 .date-clock {
@@ -382,7 +383,7 @@ h1 {
   min-width: 156px;
   min-height: 92px;
   align-content: center;
-  padding: 12px;
+  padding: 12px 24px 12px 12px;
   border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(244, 201, 79, 0.82), rgba(226, 244, 232, 0.72));
@@ -1867,7 +1868,7 @@ button:disabled {
     width: 100%;
     min-width: 0;
     min-height: 78px;
-    padding: 10px;
+    padding: 10px 24px 10px 10px;
     border: 1px solid rgba(244, 201, 79, 0.34);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
   }
@@ -2173,7 +2174,7 @@ button:disabled {
     width: 100%;
     min-width: 0;
     min-height: 70px;
-    padding: 8px 10px;
+    padding: 8px 28px 8px 10px;
     column-gap: 12px;
     row-gap: 5px;
   }
