@@ -1,28 +1,32 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { ClassRecord } from '@/lib/data';
+import type { ClassRecord, School } from '@/lib/data';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeClasses } from '../ui/scopedData';
 
-export default function ClassList({ classes }: { classes: ClassRecord[] }) {
+export default function ClassList({ classes, schools }: { classes: ClassRecord[]; schools: School[] }) {
+  const profile = useAccessProfile();
   const [query, setQuery] = useState('');
+  const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const filteredClasses = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return classes;
+    if (!term) return scopedClasses;
 
-    return classes.filter((item) =>
+    return scopedClasses.filter((item) =>
       [item.kod_sekolah, item.tahun_akademik, `Tahun ${item.tahun}`, item.nama_kelas, item.status]
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [classes, query]);
+  }, [query, scopedClasses]);
 
   return (
     <>
       <div className="panel-head">
         <h2>Senarai Kelas</h2>
         <span>
-          {filteredClasses.length} / {classes.length} rekod
+          {filteredClasses.length} / {scopedClasses.length} rekod
         </span>
       </div>
       <div className="search-row">

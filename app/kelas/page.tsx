@@ -20,7 +20,7 @@ export default async function KelasPage() {
         {classes.length === 0 ? (
           <p className="empty">Belum ada kelas. Tambah kelas pertama menggunakan borang di atas.</p>
         ) : (
-          <ClassList classes={classes} />
+          <ClassList classes={classes} schools={schools} />
         )}
       </section>
     </AppFrame>

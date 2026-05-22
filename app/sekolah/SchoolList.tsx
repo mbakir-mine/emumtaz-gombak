@@ -2,30 +2,40 @@
 
 import { useMemo, useState } from 'react';
 import type { School } from '@/lib/data';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeSchools } from '../ui/scopedData';
 import SchoolZoneForm from './SchoolZoneForm';
 
+function zoneText(zon: string | null) {
+  if (!zon) return 'Belum ditetapkan';
+  return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
+}
+
 export default function SchoolList({ schools }: { schools: School[] }) {
+  const profile = useAccessProfile();
   const [query, setQuery] = useState('');
-  const assignedZones = schools.filter((school) => school.zon).length;
+  const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
+  const assignedZones = scopedSchools.filter((school) => school.zon).length;
+  const canEditZone = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
   const filteredSchools = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return schools;
+    if (!term) return scopedSchools;
 
-    return schools.filter((school) =>
+    return scopedSchools.filter((school) =>
       [school.kod_sekolah, school.nama_sekolah, school.kategori, school.daerah, school.zon, school.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [query, schools]);
+  }, [query, scopedSchools]);
 
   return (
     <>
       <div className="panel-head">
         <h2>Sekolah</h2>
         <span>
-          {filteredSchools.length} / {schools.length} rekod · {assignedZones} berzon
+          {filteredSchools.length} / {scopedSchools.length} rekod - {assignedZones} berzon
         </span>
       </div>
       <div className="search-row">
@@ -60,7 +70,11 @@ export default function SchoolList({ schools }: { schools: School[] }) {
                   <td data-label="Kategori">{school.kategori}</td>
                   <td data-label="Daerah">{school.daerah}</td>
                   <td data-label="Zon">
-                    <SchoolZoneForm kodSekolah={school.kod_sekolah} currentZone={school.zon} />
+                    {canEditZone ? (
+                      <SchoolZoneForm kodSekolah={school.kod_sekolah} currentZone={school.zon} />
+                    ) : (
+                      zoneText(school.zon)
+                    )}
                   </td>
                   <td data-label="Status">{school.status}</td>
                 </tr>

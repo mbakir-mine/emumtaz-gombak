@@ -3,6 +3,8 @@
 import { useActionState } from 'react';
 import { createTeacher } from './actions';
 import type { School } from '@/lib/data';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeSchools } from '../ui/scopedData';
 
 const initialState = {
   ok: false,
@@ -10,7 +12,9 @@ const initialState = {
 };
 
 export default function TeacherForm({ schools }: { schools: School[] }) {
+  const profile = useAccessProfile();
   const [state, action, pending] = useActionState(createTeacher, initialState);
+  const scopedSchools = scopeSchools(profile, schools);
 
   return (
     <form action={action} className="form-grid">
@@ -18,7 +22,7 @@ export default function TeacherForm({ schools }: { schools: School[] }) {
         Sekolah
         <select name="kod_sekolah" required>
           <option value="">Pilih sekolah</option>
-          {schools.map((school) => (
+          {scopedSchools.map((school) => (
             <option key={school.kod_sekolah} value={school.kod_sekolah}>
               {school.kod_sekolah} - {school.nama_sekolah}
             </option>
@@ -55,4 +59,3 @@ export default function TeacherForm({ schools }: { schools: School[] }) {
     </form>
   );
 }
-

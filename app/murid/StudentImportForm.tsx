@@ -3,6 +3,8 @@
 import { useActionState } from 'react';
 import { importStudents } from './actions';
 import type { School } from '@/lib/data';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeSchools } from '../ui/scopedData';
 
 const initialState = {
   ok: false,
@@ -10,7 +12,9 @@ const initialState = {
 };
 
 export default function StudentImportForm({ schools }: { schools: School[] }) {
+  const profile = useAccessProfile();
   const [state, action, pending] = useActionState(importStudents, initialState);
+  const scopedSchools = scopeSchools(profile, schools);
 
   return (
     <form action={action} className="import-form">
@@ -28,7 +32,7 @@ export default function StudentImportForm({ schools }: { schools: School[] }) {
         Sekolah default
         <select name="default_kod_sekolah">
           <option value="">Ikut kod_sekolah dalam CSV</option>
-          {schools.map((school) => (
+          {scopedSchools.map((school) => (
             <option key={school.kod_sekolah} value={school.kod_sekolah}>
               {school.kod_sekolah} - {school.nama_sekolah}
             </option>

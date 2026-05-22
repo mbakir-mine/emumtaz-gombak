@@ -25,7 +25,7 @@ export default async function GuruPage() {
         {users.length === 0 ? (
           <p className="empty">Belum ada guru atau admin sekolah.</p>
         ) : (
-          <TeacherList users={users} />
+          <TeacherList users={users} schools={schools} />
         )}
       </section>
     </AppFrame>

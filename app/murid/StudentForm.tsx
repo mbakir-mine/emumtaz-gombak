@@ -3,6 +3,8 @@
 import { useMemo, useState, useActionState } from 'react';
 import { createStudent } from './actions';
 import type { ClassRecord, School } from '@/lib/data';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeClasses, scopeSchools } from '../ui/scopedData';
 
 const initialState = {
   ok: false,
@@ -16,12 +18,15 @@ export default function StudentForm({
   schools: School[];
   classes: ClassRecord[];
 }) {
+  const profile = useAccessProfile();
   const [selectedSchool, setSelectedSchool] = useState('');
   const [state, action, pending] = useActionState(createStudent, initialState);
+  const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
+  const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
 
   const filteredClasses = useMemo(
-    () => classes.filter((item) => !selectedSchool || item.kod_sekolah === selectedSchool),
-    [classes, selectedSchool],
+    () => scopedClasses.filter((item) => !selectedSchool || item.kod_sekolah === selectedSchool),
+    [scopedClasses, selectedSchool],
   );
 
   return (
@@ -35,7 +40,7 @@ export default function StudentForm({
           required
         >
           <option value="">Pilih sekolah</option>
-          {schools.map((school) => (
+          {scopedSchools.map((school) => (
             <option key={school.kod_sekolah} value={school.kod_sekolah}>
               {school.kod_sekolah} - {school.nama_sekolah}
             </option>
@@ -83,4 +88,3 @@ export default function StudentForm({
     </form>
   );
 }
-

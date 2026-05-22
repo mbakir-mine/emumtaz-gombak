@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { UserRecord } from '@/lib/data';
+import type { School, UserRecord } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeUsers } from '../ui/scopedData';
 
 function accessLabel(user: UserRecord) {
   if (user.role === 'ADMIN_DAERAH') return 'Semua sekolah';
@@ -12,27 +14,29 @@ function accessLabel(user: UserRecord) {
   return user.kod_sekolah ?? '-';
 }
 
-export default function TeacherList({ users }: { users: UserRecord[] }) {
+export default function TeacherList({ users, schools }: { users: UserRecord[]; schools: School[] }) {
+  const profile = useAccessProfile();
   const [query, setQuery] = useState('');
+  const scopedUsers = useMemo(() => scopeUsers(profile, users, schools), [profile, schools, users]);
   const filteredUsers = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return users;
+    if (!term) return scopedUsers;
 
-    return users.filter((user) =>
+    return scopedUsers.filter((user) =>
       [accessLabel(user), user.nama, user.email, roleLabel(user.role), user.role, user.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [query, users]);
+  }, [query, scopedUsers]);
 
   return (
     <>
       <div className="panel-head">
         <h2>Senarai Pengguna Sekolah</h2>
         <span>
-          {filteredUsers.length} / {users.length} rekod
+          {filteredUsers.length} / {scopedUsers.length} rekod
         </span>
       </div>
       <div className="search-row">

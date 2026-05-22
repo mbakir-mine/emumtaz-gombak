@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import type { ClassRecord, ExamRecord, School, SubjectRecord } from '@/lib/data';
 import { allowedSubjectForTahun } from '@/lib/subjects';
+import { useAccessProfile } from '../ui/AuthGate';
+import { scopeClasses, scopeSchools } from '../ui/scopedData';
 
 export default function MarkSelectionForm({
   schools,
@@ -23,19 +25,22 @@ export default function MarkSelectionForm({
   initialClassId: string;
   initialSubject: string;
 }) {
+  const profile = useAccessProfile();
   const [selectedExamId, setSelectedExamId] = useState(initialExamId);
   const [selectedSchool, setSelectedSchool] = useState(initialSchool);
   const [selectedClassId, setSelectedClassId] = useState(initialClassId);
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
+  const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
+  const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
 
   const filteredClasses = useMemo(
-    () => classes.filter((item) => selectedSchool && item.kod_sekolah === selectedSchool),
-    [classes, selectedSchool],
+    () => scopedClasses.filter((item) => selectedSchool && item.kod_sekolah === selectedSchool),
+    [scopedClasses, selectedSchool],
   );
 
   const selectedClass = useMemo(
-    () => classes.find((item) => item.id === selectedClassId),
-    [classes, selectedClassId],
+    () => scopedClasses.find((item) => item.id === selectedClassId),
+    [scopedClasses, selectedClassId],
   );
 
   const filteredSubjects = useMemo(
@@ -75,7 +80,7 @@ export default function MarkSelectionForm({
           required
         >
           <option value="">Pilih sekolah</option>
-          {schools.map((school) => (
+          {scopedSchools.map((school) => (
             <option key={school.kod_sekolah} value={school.kod_sekolah}>
               {school.kod_sekolah} - {school.nama_sekolah}
             </option>
@@ -130,4 +135,3 @@ export default function MarkSelectionForm({
     </form>
   );
 }
-

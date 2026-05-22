@@ -32,7 +32,7 @@ export default async function MuridPage() {
         {students.length === 0 ? (
           <p className="empty">Belum ada murid. Tambah murid pertama menggunakan borang di atas.</p>
         ) : (
-          <StudentList students={students} classes={classes} />
+          <StudentList students={students} classes={classes} schools={schools} />
         )}
       </section>
     </AppFrame>
