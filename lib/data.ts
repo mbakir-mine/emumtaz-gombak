@@ -15,6 +15,12 @@ export type SetupCounts = {
   };
 };
 
+export type DashboardScopeCounts = {
+  all: SetupCounts;
+  zones: Record<string, SetupCounts>;
+  schools: Record<string, SetupCounts>;
+};
+
 export type School = {
   kod_sekolah: string;
   nama_sekolah: string;
@@ -201,6 +207,7 @@ export type DashboardInsights = {
   completionClasses: MarkCompletionClass[];
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
+  scopeCounts: DashboardScopeCounts;
 };
 
 export type MarkDetailRecord = {
@@ -432,6 +439,110 @@ async function getTeacherDashboardRows(
     .filter(Boolean) as TeacherDashboardSubject[];
 
   return { teacherClasses, teacherSubjects };
+}
+
+function emptySetupCounts(subjects = 0, exams = 0): SetupCounts {
+  return {
+    schools: 0,
+    users: 0,
+    subjects,
+    exams,
+    classes: 0,
+    students: 0,
+    marks: 0,
+    schoolCategories: {},
+    studentGender: { lelaki: 0, perempuan: 0 },
+  };
+}
+
+function addSchoolToCounts(counts: SetupCounts, school: School) {
+  counts.schools += 1;
+  const key = school.kategori || 'LAIN';
+  counts.schoolCategories[key] = (counts.schoolCategories[key] ?? 0) + 1;
+}
+
+function addStudentToCounts(counts: SetupCounts, student: StudentRecord) {
+  if (student.status !== 'AKTIF') return;
+  counts.students += 1;
+  if (student.jantina === 'L') counts.studentGender.lelaki += 1;
+  if (student.jantina === 'P') counts.studentGender.perempuan += 1;
+}
+
+function buildDashboardScopeCounts({
+  schools,
+  classes,
+  students,
+  marks,
+  users,
+  subjects,
+  exams,
+}: {
+  schools: School[];
+  classes: ClassRecord[];
+  students: StudentRecord[];
+  marks: MarkRecord[];
+  users: UserRecord[];
+  subjects: SubjectRecord[];
+  exams: ExamRecord[];
+}): DashboardScopeCounts {
+  const all = emptySetupCounts(subjects.length, exams.length);
+  const zones: Record<string, SetupCounts> = {};
+  const schoolCounts: Record<string, SetupCounts> = {};
+  const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
+
+  schools.forEach((school) => {
+    addSchoolToCounts(all, school);
+    schoolCounts[school.kod_sekolah] = emptySetupCounts(subjects.length, exams.length);
+    addSchoolToCounts(schoolCounts[school.kod_sekolah], school);
+
+    if (school.zon) {
+      zones[school.zon] = zones[school.zon] ?? emptySetupCounts(subjects.length, exams.length);
+      addSchoolToCounts(zones[school.zon], school);
+    }
+  });
+
+  classes.forEach((classRecord) => {
+    all.classes += 1;
+    const schoolCount = schoolCounts[classRecord.kod_sekolah];
+    if (schoolCount) schoolCount.classes += 1;
+
+    const zon = schoolMap.get(classRecord.kod_sekolah)?.zon;
+    if (zon && zones[zon]) zones[zon].classes += 1;
+  });
+
+  students.forEach((student) => {
+    addStudentToCounts(all, student);
+    const schoolCount = schoolCounts[student.kod_sekolah];
+    if (schoolCount) addStudentToCounts(schoolCount, student);
+
+    const zon = schoolMap.get(student.kod_sekolah)?.zon;
+    if (zon && zones[zon]) addStudentToCounts(zones[zon], student);
+  });
+
+  marks.forEach((mark) => {
+    all.marks += 1;
+    const schoolCount = schoolCounts[mark.kod_sekolah];
+    if (schoolCount) schoolCount.marks += 1;
+
+    const zon = schoolMap.get(mark.kod_sekolah)?.zon;
+    if (zon && zones[zon]) zones[zon].marks += 1;
+  });
+
+  users.forEach((user) => {
+    all.users += 1;
+    if (user.kod_sekolah && schoolCounts[user.kod_sekolah]) {
+      schoolCounts[user.kod_sekolah].users += 1;
+    }
+
+    if (user.zon && zones[user.zon]) {
+      zones[user.zon].users += 1;
+    } else if (user.kod_sekolah) {
+      const zon = schoolMap.get(user.kod_sekolah)?.zon;
+      if (zon && zones[zon]) zones[zon].users += 1;
+    }
+  });
+
+  return { all, zones, schools: schoolCounts };
 }
 
 function gradePointFromAverage(purata: number | null | undefined) {
@@ -692,7 +803,7 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
 }
 
 export async function getDashboardInsights(): Promise<DashboardInsights> {
-  const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students] = await Promise.all([
+  const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students, users] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
@@ -701,8 +812,18 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
     getSchoolSummaries(),
     fetchStudentSummariesInBatches(),
     fetchStudentsInBatches(),
+    getSchoolUsers(),
   ]);
   const teacherDashboard = await getTeacherDashboardRows(schools, classes, students, subjects);
+  const baseScopeCounts = buildDashboardScopeCounts({
+    schools,
+    classes,
+    students,
+    marks: [],
+    users,
+    subjects,
+    exams,
+  });
 
   const latestExam = [...exams].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
   const key = latestExam
@@ -718,12 +839,22 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
       completionClasses: [],
       teacherClasses: teacherDashboard.teacherClasses,
       teacherSubjects: teacherDashboard.teacherSubjects,
+      scopeCounts: baseScopeCounts,
     };
   }
 
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
   const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
   const marks = latestExam ? await fetchMarksByExamInBatches(latestExam.id) : [];
+  const scopeCounts = buildDashboardScopeCounts({
+    schools,
+    classes,
+    students,
+    marks,
+    users,
+    subjects,
+    exams,
+  });
   const rulesByTahun = new Map<number, string[]>();
   rules.forEach((rule) => {
     rulesByTahun.set(rule.tahun, [...(rulesByTahun.get(rule.tahun) ?? []), rule.kod_subjek]);
@@ -863,6 +994,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
     ),
     teacherClasses: teacherDashboard.teacherClasses,
     teacherSubjects: teacherDashboard.teacherSubjects,
+    scopeCounts,
   };
 }
 

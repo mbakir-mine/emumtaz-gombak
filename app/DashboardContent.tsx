@@ -83,6 +83,20 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
   ];
 }
 
+function scopedCountsForProfile(counts: SetupCounts, insights: DashboardInsights, profile: ReturnType<typeof useAccessProfile>) {
+  if (!profile) return counts;
+  if (profile.role === 'ADMIN_ZON' && profile.zon) {
+    return insights.scopeCounts.zones[profile.zon] ?? counts;
+  }
+  if (profile.role === 'ADMIN_SEKOLAH' && profile.kod_sekolah) {
+    return insights.scopeCounts.schools[profile.kod_sekolah] ?? counts;
+  }
+  if (profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH') {
+    return insights.scopeCounts.all;
+  }
+  return counts;
+}
+
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '-';
   return value.toFixed(2);
@@ -533,7 +547,8 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
   const isTeacher = profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK';
   const teacherClasses = insights.teacherClasses.filter((item) => item.user_id === profile?.id);
   const teacherSubjects = insights.teacherSubjects.filter((item) => item.user_id === profile?.id);
-  const metrics = metricsForRole(counts, profile?.role);
+  const scopedCounts = scopedCountsForProfile(counts, insights, profile);
+  const metrics = metricsForRole(scopedCounts, profile?.role);
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
   const scopedSchoolRanks = insights.schoolRanks.filter((row) => {
