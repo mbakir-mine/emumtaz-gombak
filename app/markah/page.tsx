@@ -28,6 +28,8 @@ export default async function MarkahPage({
   const selectedClassId = params.class_id ?? '';
   const selectedExamId = params.exam_id ?? '';
   const selectedSubject = params.kod_subjek ?? '';
+  const currentYear = new Date().getFullYear();
+  const selectedYear = Number(params.tahun_akademik ?? currentYear);
   const selectedClass = classes.find((item) => item.id === selectedClassId);
   const selectedExam = exams.find((exam) => exam.id === selectedExamId);
   const markAccess = examAccessStatus(selectedExam);
@@ -52,6 +54,7 @@ export default async function MarkahPage({
           classes={classes}
           exams={exams}
           subjects={subjects}
+          initialYear={selectedYear}
           initialExamId={selectedExamId}
           initialSchool={selectedSchool}
           initialClassId={selectedClassId}

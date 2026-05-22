@@ -11,6 +11,7 @@ export default function MarkSelectionForm({
   classes,
   exams,
   subjects,
+  initialYear,
   initialExamId,
   initialSchool,
   initialClassId,
@@ -20,13 +21,16 @@ export default function MarkSelectionForm({
   classes: ClassRecord[];
   exams: ExamRecord[];
   subjects: SubjectRecord[];
+  initialYear: number;
   initialExamId: string;
   initialSchool: string;
   initialClassId: string;
   initialSubject: string;
 }) {
   const profile = useAccessProfile();
+  const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
   const [selectedExamId, setSelectedExamId] = useState(initialExamId);
+  const [selectedYear, setSelectedYear] = useState(initialYear);
   const [selectedSchool, setSelectedSchool] = useState(initialSchool);
   const [selectedClassId, setSelectedClassId] = useState(initialClassId);
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
@@ -36,6 +40,10 @@ export default function MarkSelectionForm({
   const filteredClasses = useMemo(
     () => scopedClasses.filter((item) => selectedSchool && item.kod_sekolah === selectedSchool),
     [scopedClasses, selectedSchool],
+  );
+  const filteredExams = useMemo(
+    () => exams.filter((exam) => exam.tahun_akademik === selectedYear),
+    [exams, selectedYear],
   );
 
   const selectedClass = useMemo(
@@ -51,6 +59,25 @@ export default function MarkSelectionForm({
   return (
     <form className="form-grid" method="get">
       <label>
+        Tahun Akademik
+        <select
+          name="tahun_akademik"
+          value={selectedYear}
+          onChange={(event) => {
+            setSelectedYear(Number(event.target.value));
+            setSelectedExamId('');
+          }}
+          required
+        >
+          {yearOptions.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
         Peperiksaan
         <select
           name="exam_id"
@@ -59,9 +86,9 @@ export default function MarkSelectionForm({
           required
         >
           <option value="">Pilih peperiksaan</option>
-          {exams.map((exam) => (
+          {filteredExams.map((exam) => (
             <option key={exam.id} value={exam.id}>
-              {exam.kod_peperiksaan} {exam.tahun_akademik} - {exam.nama_peperiksaan}
+              {exam.kod_peperiksaan} - {exam.nama_peperiksaan}
             </option>
           ))}
         </select>
