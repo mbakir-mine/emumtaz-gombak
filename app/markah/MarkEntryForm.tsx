@@ -29,13 +29,13 @@ export default function MarkEntryForm({
   const marksByStudent = new Map(marks.map((mark) => [mark.student_id, mark.markah]));
 
   return (
-    <form action={action}>
+    <form action={action} className="mark-entry-form">
       <input type="hidden" name="exam_id" value={examId} />
       <input type="hidden" name="class_id" value={classId} />
       <input type="hidden" name="kod_sekolah" value={kodSekolah} />
       <input type="hidden" name="kod_subjek" value={kodSubjek} />
 
-      <table>
+      <table className="mark-entry-table">
         <thead>
           <tr>
             <th>Nama Murid</th>
