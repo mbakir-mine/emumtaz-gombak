@@ -57,7 +57,7 @@ export default function MarkSelectionForm({
   );
 
   return (
-    <form className="form-grid" method="get">
+    <form className="form-grid inline-form" method="get">
       <label>
         Tahun Akademik
         <select
