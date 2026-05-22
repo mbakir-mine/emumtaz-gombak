@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { navItems, visibleNavItems } from '@/lib/access';
 import { supabase } from '@/lib/supabase';
 import { useAccessProfile } from './AuthGate';
@@ -29,13 +29,13 @@ const groupedMenu = [
     key: 'reports',
     label: 'Laporan',
     href: '/laporan',
-    items: ['reports'],
+    items: ['reportIndividual', 'reportClass', 'reportSchool', 'reportSubject', 'comparison', 'reportAnnual'],
   },
   {
     key: 'analysis',
     label: 'Analisis',
     href: '/analisis',
-    items: ['analysis', 'comparison'],
+    items: ['analysis'],
   },
   {
     key: 'settings',
@@ -53,14 +53,20 @@ const childLabels: Record<string, string> = {
   setup: 'Akses Markah',
   marks: 'Kelas',
   reports: 'Pusat Laporan',
+  reportIndividual: 'Individu',
+  reportClass: 'Kelas',
+  reportSchool: 'Sekolah',
+  reportSubject: 'Subjek',
   analysis: 'Analisis Subjek',
-  comparison: 'Penilaian UPSA/UASA',
+  comparison: 'UPSA vs UASA',
+  reportAnnual: 'Perbandingan Tahunan',
   users: 'Admin',
   changePassword: 'Tukar Password',
 };
 
 export default function SidebarNav({ active }: { active: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const profile = useAccessProfile();
   const visibleItems = profile ? visibleNavItems(profile.role, profile.allowed_nav) : [];
   const visibleKeys = new Set(visibleItems.map((item) => item.key));
@@ -74,14 +80,24 @@ export default function SidebarNav({ active }: { active: string }) {
   const groups = groupedMenu
     .map((group) => {
       const children = group.items
-        .filter((key) => visibleKeys.has(key) || key === 'changePassword')
+        .filter((key) => {
+          if (visibleKeys.has(key) || key === 'changePassword') return true;
+          if (group.key !== 'reports' || !visibleKeys.has('reports') || !profile) return false;
+          const item = allItemMap.get(key);
+          return item ? item.roles.includes(profile.role) : false;
+        })
         .map((key) => allItemMap.get(key))
         .filter(Boolean);
+
+      const pathActive = children.some((item) => {
+        if (!item) return false;
+        return pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
+      });
 
       return {
         ...group,
         children,
-        isActive: group.items.includes(active),
+        isActive: group.key === active || group.items.includes(active) || pathActive,
       };
     })
     .filter((group) => group.children.length > 0);
@@ -96,7 +112,17 @@ export default function SidebarNav({ active }: { active: string }) {
           {group.isActive && group.children.length > 1 && (
             <div className="nav-submenu">
               {group.children.map((item) => (
-                <Link className={active === item!.key ? 'active' : ''} href={item!.href} key={item!.key}>
+                <Link
+                  className={
+                    active === item!.key ||
+                    (item!.key !== 'reportAnnual' &&
+                      (pathname === item!.href || (item!.href !== '/' && pathname.startsWith(`${item!.href}/`))))
+                      ? 'active'
+                      : ''
+                  }
+                  href={item!.href}
+                  key={item!.key}
+                >
                   {childLabels[item!.key] ?? item!.label}
                 </Link>
               ))}

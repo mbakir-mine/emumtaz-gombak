@@ -30,10 +30,15 @@ export const navItems: NavItem[] = [
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
+  { key: 'reportIndividual', label: 'Laporan Individu', href: '/laporan/individu', roles: allRoles },
+  { key: 'reportClass', label: 'Laporan Kelas', href: '/laporan/kelas', roles: allRoles },
+  { key: 'reportSchool', label: 'Laporan Sekolah', href: '/laporan/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
+  { key: 'reportSubject', label: 'Laporan Subjek', href: '/laporan/subjek', roles: allRoles },
+  { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'changePassword', label: 'Tukar Password', href: '/tukar-password', roles: allRoles, hidden: true },
   { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },
-  { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'], hidden: true },
+  { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'], hidden: true },
   { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'], hidden: true },
 ];
@@ -78,6 +83,7 @@ export function canAccessPath(role: UserRole, pathname: string, allowedNav?: str
   const cleanPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   const matchedItem = navItems
     .filter((item) => item.href !== '/')
+    .sort((a, b) => b.href.length - a.href.length)
     .find((item) => cleanPath === item.href || cleanPath.startsWith(`${item.href}/`));
 
   if (!matchedItem) {
