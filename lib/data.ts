@@ -13,6 +13,7 @@ export type SetupCounts = {
     lelaki: number;
     perempuan: number;
   };
+  classesByYear: Record<number, number>;
 };
 
 export type DashboardScopeCounts = {
@@ -452,6 +453,7 @@ function emptySetupCounts(subjects = 0, exams = 0): SetupCounts {
     marks: 0,
     schoolCategories: {},
     studentGender: { lelaki: 0, perempuan: 0 },
+    classesByYear: {},
   };
 }
 
@@ -503,11 +505,18 @@ function buildDashboardScopeCounts({
 
   classes.forEach((classRecord) => {
     all.classes += 1;
+    all.classesByYear[classRecord.tahun] = (all.classesByYear[classRecord.tahun] ?? 0) + 1;
     const schoolCount = schoolCounts[classRecord.kod_sekolah];
-    if (schoolCount) schoolCount.classes += 1;
+    if (schoolCount) {
+      schoolCount.classes += 1;
+      schoolCount.classesByYear[classRecord.tahun] = (schoolCount.classesByYear[classRecord.tahun] ?? 0) + 1;
+    }
 
     const zon = schoolMap.get(classRecord.kod_sekolah)?.zon;
-    if (zon && zones[zon]) zones[zon].classes += 1;
+    if (zon && zones[zon]) {
+      zones[zon].classes += 1;
+      zones[zon].classesByYear[classRecord.tahun] = (zones[zon].classesByYear[classRecord.tahun] ?? 0) + 1;
+    }
   });
 
   students.forEach((student) => {
@@ -581,6 +590,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
       marks: 0,
       schoolCategories: {},
       studentGender: { lelaki: 0, perempuan: 0 },
+      classesByYear: {},
     };
   }
 
@@ -593,6 +603,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
   let marks = 0;
   let schoolCategories: Record<string, number> = {};
   let studentGender = { lelaki: 0, perempuan: 0 };
+  let classesByYear: Record<number, number> = {};
 
   try {
     [schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender] = await Promise.all([
@@ -606,11 +617,15 @@ export async function getSetupCounts(): Promise<SetupCounts> {
       getSchoolCategoryCounts(),
       getStudentGenderCounts(),
     ]);
+    const classRows = await getClasses();
+    classRows.forEach((classRecord) => {
+      classesByYear[classRecord.tahun] = (classesByYear[classRecord.tahun] ?? 0) + 1;
+    });
   } catch {
-    return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender };
+    return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender, classesByYear };
   }
 
-  return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender };
+  return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender, classesByYear };
 }
 
 export async function getSchools(): Promise<School[]> {

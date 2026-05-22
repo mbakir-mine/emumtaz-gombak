@@ -45,7 +45,11 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
   if (role === 'ADMIN_SEKOLAH') {
     return [
       { label: 'Murid', value: counts.students },
-      { label: 'Kelas', value: counts.classes },
+      {
+        label: 'Kelas',
+        value: counts.classes,
+        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+      },
       { label: 'Guru', value: counts.users },
       { label: 'Markah', value: counts.marks },
     ];
@@ -54,9 +58,13 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
   if (role === 'ADMIN_ZON') {
     return [
       { label: 'Sekolah', value: counts.schools },
+      {
+        label: 'Kelas',
+        value: counts.classes,
+        breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+      },
       { label: 'Murid', value: counts.students },
       { label: 'Markah', value: counts.marks },
-      { label: 'Laporan', value: 'Aktif' },
     ];
   }
 
@@ -70,7 +78,11 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
         { label: 'KAFAI', value: counts.schoolCategories.KAFAI ?? 0 },
       ],
     },
-    { label: 'Kelas', value: counts.classes },
+    {
+      label: 'Kelas',
+      value: counts.classes,
+      breakdown: [1, 2, 3, 4, 5, 6].map((tahun) => ({ label: `T${tahun}`, value: counts.classesByYear[tahun] ?? 0 })),
+    },
     {
       label: 'Murid Aktif',
       value: counts.students,
@@ -79,7 +91,6 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
         { label: 'Perempuan', value: counts.studentGender.perempuan },
       ],
     },
-    { label: 'Peperiksaan', value: counts.exams, note: 'UPSA & UASA' },
   ];
 }
 
