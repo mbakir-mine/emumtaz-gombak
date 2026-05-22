@@ -167,12 +167,40 @@ export type MarkCompletionClass = {
   complete: boolean;
 };
 
+export type TeacherDashboardClass = {
+  user_id: string;
+  class_id: string;
+  kod_sekolah: string;
+  nama_sekolah: string;
+  tahun: number;
+  nama_kelas: string;
+  jumlah_murid: number;
+  lelaki: number;
+  perempuan: number;
+};
+
+export type TeacherDashboardSubject = {
+  user_id: string;
+  class_id: string;
+  kod_sekolah: string;
+  nama_sekolah: string;
+  tahun: number;
+  nama_kelas: string;
+  kod_subjek: string;
+  nama_subjek: string;
+  jumlah_murid: number;
+  lelaki: number;
+  perempuan: number;
+};
+
 export type DashboardInsights = {
   latestExamLabel: string;
   schoolRanks: DashboardSchoolRank[];
   classRanks: DashboardClassRank[];
   completionSchools: MarkCompletionSchool[];
   completionClasses: MarkCompletionClass[];
+  teacherClasses: TeacherDashboardClass[];
+  teacherSubjects: TeacherDashboardSubject[];
 };
 
 export type MarkDetailRecord = {
@@ -332,6 +360,78 @@ async function getSubjectGradeRules(): Promise<SubjectGradeRule[]> {
 
   if (error) return [];
   return data ?? [];
+}
+
+async function getTeacherDashboardRows(
+  schools: School[],
+  classes: ClassRecord[],
+  students: StudentRecord[],
+  subjects: SubjectRecord[],
+): Promise<{
+  teacherClasses: TeacherDashboardClass[];
+  teacherSubjects: TeacherDashboardSubject[];
+}> {
+  if (!supabase) return { teacherClasses: [], teacherSubjects: [] };
+
+  const [{ data: classAssignments }, { data: subjectAssignments }] = await Promise.all([
+    supabase.from('teacher_class_assignments').select('user_id,class_id'),
+    supabase.from('teacher_subject_assignments').select('user_id,class_id,kod_subjek'),
+  ]);
+
+  const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
+  const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
+  const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject]));
+
+  const teacherClasses = (classAssignments ?? [])
+    .map((assignment: any) => {
+      const classRecord = classMap.get(assignment.class_id);
+      if (!classRecord) return null;
+      const school = schoolMap.get(classRecord.kod_sekolah);
+      const classStudents = students.filter(
+        (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
+      );
+
+      return {
+        user_id: assignment.user_id,
+        class_id: classRecord.id,
+        kod_sekolah: classRecord.kod_sekolah,
+        nama_sekolah: school?.nama_sekolah ?? classRecord.kod_sekolah,
+        tahun: classRecord.tahun,
+        nama_kelas: classRecord.nama_kelas,
+        jumlah_murid: classStudents.length,
+        lelaki: classStudents.filter((student) => student.jantina === 'L').length,
+        perempuan: classStudents.filter((student) => student.jantina === 'P').length,
+      };
+    })
+    .filter(Boolean) as TeacherDashboardClass[];
+
+  const teacherSubjects = (subjectAssignments ?? [])
+    .map((assignment: any) => {
+      const classRecord = classMap.get(assignment.class_id);
+      const subject = subjectMap.get(assignment.kod_subjek);
+      if (!classRecord || !subject) return null;
+      const school = schoolMap.get(classRecord.kod_sekolah);
+      const classStudents = students.filter(
+        (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
+      );
+
+      return {
+        user_id: assignment.user_id,
+        class_id: classRecord.id,
+        kod_sekolah: classRecord.kod_sekolah,
+        nama_sekolah: school?.nama_sekolah ?? classRecord.kod_sekolah,
+        tahun: classRecord.tahun,
+        nama_kelas: classRecord.nama_kelas,
+        kod_subjek: subject.kod_subjek,
+        nama_subjek: subject.nama_subjek,
+        jumlah_murid: classStudents.length,
+        lelaki: classStudents.filter((student) => student.jantina === 'L').length,
+        perempuan: classStudents.filter((student) => student.jantina === 'P').length,
+      };
+    })
+    .filter(Boolean) as TeacherDashboardSubject[];
+
+  return { teacherClasses, teacherSubjects };
 }
 
 function gradePointFromAverage(purata: number | null | undefined) {
@@ -592,15 +692,17 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
 }
 
 export async function getDashboardInsights(): Promise<DashboardInsights> {
-  const [schools, classes, exams, rules, schoolSummaries, studentSummaries, students] = await Promise.all([
+  const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
     getSubjectGradeRules(),
+    getSubjects(),
     getSchoolSummaries(),
     fetchStudentSummariesInBatches(),
     fetchStudentsInBatches(),
   ]);
+  const teacherDashboard = await getTeacherDashboardRows(schools, classes, students, subjects);
 
   const latestExam = [...exams].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
   const key = latestExam
@@ -614,6 +716,8 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
       classRanks: [],
       completionSchools: [],
       completionClasses: [],
+      teacherClasses: teacherDashboard.teacherClasses,
+      teacherSubjects: teacherDashboard.teacherSubjects,
     };
   }
 
@@ -757,6 +861,8 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
     completionClasses: [...classCompletionMap.values()].sort(
       (a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah) || a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas),
     ),
+    teacherClasses: teacherDashboard.teacherClasses,
+    teacherSubjects: teacherDashboard.teacherSubjects,
   };
 }
 

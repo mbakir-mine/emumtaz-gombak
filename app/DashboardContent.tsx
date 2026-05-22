@@ -8,6 +8,8 @@ import type {
   MarkCompletionClass,
   MarkCompletionSchool,
   SetupCounts,
+  TeacherDashboardClass,
+  TeacherDashboardSubject,
 } from '@/lib/data';
 import { useAccessProfile } from './ui/AuthGate';
 
@@ -426,8 +428,111 @@ function MarkCompletionPanel({
   );
 }
 
+function TeacherDashboard({
+  nama,
+  role,
+  kodSekolah,
+  classes,
+  subjects,
+}: {
+  nama: string;
+  role?: string;
+  kodSekolah?: string | null;
+  classes: TeacherDashboardClass[];
+  subjects: TeacherDashboardSubject[];
+}) {
+  const isGuruKelas = role === 'GURU_KELAS';
+  const primarySchool = classes[0]?.nama_sekolah ?? subjects[0]?.nama_sekolah ?? kodSekolah ?? '-';
+  const relatedClassNames = isGuruKelas
+    ? classes.map((item) => `Tahun ${item.tahun} - ${item.nama_kelas}`)
+    : [...new Set(subjects.map((item) => `Tahun ${item.tahun} - ${item.nama_kelas}`))];
+  const uniqueClassTotals = new Map<string, { jumlah: number; lelaki: number; perempuan: number }>();
+  [...classes, ...subjects].forEach((item) => {
+    if (!uniqueClassTotals.has(item.class_id)) {
+      uniqueClassTotals.set(item.class_id, {
+        jumlah: item.jumlah_murid,
+        lelaki: item.lelaki,
+        perempuan: item.perempuan,
+      });
+    }
+  });
+  const totals = [...uniqueClassTotals.values()].reduce(
+    (sum, item) => ({
+      jumlah: sum.jumlah + item.jumlah,
+      lelaki: sum.lelaki + item.lelaki,
+      perempuan: sum.perempuan + item.perempuan,
+    }),
+    { jumlah: 0, lelaki: 0, perempuan: 0 },
+  );
+  const subjectLabels = [...new Map(subjects.map((item) => [item.kod_subjek, item.nama_subjek])).values()];
+  const roleLabel = isGuruKelas ? 'Guru Kelas' : 'Guru Subjek';
+
+  return (
+    <div className="teacher-dashboard-wrap">
+      <section className="panel teacher-dashboard-panel">
+        <div className="panel-head">
+          <div>
+            <h2>Ringkasan Tugasan</h2>
+            <p className="table-note">Paparan ringkas untuk {roleLabel}.</p>
+          </div>
+        </div>
+        <div className="teacher-profile-card">
+          <div>
+            <span>Nama Pengguna</span>
+            <strong>{nama}</strong>
+          </div>
+          <div>
+            <span>Sekolah Bertugas</span>
+            <strong>{primarySchool}</strong>
+          </div>
+          <div>
+            <span>Peranan</span>
+            <strong>{roleLabel}</strong>
+          </div>
+        </div>
+
+        <div className="teacher-info-grid">
+          {isGuruKelas && (
+            <div className="teacher-info-card wide">
+              <span>Kelas</span>
+              <strong>{relatedClassNames.join(', ') || 'Belum ditetapkan'}</strong>
+            </div>
+          )}
+          <div className="teacher-info-card total">
+            <span>Jumlah Murid</span>
+            <strong>{totals.jumlah}</strong>
+          </div>
+          <div className="teacher-info-card">
+            <span>Lelaki</span>
+            <strong>{totals.lelaki}</strong>
+          </div>
+          <div className="teacher-info-card">
+            <span>Perempuan</span>
+            <strong>{totals.perempuan}</strong>
+          </div>
+          <div className="teacher-info-card wide">
+            <span>Mata Pelajaran Diajar</span>
+            {subjectLabels.length > 0 ? (
+              <div className="subject-chip-list">
+                {subjectLabels.map((subject) => (
+                  <b key={subject}>{subject}</b>
+                ))}
+              </div>
+            ) : (
+              <strong>Belum ditetapkan</strong>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function DashboardContent({ counts, insights }: { counts: SetupCounts; insights: DashboardInsights }) {
   const profile = useAccessProfile();
+  const isTeacher = profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK';
+  const teacherClasses = insights.teacherClasses.filter((item) => item.user_id === profile?.id);
+  const teacherSubjects = insights.teacherSubjects.filter((item) => item.user_id === profile?.id);
   const metrics = metricsForRole(counts, profile?.role);
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
@@ -441,6 +546,16 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
   return (
     <>
       {profile?.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
+      {isTeacher ? (
+        <TeacherDashboard
+          nama={profile?.nama ?? '-'}
+          role={profile?.role}
+          kodSekolah={profile?.kod_sekolah}
+          classes={teacherClasses}
+          subjects={teacherSubjects}
+        />
+      ) : (
+        <>
       <div className="metric-grid dashboard-metrics">
         {metrics.map((metric) => (
           <div className="metric dashboard-metric" key={metric.label}>
@@ -487,6 +602,8 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
           classes={insights.completionClasses}
         />
       </div>
+        </>
+      )}
 
     </>
   );
