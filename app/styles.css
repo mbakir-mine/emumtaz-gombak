@@ -886,6 +886,18 @@ select {
   width: 100%;
 }
 
+.forgot-link {
+  justify-self: end;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.forgot-link:hover {
+  color: #064e2d;
+  text-decoration: underline;
+}
+
 .parent-page {
   min-height: 100vh;
   padding: 28px;

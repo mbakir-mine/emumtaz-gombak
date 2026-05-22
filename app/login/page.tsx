@@ -82,6 +82,10 @@ export default function LoginPage() {
             />
           </label>
 
+          <Link className="forgot-link" href="/lupa-password">
+            Lupa kata laluan?
+          </Link>
+
           {message && <p className="form-message">{message}</p>}
 
           <button className="button" type="submit" disabled={loading}>
