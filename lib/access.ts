@@ -32,7 +32,7 @@ export const navItems: NavItem[] = [
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'changePassword', label: 'Tukar Password', href: '/tukar-password', roles: allRoles, hidden: true },
-  { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles, hidden: true },
+  { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },
   { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'], hidden: true },
   { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'], hidden: true },
   { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'], hidden: true },

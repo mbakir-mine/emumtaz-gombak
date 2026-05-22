@@ -75,16 +75,84 @@ a {
   gap: 4px;
 }
 
-.nav a {
+.nav-group {
+  position: relative;
+}
+
+.nav a,
+.nav summary,
+.nav-logout {
   padding: 11px 12px;
   border-radius: 8px;
   color: #dbe4ef;
+  font: inherit;
   font-weight: 700;
 }
 
+.nav summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  cursor: pointer;
+}
+
+.nav summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav summary::after {
+  content: '›';
+  color: rgba(255, 255, 255, 0.6);
+  transition: transform 0.18s ease;
+}
+
+.nav-group[open] summary::after {
+  transform: rotate(90deg);
+}
+
 .nav a:hover,
-.nav a.active {
+.nav a.active,
+.nav summary:hover,
+.nav summary.active {
   background: var(--nav-2);
+  color: white;
+}
+
+.nav-submenu {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 6px 12px;
+}
+
+.nav-submenu a {
+  padding: 8px 10px;
+  color: #c9d8ce;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nav-submenu a::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: rgba(244, 201, 79, 0.62);
+  vertical-align: middle;
+}
+
+.nav-logout {
+  width: 100%;
+  border: 1px solid rgba(244, 201, 79, 0.22);
+  background: rgba(244, 201, 79, 0.08);
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-logout:hover {
+  background: rgba(244, 201, 79, 0.18);
   color: white;
 }
 
@@ -1432,7 +1500,13 @@ button:disabled {
     display: none;
   }
 
-  .nav a {
+  .nav-group {
+    flex: 0 0 auto;
+  }
+
+  .nav a,
+  .nav summary,
+  .nav-logout {
     flex: 0 0 auto;
     padding: 10px 13px;
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1442,10 +1516,39 @@ button:disabled {
   }
 
   .nav a:hover,
-  .nav a.active {
+  .nav a.active,
+  .nav summary:hover,
+  .nav summary.active {
     background: linear-gradient(135deg, rgba(244, 201, 79, 0.94), rgba(226, 244, 232, 0.9));
     color: #062615;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  }
+
+  .nav summary::after {
+    margin-left: 8px;
+  }
+
+  .nav-submenu {
+    position: absolute;
+    z-index: 40;
+    min-width: 180px;
+    margin-top: 6px;
+    padding: 8px;
+    border: 1px solid rgba(244, 201, 79, 0.22);
+    border-radius: 12px;
+    background: rgba(2, 46, 25, 0.96);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+  }
+
+  .nav-submenu a {
+    display: block;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+  }
+
+  .nav-logout {
+    width: auto;
   }
 
   .date-clock {
@@ -1615,7 +1718,9 @@ button:disabled {
     padding-bottom: 7px;
   }
 
-  .nav a {
+  .nav a,
+  .nav summary,
+  .nav-logout {
     padding: 9px 11px;
     border-radius: 10px;
     font-size: 14px;
@@ -1681,15 +1786,13 @@ button:disabled {
   }
 
   .user-badge {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
     gap: 8px;
     padding: 9px;
     border-radius: 10px;
   }
 
   .user-badge div {
-    grid-column: 1 / -1;
+    min-width: 0;
   }
 
   .user-badge strong {
@@ -1972,7 +2075,9 @@ button:disabled {
     padding-inline: 12px;
   }
 
-  .nav a {
+  .nav a,
+  .nav summary,
+  .nav-logout {
     padding: 8px 10px;
     border-radius: 9px;
     font-size: 13px;
@@ -2009,16 +2114,6 @@ button:disabled {
 
   .page-subtitle {
     font-size: 13px;
-  }
-
-  .user-badge {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .user-badge-link,
-  .user-badge button {
-    width: 100%;
-    padding-inline: 8px;
   }
 
   .welcome-title {
