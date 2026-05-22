@@ -1534,6 +1534,15 @@ button:disabled {
 
   .nav-logout {
     width: auto;
+    border-color: rgba(244, 201, 79, 0.58);
+    background: linear-gradient(135deg, rgba(255, 245, 211, 0.98), rgba(244, 201, 79, 0.78));
+    color: #5b3a05;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  }
+
+  .nav-logout:hover {
+    background: linear-gradient(135deg, rgba(244, 201, 79, 0.98), rgba(255, 245, 211, 0.92));
+    color: #052615;
   }
 
   .date-clock {
@@ -2074,6 +2083,12 @@ button:disabled {
     border-radius: 9px;
     font-size: 13px;
     font-weight: 700;
+  }
+
+  .nav-logout {
+    border-color: rgba(244, 201, 79, 0.62);
+    background: linear-gradient(135deg, #fff5d3, #f4c94f);
+    color: #563704;
   }
 
   .date-clock {
