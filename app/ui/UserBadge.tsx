@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { roleLabel } from '@/lib/access';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +21,9 @@ export default function UserBadge() {
         <strong>{profile ? roleLabel(profile.role) : 'Pengguna'}</strong>
         {profile?.nama && <small>{profile.nama}</small>}
       </div>
+      <Link className="user-badge-link" href="/tukar-password">
+        Tukar Password
+      </Link>
       <button type="button" onClick={logout}>
         Keluar
       </button>

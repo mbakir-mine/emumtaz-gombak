@@ -216,6 +216,19 @@ h1 {
   cursor: pointer;
 }
 
+.user-badge-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #fff8dc;
+  color: #7a560c;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .metric-grid,
 .card-grid {
   display: grid;
@@ -1172,6 +1185,14 @@ select {
 
 .profile-form-wrap .status-form {
   min-width: 0;
+}
+
+.password-panel {
+  max-width: 760px;
+}
+
+.password-form {
+  grid-template-columns: 1fr;
 }
 
 .zone-form {
