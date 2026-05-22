@@ -23,7 +23,6 @@ export default async function SetupPage() {
           <div className="exam-access-board">
             <div className="exam-access-card">
               <h3>UPSA</h3>
-              <p>Ujian Pertengahan Semester Akademik</p>
               <div className="exam-access-list">
                 {upsaExams.length === 0 ? (
                   <p className="empty">Belum ada rekod UPSA.</p>
@@ -34,7 +33,6 @@ export default async function SetupPage() {
             </div>
             <div className="exam-access-card">
               <h3>UASA</h3>
-              <p>Ujian Akhir Semester Akademik</p>
               <div className="exam-access-list">
                 {uasaExams.length === 0 ? (
                   <p className="empty">Belum ada rekod UASA.</p>
