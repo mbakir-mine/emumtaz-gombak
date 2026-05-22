@@ -1072,6 +1072,52 @@ select {
   background: white;
 }
 
+.report-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0 20px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.print-report-title {
+  display: none;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.print-report-title h2 {
+  margin-bottom: 4px;
+}
+
+.student-report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.student-report-summary div {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
+.student-report-summary span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.student-report-summary strong {
+  font-size: 20px;
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1309,6 +1355,10 @@ select {
     margin: 0;
     padding: 0;
   }
+
+  .print-report-title {
+    display: block;
+  }
 }
 
 button:disabled {
@@ -1423,6 +1473,10 @@ button:disabled {
     grid-template-columns: 1fr 1fr;
   }
 
+  .report-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .access-checks {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
@@ -1502,6 +1556,10 @@ button:disabled {
 
   .student-report-head {
     grid-template-columns: 1fr;
+  }
+
+  .student-report-summary {
+    grid-template-columns: 1fr 1fr;
   }
 
   h1,
@@ -1630,6 +1688,11 @@ button:disabled {
   }
 
   .exam-access-form {
+    grid-template-columns: 1fr;
+  }
+
+  .report-filter-grid,
+  .student-report-summary {
     grid-template-columns: 1fr;
   }
 

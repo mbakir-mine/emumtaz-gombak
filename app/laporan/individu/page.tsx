@@ -1,14 +1,14 @@
 import AppFrame from '../../ui/AppFrame';
-import { getSchools, getStudentSummaries } from '@/lib/data';
+import { getClasses, getSchools, getStudentSummaries } from '@/lib/data';
 import IndividualReportTable from './IndividualReportTable';
 
 export default async function LaporanIndividuPage() {
-  const [schools, summaries] = await Promise.all([getSchools(), getStudentSummaries()]);
+  const [schools, classes, summaries] = await Promise.all([getSchools(), getClasses(), getStudentSummaries()]);
 
   return (
     <AppFrame title="Laporan Individu" active="reports">
       <section className="panel report-page">
-        <IndividualReportTable schools={schools} summaries={summaries} />
+        <IndividualReportTable schools={schools} classes={classes} summaries={summaries} />
       </section>
     </AppFrame>
   );
