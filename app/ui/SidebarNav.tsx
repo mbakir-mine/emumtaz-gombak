@@ -23,7 +23,7 @@ const groupedMenu = [
     key: 'scoring',
     label: 'Pemarkahan',
     href: '/markah',
-    items: ['setup', 'marks'],
+    items: ['marks'],
   },
   {
     key: 'reports',
@@ -40,8 +40,8 @@ const groupedMenu = [
   {
     key: 'settings',
     label: 'Tetapan',
-    href: '/pengguna',
-    items: ['users', 'changePassword'],
+    href: '/setup',
+    items: ['setup', 'users', 'changePassword'],
   },
 ];
 
@@ -50,7 +50,7 @@ const childLabels: Record<string, string> = {
   teachers: 'Guru',
   classes: 'Kelas',
   students: 'Murid',
-  setup: 'Subjek',
+  setup: 'Akses Markah',
   marks: 'Kelas',
   reports: 'Pusat Laporan',
   analysis: 'Analisis Subjek',
