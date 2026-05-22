@@ -20,7 +20,9 @@
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, rgba(244, 201, 79, 0.16), transparent 34rem),
+    linear-gradient(180deg, #f7faf4, #eef8ef 52%, #f8fbf4);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -269,6 +271,18 @@ h1 {
   gap: 14px;
   overflow: hidden;
   background: linear-gradient(135deg, #ffffff, #f2fbf2);
+}
+
+.dashboard-metric::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  bottom: -44px;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: rgba(244, 201, 79, 0.12);
+  pointer-events: none;
 }
 
 .metric-side {
@@ -1370,6 +1384,13 @@ button:disabled {
 }
 
 @media (max-width: 960px) {
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(244, 201, 79, 0.18), transparent 18rem),
+      radial-gradient(circle at 100% 22rem, rgba(11, 107, 58, 0.12), transparent 24rem),
+      linear-gradient(180deg, #f2fbf3 0%, #fbfdf7 42%, #f7faf4 100%);
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -1378,12 +1399,18 @@ button:disabled {
     position: sticky;
     top: 0;
     z-index: 20;
-    padding: 14px 16px;
-    box-shadow: 0 10px 24px rgba(16, 32, 51, 0.16);
+    padding: 14px 16px 16px;
+    background:
+      radial-gradient(circle at 20px 2px, rgba(244, 201, 79, 0.2), transparent 10rem),
+      linear-gradient(135deg, #022e19 0%, #064426 58%, #0b6b3a 100%);
+    border-bottom: 1px solid rgba(244, 201, 79, 0.2);
+    box-shadow: 0 16px 32px rgba(16, 32, 51, 0.2);
   }
 
   .brand {
+    align-items: center;
     margin-bottom: 12px;
+    padding-bottom: 12px;
   }
 
   .brand-mark {
@@ -1407,17 +1434,33 @@ button:disabled {
 
   .nav a {
     flex: 0 0 auto;
-    padding: 10px 12px;
+    padding: 10px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.82);
     white-space: nowrap;
+  }
+
+  .nav a:hover,
+  .nav a.active {
+    background: linear-gradient(135deg, rgba(244, 201, 79, 0.94), rgba(226, 244, 232, 0.9));
+    color: #062615;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
   }
 
   .date-clock {
     position: static;
     width: auto;
     margin-top: 10px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: baseline;
+    border-color: rgba(244, 201, 79, 0.46);
+    background:
+      linear-gradient(135deg, rgba(1, 35, 19, 0.82), rgba(6, 68, 38, 0.72));
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 10px 20px rgba(0, 0, 0, 0.12);
   }
 
   .date-clock small {
@@ -1436,8 +1479,13 @@ button:disabled {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     padding: 18px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(244, 201, 79, 0.16), transparent 12rem),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(237, 248, 239, 0.94)),
+      white;
+    border-bottom-color: #d4e6d5;
   }
 
   .topbar h1 {
@@ -1448,6 +1496,9 @@ button:disabled {
     width: 100%;
     max-width: none;
     justify-content: space-between;
+    border-color: #cfe0cf;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 22px rgba(2, 46, 25, 0.06);
   }
 
   .metric-grid,
@@ -1529,7 +1580,61 @@ button:disabled {
   }
 
   .topbar {
-    padding: 14px;
+    gap: 10px;
+    padding: 16px 14px;
+  }
+
+  .sidebar {
+    padding: 12px 16px 14px;
+  }
+
+  .brand {
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 0 0 10px;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  }
+
+  .brand strong {
+    font-size: 15px;
+  }
+
+  .brand small {
+    margin-top: 2px;
+    font-size: 13px;
+  }
+
+  .nav {
+    gap: 7px;
+    padding-bottom: 7px;
+  }
+
+  .nav a {
+    padding: 9px 11px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .date-clock {
+    min-height: 46px;
+    margin-top: 7px;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .date-clock strong {
+    font-size: 18px;
+  }
+
+  .date-clock span,
+  .date-clock small {
+    font-size: 11px;
   }
 
   .login-page {
@@ -1567,8 +1672,33 @@ button:disabled {
 
   h1,
   .topbar h1 {
-    font-size: 24px;
+    font-size: 25px;
     line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 15px;
+  }
+
+  .user-badge {
+    gap: 8px;
+    padding: 9px;
+    border-radius: 10px;
+  }
+
+  .user-badge strong {
+    font-size: 14px;
+  }
+
+  .user-badge small {
+    font-size: 12px;
+  }
+
+  .user-badge-link,
+  .user-badge button {
+    min-height: 36px;
+    border-radius: 9px;
+    font-size: 12px;
   }
 
   .eyebrow {
@@ -1582,11 +1712,13 @@ button:disabled {
 
   .dashboard-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 12px;
+    margin-top: 18px;
   }
 
   .dashboard-metrics .metric {
-    min-height: 112px;
+    min-height: 118px;
+    border-radius: 14px;
   }
 
   .dashboard-metrics .metric:nth-child(1),
@@ -1595,7 +1727,24 @@ button:disabled {
   }
 
   .dashboard-metric {
-    padding: 14px;
+    padding: 16px;
+    border-color: #dce9dc;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(244, 201, 79, 0.18), transparent 38%),
+      linear-gradient(135deg, #ffffff, #f1fbf3);
+    box-shadow: 0 12px 26px rgba(2, 46, 25, 0.09);
+  }
+
+  .dashboard-metric::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 0;
+    width: 4px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(180deg, var(--gold), var(--green));
+    opacity: 0.72;
   }
 
   .dashboard-metric:not(:has(.metric-breakdown)) {
@@ -1609,12 +1758,16 @@ button:disabled {
   .metric-accent {
     width: 42px;
     height: 42px;
+    border-radius: 11px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
   }
 
   .metric-breakdown {
-    min-width: 150px;
-    min-height: 72px;
-    padding: 9px;
+    min-width: 162px;
+    min-height: 78px;
+    padding: 10px;
+    border: 1px solid rgba(244, 201, 79, 0.34);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
   }
 
   .metric-breakdown span {
@@ -1627,8 +1780,9 @@ button:disabled {
   }
 
   .welcome-title {
-    margin: 18px 14px 0;
-    font-size: 18px;
+    margin: 20px 14px 2px;
+    font-size: 17px;
+    line-height: 1.35;
   }
 
   .grade-scale {
@@ -1652,6 +1806,8 @@ button:disabled {
   .completion-button {
     min-height: 72px;
     padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff, #fbfff7);
   }
 
   .completion-button strong {
@@ -1665,6 +1821,8 @@ button:disabled {
 
   .zone-completion-card {
     padding: 9px;
+    border-radius: 12px;
+    background: rgba(255, 250, 240, 0.78);
   }
 
   .zone-completion-card span,
@@ -1674,6 +1832,20 @@ button:disabled {
 
   .completion-chart {
     padding: 12px;
+    border-radius: 12px;
+  }
+
+  .dashboard-insight-panel,
+  .completion-panel {
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 12px 26px rgba(2, 46, 25, 0.07);
+  }
+
+  .dashboard-insight-panel h2,
+  .completion-panel h2 {
+    font-size: 22px;
+    line-height: 1.25;
   }
 
   .rank-item {
