@@ -80,7 +80,6 @@ a {
 }
 
 .nav a,
-.nav summary,
 .nav-logout {
   padding: 11px 12px;
   border-radius: 8px;
@@ -89,32 +88,21 @@ a {
   font-weight: 700;
 }
 
-.nav summary {
+.nav-group-link {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  list-style: none;
-  cursor: pointer;
 }
 
-.nav summary::-webkit-details-marker {
-  display: none;
-}
-
-.nav summary::after {
+.nav-group-link::after {
   content: '›';
   color: rgba(255, 255, 255, 0.6);
-  transition: transform 0.18s ease;
-}
-
-.nav-group[open] summary::after {
-  transform: rotate(90deg);
 }
 
 .nav a:hover,
 .nav a.active,
-.nav summary:hover,
-.nav summary.active {
+.nav-group-link:hover,
+.nav-group-link.active {
   background: var(--nav-2);
   color: white;
 }
@@ -1505,7 +1493,6 @@ button:disabled {
   }
 
   .nav a,
-  .nav summary,
   .nav-logout {
     flex: 0 0 auto;
     padding: 10px 13px;
@@ -1517,15 +1504,11 @@ button:disabled {
 
   .nav a:hover,
   .nav a.active,
-  .nav summary:hover,
-  .nav summary.active {
+  .nav-group-link:hover,
+  .nav-group-link.active {
     background: linear-gradient(135deg, rgba(244, 201, 79, 0.94), rgba(226, 244, 232, 0.9));
     color: #062615;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
-  }
-
-  .nav summary::after {
-    margin-left: 8px;
   }
 
   .nav-submenu {
@@ -1719,7 +1702,6 @@ button:disabled {
   }
 
   .nav a,
-  .nav summary,
   .nav-logout {
     padding: 9px 11px;
     border-radius: 10px;
@@ -1862,7 +1844,8 @@ button:disabled {
   }
 
   .metric-side {
-    min-width: 116px;
+    width: clamp(174px, 42vw, 232px);
+    min-width: clamp(174px, 42vw, 232px);
   }
 
   .metric-accent {
@@ -1873,8 +1856,9 @@ button:disabled {
   }
 
   .metric-breakdown {
-    min-width: 162px;
-    min-height: 78px;
+    width: 100%;
+    min-width: 0;
+    min-height: 86px;
     padding: 10px;
     border: 1px solid rgba(244, 201, 79, 0.34);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
@@ -2076,7 +2060,6 @@ button:disabled {
   }
 
   .nav a,
-  .nav summary,
   .nav-logout {
     padding: 8px 10px;
     border-radius: 9px;
@@ -2148,7 +2131,8 @@ button:disabled {
   }
 
   .metric-side {
-    min-width: 104px;
+    width: clamp(176px, 48vw, 232px);
+    min-width: clamp(176px, 48vw, 232px);
   }
 
   .metric-accent {
@@ -2157,8 +2141,9 @@ button:disabled {
   }
 
   .metric-breakdown {
-    min-width: 170px;
-    min-height: 70px;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
     padding: 9px 10px;
     column-gap: 12px;
     row-gap: 5px;

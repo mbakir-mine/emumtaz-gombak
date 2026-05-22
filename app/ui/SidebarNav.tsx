@@ -89,16 +89,20 @@ export default function SidebarNav({ active }: { active: string }) {
   return (
     <nav className="nav">
       {groups.map((group) => (
-        <details className="nav-group" key={group.key} open={group.isActive}>
-          <summary className={group.isActive ? 'active' : ''}>{group.label}</summary>
-          <div className="nav-submenu">
-            {group.children.map((item) => (
-              <Link className={active === item!.key ? 'active' : ''} href={item!.href} key={item!.key}>
-                {childLabels[item!.key] ?? item!.label}
-              </Link>
-            ))}
-          </div>
-        </details>
+        <div className="nav-group" key={group.key}>
+          <Link className={`nav-group-link ${group.isActive ? 'active' : ''}`} href={group.href}>
+            {group.label}
+          </Link>
+          {group.isActive && group.children.length > 1 && (
+            <div className="nav-submenu">
+              {group.children.map((item) => (
+                <Link className={active === item!.key ? 'active' : ''} href={item!.href} key={item!.key}>
+                  {childLabels[item!.key] ?? item!.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       ))}
       <button className="nav-logout" type="button" onClick={logout}>
         Keluar
