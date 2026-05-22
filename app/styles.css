@@ -1769,19 +1769,26 @@ button:disabled {
 
   .user-badge {
     gap: 8px;
-    padding: 9px;
+    padding: 0;
+    border: 0;
     border-radius: 10px;
+    background: transparent;
+    box-shadow: none;
   }
 
   .user-badge div {
     min-width: 0;
+    padding: 8px 0 0;
+    border-top: 1px solid rgba(11, 107, 58, 0.12);
   }
 
   .user-badge strong {
+    display: block;
     font-size: 14px;
   }
 
   .user-badge small {
+    display: block;
     font-size: 12px;
   }
 
