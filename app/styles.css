@@ -975,6 +975,11 @@ th {
   gap: 14px;
 }
 
+.teacher-form-grid {
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 14px 16px;
+}
+
 .inline-form {
   gap: 12px 16px;
 }
@@ -1011,6 +1016,79 @@ th {
 
 .import-form .form-actions {
   grid-column: 1 / -1;
+}
+
+.teacher-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.teacher-summary-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 142px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(237, 248, 239, 0.9)),
+    white;
+}
+
+.teacher-summary-card span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.teacher-summary-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.teacher-count-list {
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 201, 79, 0.7), rgba(226, 244, 232, 0.7));
+}
+
+.teacher-count-list span {
+  display: grid;
+  grid-template-columns: minmax(104px, 1fr) 8px 32px;
+  gap: 5px;
+  align-items: baseline;
+  color: #263b2e;
+}
+
+.teacher-count-list em,
+.teacher-count-list i {
+  font-style: normal;
+}
+
+.teacher-count-list em {
+  text-align: right;
+}
+
+.teacher-count-list b {
+  color: #052615;
+  text-align: right;
+}
+
+.list-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 14px;
 }
 
 .form-actions {
@@ -1865,6 +1943,14 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .teacher-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .teacher-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .inline-form label {
     grid-template-columns: 1fr;
     gap: 6px;
@@ -2042,6 +2128,39 @@ button:disabled {
 
   .metric-grid,
   .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-summary-grid {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .teacher-summary-card {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .teacher-summary-card strong {
+    font-size: 28px;
+  }
+
+  .teacher-count-list {
+    min-width: 174px;
+    padding: 9px 10px;
+  }
+
+  .teacher-count-list span {
+    grid-template-columns: minmax(96px, 1fr) 7px 28px;
+    font-size: 12px;
+  }
+
+  .list-choice-row {
+    display: grid;
     grid-template-columns: 1fr;
   }
 

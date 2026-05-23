@@ -17,7 +17,7 @@ export default function TeacherForm({ schools }: { schools: School[] }) {
   const scopedSchools = scopeSchools(profile, schools);
 
   return (
-    <form action={action} className="form-grid">
+    <form action={action} className="form-grid teacher-form-grid">
       <label>
         Sekolah
         <select name="kod_sekolah" required>
