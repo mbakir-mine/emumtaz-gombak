@@ -80,7 +80,7 @@ identity_upsert as (
     updated_at
   )
   select
-    au.id::text,
+    au.id,
     au.id,
     au.email,
     jsonb_build_object('sub', au.id::text, 'email', au.email, 'email_verified', true),
