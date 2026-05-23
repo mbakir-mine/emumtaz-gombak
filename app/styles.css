@@ -464,6 +464,35 @@ h1 {
   line-height: 1;
 }
 
+.school-count-button {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.school-count-button:hover,
+.school-count-button:focus-visible {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.school-count-button strong {
+  color: var(--ink);
+  font-size: 40px;
+  line-height: 1;
+}
+
+.school-count-button b {
+  color: #052615;
+}
+
 .school-summary-card > strong {
   color: var(--ink);
   font-size: 34px;
@@ -2038,7 +2067,8 @@ button:disabled {
     gap: 8px;
   }
 
-  .school-summary-main > strong {
+  .school-summary-main > strong,
+  .school-count-button strong {
     font-size: 28px;
   }
 

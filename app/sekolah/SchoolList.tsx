@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { School } from '@/lib/data';
 import type { AccessProfile } from '@/lib/access';
 import { useAccessProfile } from '../ui/AuthGate';
@@ -41,7 +42,44 @@ function zoneBreakdown(schools: School[], categories: string[]) {
   }));
 }
 
-function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | null; schools: School[] }) {
+type SchoolFilter = {
+  label: string;
+  categories?: string[];
+  zone?: string;
+};
+
+function matchesFilter(school: School, filter: SchoolFilter | null) {
+  if (!filter) return false;
+  if (filter.zone && school.zon !== filter.zone) return false;
+  if (filter.categories && !filter.categories.includes(categoryOf(school))) return false;
+  return true;
+}
+
+function CountButton({
+  children,
+  filter,
+  onSelect,
+}: {
+  children: ReactNode;
+  filter: SchoolFilter;
+  onSelect: (filter: SchoolFilter) => void;
+}) {
+  return (
+    <button type="button" className="school-count-button" onClick={() => onSelect(filter)}>
+      {children}
+    </button>
+  );
+}
+
+function SchoolSummaryCards({
+  profile,
+  schools,
+  onSelect,
+}: {
+  profile: AccessProfile | null;
+  schools: School[];
+  onSelect: (filter: SchoolFilter) => void;
+}) {
   const breakdown = categoryBreakdown(schools);
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
   const sraSraiTotal = countByCategory(schools, ['SRA', 'SRAI']);
@@ -56,22 +94,30 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
           <small>{scopeLabel}</small>
         </div>
         <div className="school-summary-main">
-          <strong>{schools.length}</strong>
+          <CountButton filter={{ label: `Semua sekolah ${scopeLabel}` }} onSelect={onSelect}>
+            <strong>{schools.length}</strong>
+          </CountButton>
           <div className="school-count-list">
             <span>
               <em>SRAI</em>
               <i>:</i>
-              <b>{breakdown.srai}</b>
+              <CountButton filter={{ label: `SRAI ${scopeLabel}`, categories: ['SRAI'] }} onSelect={onSelect}>
+                <b>{breakdown.srai}</b>
+              </CountButton>
             </span>
             <span>
               <em>SRA</em>
               <i>:</i>
-              <b>{breakdown.sra}</b>
+              <CountButton filter={{ label: `SRA ${scopeLabel}`, categories: ['SRA'] }} onSelect={onSelect}>
+                <b>{breakdown.sra}</b>
+              </CountButton>
             </span>
             <span>
               <em>KAFAI</em>
               <i>:</i>
-              <b>{breakdown.kafai}</b>
+              <CountButton filter={{ label: `KAFAI ${scopeLabel}`, categories: ['KAFAI'] }} onSelect={onSelect}>
+                <b>{breakdown.kafai}</b>
+              </CountButton>
             </span>
           </div>
         </div>
@@ -83,19 +129,28 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
           <small>{scopeLabel}</small>
         </div>
         <div className="school-summary-main">
-          <strong>{sraSraiTotal}</strong>
+          <CountButton
+            filter={{ label: `SRA & SRAI ${scopeLabel}`, categories: ['SRA', 'SRAI'] }}
+            onSelect={onSelect}
+          >
+            <strong>{sraSraiTotal}</strong>
+          </CountButton>
           <div className="school-zone-list">
             {isZoneAdmin ? (
               <>
                 <span>
                   <em>SRAI</em>
                   <i>:</i>
-                  <b>{breakdown.srai}</b>
+                  <CountButton filter={{ label: `SRAI ${scopeLabel}`, categories: ['SRAI'] }} onSelect={onSelect}>
+                    <b>{breakdown.srai}</b>
+                  </CountButton>
                 </span>
                 <span>
                   <em>SRA</em>
                   <i>:</i>
-                  <b>{breakdown.sra}</b>
+                  <CountButton filter={{ label: `SRA ${scopeLabel}`, categories: ['SRA'] }} onSelect={onSelect}>
+                    <b>{breakdown.sra}</b>
+                  </CountButton>
                 </span>
               </>
             ) : (
@@ -103,7 +158,12 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
                 <span key={item.zone}>
                   <em>{zoneText(item.zone)}</em>
                   <i>:</i>
-                  <b>{item.count}</b>
+                  <CountButton
+                    filter={{ label: `SRA & SRAI ${zoneText(item.zone)}`, categories: ['SRA', 'SRAI'], zone: item.zone }}
+                    onSelect={onSelect}
+                  >
+                    <b>{item.count}</b>
+                  </CountButton>
                 </span>
               ))
             )}
@@ -117,20 +177,29 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
           <small>{scopeLabel}</small>
         </div>
         <div className="school-summary-main">
-          <strong>{kafaiTotal}</strong>
+          <CountButton filter={{ label: `KAFAI ${scopeLabel}`, categories: ['KAFAI'] }} onSelect={onSelect}>
+            <strong>{kafaiTotal}</strong>
+          </CountButton>
           <div className="school-zone-list">
             {isZoneAdmin ? (
               <span>
                 <em>KAFAI</em>
                 <i>:</i>
-                <b>{breakdown.kafai}</b>
+                <CountButton filter={{ label: `KAFAI ${scopeLabel}`, categories: ['KAFAI'] }} onSelect={onSelect}>
+                  <b>{breakdown.kafai}</b>
+                </CountButton>
               </span>
             ) : (
               zoneBreakdown(schools, ['KAFAI']).map((item) => (
                 <span key={item.zone}>
                   <em>{zoneText(item.zone)}</em>
                   <i>:</i>
-                  <b>{item.count}</b>
+                  <CountButton
+                    filter={{ label: `KAFAI ${zoneText(item.zone)}`, categories: ['KAFAI'], zone: item.zone }}
+                    onSelect={onSelect}
+                  >
+                    <b>{item.count}</b>
+                  </CountButton>
                 </span>
               ))
             )}
@@ -144,27 +213,33 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
 export default function SchoolList({ schools }: { schools: School[] }) {
   const profile = useAccessProfile();
   const [query, setQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<SchoolFilter | null>(null);
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const assignedZones = scopedSchools.filter((school) => school.zon).length;
   const canEditZone = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
   const filteredSchools = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return scopedSchools;
+    const baseSchools = selectedFilter ? scopedSchools.filter((school) => matchesFilter(school, selectedFilter)) : [];
+    if (!term) return baseSchools;
 
-    return scopedSchools.filter((school) =>
+    return (selectedFilter ? baseSchools : scopedSchools).filter((school) =>
       [school.kod_sekolah, school.nama_sekolah, school.kategori, school.daerah, school.zon, school.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [query, scopedSchools]);
+  }, [query, scopedSchools, selectedFilter]);
+  const shouldShowList = Boolean(selectedFilter) || query.trim().length > 0;
 
   return (
     <>
-      <SchoolSummaryCards profile={profile} schools={scopedSchools} />
+      <SchoolSummaryCards profile={profile} schools={scopedSchools} onSelect={setSelectedFilter} />
       <div className="panel-head">
-        <h2>Sekolah</h2>
+        <div>
+          <h2>Carian Sekolah</h2>
+          {selectedFilter ? <p className="table-note">Paparan: {selectedFilter.label}</p> : null}
+        </div>
         <span>
           {filteredSchools.length} / {scopedSchools.length} rekod - {assignedZones} berzon
         </span>
@@ -173,12 +248,18 @@ export default function SchoolList({ schools }: { schools: School[] }) {
         <input
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            if (!event.target.value.trim()) return;
+            setSelectedFilter(null);
+          }}
           placeholder="Cari kod, nama sekolah, kategori, zon atau status"
           aria-label="Cari sekolah"
         />
       </div>
-      {filteredSchools.length === 0 ? (
+      {!shouldShowList ? (
+        <p className="empty">Klik angka pada kad di atas atau gunakan carian untuk memaparkan senarai sekolah.</p>
+      ) : filteredSchools.length === 0 ? (
         <p className="empty">Tiada rekod sekolah sepadan dengan carian.</p>
       ) : (
         <div className="table-scroll">
