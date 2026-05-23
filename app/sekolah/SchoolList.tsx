@@ -2,13 +2,112 @@
 
 import { useMemo, useState } from 'react';
 import type { School } from '@/lib/data';
+import type { AccessProfile } from '@/lib/access';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeSchools } from '../ui/scopedData';
 import SchoolZoneForm from './SchoolZoneForm';
 
+const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
+
 function zoneText(zon: string | null) {
   if (!zon) return 'Belum ditetapkan';
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
+}
+
+function categoryOf(school: School) {
+  return (school.kategori || '').toUpperCase();
+}
+
+function countByCategory(schools: School[], categories: string[]) {
+  const allowed = new Set(categories);
+  return schools.filter((school) => allowed.has(categoryOf(school))).length;
+}
+
+function categoryBreakdown(schools: School[]) {
+  return {
+    srai: countByCategory(schools, ['SRAI']),
+    sra: countByCategory(schools, ['SRA']),
+    kafai: countByCategory(schools, ['KAFAI']),
+  };
+}
+
+function zoneBreakdown(schools: School[], categories: string[]) {
+  return zoneOrder.map((zone) => ({
+    zone,
+    count: countByCategory(
+      schools.filter((school) => school.zon === zone),
+      categories,
+    ),
+  }));
+}
+
+function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | null; schools: School[] }) {
+  const breakdown = categoryBreakdown(schools);
+  const isZoneAdmin = profile?.role === 'ADMIN_ZON';
+  const sraSraiTotal = countByCategory(schools, ['SRA', 'SRAI']);
+  const kafaiTotal = countByCategory(schools, ['KAFAI']);
+
+  return (
+    <div className="school-summary-grid">
+      <article className="school-summary-card">
+        <span>{isZoneAdmin ? `Sekolah ${zoneText(profile?.zon ?? null)}` : 'Sekolah Daerah'}</span>
+        <strong>{schools.length}</strong>
+        <div className="school-count-list">
+          <span>
+            <em>SRAI</em>
+            <i>:</i>
+            <b>{breakdown.srai}</b>
+          </span>
+          <span>
+            <em>SRA</em>
+            <i>:</i>
+            <b>{breakdown.sra}</b>
+          </span>
+          <span>
+            <em>KAFAI</em>
+            <i>:</i>
+            <b>{breakdown.kafai}</b>
+          </span>
+        </div>
+      </article>
+
+      <article className="school-summary-card">
+        <span>{isZoneAdmin ? 'SRA & SRAI Zon' : 'SRA & SRAI Daerah'}</span>
+        <strong>{sraSraiTotal}</strong>
+        {!isZoneAdmin ? (
+          <div className="school-zone-list">
+            {zoneBreakdown(schools, ['SRA', 'SRAI']).map((item) => (
+              <span key={item.zone}>
+                <em>{zoneText(item.zone)}</em>
+                <i>:</i>
+                <b>{item.count}</b>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p>Sekolah agama rendah dalam zon semasa.</p>
+        )}
+      </article>
+
+      <article className="school-summary-card">
+        <span>{isZoneAdmin ? 'KAFAI Zon' : 'KAFAI Daerah'}</span>
+        <strong>{kafaiTotal}</strong>
+        {!isZoneAdmin ? (
+          <div className="school-zone-list">
+            {zoneBreakdown(schools, ['KAFAI']).map((item) => (
+              <span key={item.zone}>
+                <em>{zoneText(item.zone)}</em>
+                <i>:</i>
+                <b>{item.count}</b>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p>KAFAI dalam zon semasa.</p>
+        )}
+      </article>
+    </div>
+  );
 }
 
 export default function SchoolList({ schools }: { schools: School[] }) {
@@ -32,6 +131,7 @@ export default function SchoolList({ schools }: { schools: School[] }) {
 
   return (
     <>
+      <SchoolSummaryCards profile={profile} schools={scopedSchools} />
       <div className="panel-head">
         <h2>Sekolah</h2>
         <span>

@@ -418,6 +418,80 @@ h1 {
   padding: 22px;
 }
 
+.school-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.school-summary-card {
+  display: grid;
+  gap: 10px;
+  min-height: 158px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(237, 248, 239, 0.9)),
+    white;
+}
+
+.school-summary-card > span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.school-summary-card > strong {
+  color: var(--ink);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.school-summary-card > p {
+  align-self: end;
+  margin: 0;
+  color: var(--muted);
+}
+
+.school-count-list,
+.school-zone-list {
+  display: grid;
+  gap: 6px;
+  align-self: end;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 201, 79, 0.7), rgba(226, 244, 232, 0.7));
+}
+
+.school-count-list span,
+.school-zone-list span {
+  display: grid;
+  grid-template-columns: minmax(88px, 1fr) 8px 34px;
+  gap: 5px;
+  align-items: baseline;
+  color: #263b2e;
+}
+
+.school-count-list em,
+.school-count-list i,
+.school-zone-list em,
+.school-zone-list i {
+  font-style: normal;
+}
+
+.school-count-list em,
+.school-zone-list em {
+  text-align: right;
+}
+
+.school-count-list b,
+.school-zone-list b {
+  color: #052615;
+  text-align: right;
+}
+
 .panel-head {
   display: flex;
   justify-content: space-between;
@@ -1686,6 +1760,10 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .school-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-split {
     grid-template-columns: 1fr;
   }
@@ -1913,6 +1991,26 @@ button:disabled {
   .metric-grid,
   .card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .school-summary-grid {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .school-summary-card {
+    min-height: 0;
+    padding: 15px;
+  }
+
+  .school-summary-card > strong {
+    font-size: 30px;
+  }
+
+  .school-count-list span,
+  .school-zone-list span {
+    grid-template-columns: minmax(96px, 1fr) 8px 34px;
+    font-size: 13px;
   }
 
   .dashboard-metrics {
