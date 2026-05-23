@@ -46,65 +46,96 @@ function SchoolSummaryCards({ profile, schools }: { profile: AccessProfile | nul
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
   const sraSraiTotal = countByCategory(schools, ['SRA', 'SRAI']);
   const kafaiTotal = countByCategory(schools, ['KAFAI']);
+  const scopeLabel = isZoneAdmin ? zoneText(profile?.zon ?? null) : 'Daerah Gombak';
 
   return (
     <div className="school-summary-grid">
       <article className="school-summary-card">
-        <span>{isZoneAdmin ? `Sekolah ${zoneText(profile?.zon ?? null)}` : 'Sekolah Daerah'}</span>
-        <strong>{schools.length}</strong>
-        <div className="school-count-list">
-          <span>
-            <em>SRAI</em>
-            <i>:</i>
-            <b>{breakdown.srai}</b>
-          </span>
-          <span>
-            <em>SRA</em>
-            <i>:</i>
-            <b>{breakdown.sra}</b>
-          </span>
-          <span>
-            <em>KAFAI</em>
-            <i>:</i>
-            <b>{breakdown.kafai}</b>
-          </span>
+        <div className="school-summary-title">
+          <span>Jumlah Sekolah</span>
+          <small>{scopeLabel}</small>
+        </div>
+        <div className="school-summary-main">
+          <strong>{schools.length}</strong>
+          <div className="school-count-list">
+            <span>
+              <em>SRAI</em>
+              <i>:</i>
+              <b>{breakdown.srai}</b>
+            </span>
+            <span>
+              <em>SRA</em>
+              <i>:</i>
+              <b>{breakdown.sra}</b>
+            </span>
+            <span>
+              <em>KAFAI</em>
+              <i>:</i>
+              <b>{breakdown.kafai}</b>
+            </span>
+          </div>
         </div>
       </article>
 
       <article className="school-summary-card">
-        <span>{isZoneAdmin ? 'SRA & SRAI Zon' : 'SRA & SRAI Daerah'}</span>
-        <strong>{sraSraiTotal}</strong>
-        {!isZoneAdmin ? (
+        <div className="school-summary-title">
+          <span>SRA & SRAI</span>
+          <small>{scopeLabel}</small>
+        </div>
+        <div className="school-summary-main">
+          <strong>{sraSraiTotal}</strong>
           <div className="school-zone-list">
-            {zoneBreakdown(schools, ['SRA', 'SRAI']).map((item) => (
-              <span key={item.zone}>
-                <em>{zoneText(item.zone)}</em>
-                <i>:</i>
-                <b>{item.count}</b>
-              </span>
-            ))}
+            {isZoneAdmin ? (
+              <>
+                <span>
+                  <em>SRAI</em>
+                  <i>:</i>
+                  <b>{breakdown.srai}</b>
+                </span>
+                <span>
+                  <em>SRA</em>
+                  <i>:</i>
+                  <b>{breakdown.sra}</b>
+                </span>
+              </>
+            ) : (
+              zoneBreakdown(schools, ['SRA', 'SRAI']).map((item) => (
+                <span key={item.zone}>
+                  <em>{zoneText(item.zone)}</em>
+                  <i>:</i>
+                  <b>{item.count}</b>
+                </span>
+              ))
+            )}
           </div>
-        ) : (
-          <p>Sekolah agama rendah dalam zon semasa.</p>
-        )}
+        </div>
       </article>
 
       <article className="school-summary-card">
-        <span>{isZoneAdmin ? 'KAFAI Zon' : 'KAFAI Daerah'}</span>
-        <strong>{kafaiTotal}</strong>
-        {!isZoneAdmin ? (
+        <div className="school-summary-title">
+          <span>KAFAI</span>
+          <small>{scopeLabel}</small>
+        </div>
+        <div className="school-summary-main">
+          <strong>{kafaiTotal}</strong>
           <div className="school-zone-list">
-            {zoneBreakdown(schools, ['KAFAI']).map((item) => (
-              <span key={item.zone}>
-                <em>{zoneText(item.zone)}</em>
+            {isZoneAdmin ? (
+              <span>
+                <em>KAFAI</em>
                 <i>:</i>
-                <b>{item.count}</b>
+                <b>{breakdown.kafai}</b>
               </span>
-            ))}
+            ) : (
+              zoneBreakdown(schools, ['KAFAI']).map((item) => (
+                <span key={item.zone}>
+                  <em>{zoneText(item.zone)}</em>
+                  <i>:</i>
+                  <b>{item.count}</b>
+                </span>
+              ))
+            )}
           </div>
-        ) : (
-          <p>KAFAI dalam zon semasa.</p>
-        )}
+        </div>
       </article>
     </div>
   );
