@@ -2023,19 +2023,24 @@ button:disabled {
   }
 
   .zone-completion-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 
   .zone-completion-card {
-    padding: 9px;
+    min-height: 86px;
+    padding: 9px 8px;
     border-radius: 12px;
     background: rgba(255, 250, 240, 0.78);
   }
 
   .zone-completion-card span,
   .zone-completion-card small {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .zone-completion-card strong {
+    font-size: 13px;
   }
 
   .completion-chart {

@@ -327,7 +327,7 @@ function CompletionList({
 }
 
 function ZoneCompletionSummary({ rows }: { rows: MarkCompletionSchool[] }) {
-  const zones = ['BARAT', 'TIMUR', 'TENGAH'];
+  const zones = ['BARAT', 'TENGAH', 'TIMUR'];
 
   return (
     <div className="zone-completion-grid">
@@ -364,7 +364,7 @@ function CompletionChart({
         const done = rows.filter((row) => row.complete).length;
         return { label: `T${tahun}`, total, done };
       })
-    : ['BARAT', 'TIMUR', 'TENGAH'].map((zon) => {
+    : ['BARAT', 'TENGAH', 'TIMUR'].map((zon) => {
         const rows = schools.filter((row) => row.zon === zon);
         const total = rows.length;
         const done = rows.filter((row) => row.complete).length;
