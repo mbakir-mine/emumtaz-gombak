@@ -56,18 +56,39 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const profileResult = await withTimeout(
-          Promise.resolve(supabase
-            .from('app_users')
-            .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
-            .eq('email', email.toLowerCase())
-            .eq('status', 'AKTIF')
-            .limit(10)),
+        let profileResult = await withTimeout(
+          Promise.resolve(
+            supabase
+              .from('app_users')
+              .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
+              .eq('email', email.toLowerCase())
+              .eq('status', 'AKTIF')
+              .limit(10),
+          ),
         );
-        const { data, error } = profileResult as {
+        let { data, error } = profileResult as {
           data: unknown[] | null;
           error: { message: string } | null;
         };
+
+        if (error?.message?.includes('must_change_password')) {
+          const fallbackResult = await withTimeout(
+            Promise.resolve(
+              supabase
+                .from('app_users')
+                .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+                .eq('email', email.toLowerCase())
+                .eq('status', 'AKTIF')
+                .limit(10),
+            ),
+          );
+          const fallback = fallbackResult as {
+            data: unknown[] | null;
+            error: { message: string } | null;
+          };
+          data = (fallback.data ?? []).map((item) => ({ ...(item as object), must_change_password: false }));
+          error = fallback.error;
+        }
 
         if (cancelled) return;
 

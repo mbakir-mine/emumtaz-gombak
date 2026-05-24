@@ -35,12 +35,24 @@ export default function AksesPage() {
         return;
       }
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('app_users')
         .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
         .eq('email', email)
         .eq('status', 'AKTIF')
         .order('role');
+
+      if (error?.message?.includes('must_change_password')) {
+        const fallback = await supabase
+          .from('app_users')
+          .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+          .eq('email', email)
+          .eq('status', 'AKTIF')
+          .order('role');
+
+        data = (fallback.data ?? []).map((item) => ({ ...item, must_change_password: false }));
+        error = fallback.error;
+      }
 
       if (error) {
         setMessage('Ralat membaca profil akses.');
