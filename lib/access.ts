@@ -57,6 +57,27 @@ export function choosePrimaryProfile(profiles: AccessProfile[]) {
   return [...profiles].sort((a, b) => roleRank[a.role] - roleRank[b.role])[0] ?? null;
 }
 
+export function uniqueAccessProfiles(profiles: AccessProfile[]) {
+  const seen = new Set<string>();
+
+  return profiles.filter((profile) => {
+    const key = [
+      profile.email.toLowerCase(),
+      profile.role,
+      profile.kod_sekolah ?? '',
+      profile.zon ?? '',
+      profile.status,
+    ].join('|');
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export function roleLabel(role: string) {
   const labels: Record<string, string> = {
     OWNER: 'Pentadbir Utama',

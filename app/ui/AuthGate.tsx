@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
-import { canAccessPath, choosePrimaryProfile, type AccessProfile } from '@/lib/access';
+import { canAccessPath, choosePrimaryProfile, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 const publicPaths = ['/login', '/daftar', '/akses'];
@@ -77,7 +77,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const profiles = (data ?? []) as AccessProfile[];
+        const profiles = uniqueAccessProfiles((data ?? []) as AccessProfile[]);
         const selectedProfileId = window.localStorage.getItem(selectedProfileKey);
         const selectedProfile = selectedProfileId
           ? profiles.find((item) => item.id === selectedProfileId) ?? null

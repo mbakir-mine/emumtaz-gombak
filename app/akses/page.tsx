@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { roleLabel, type AccessProfile } from '@/lib/access';
+import { roleLabel, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
@@ -48,7 +48,7 @@ export default function AksesPage() {
         return;
       }
 
-      const activeProfiles = (data ?? []) as AccessProfile[];
+      const activeProfiles = uniqueAccessProfiles((data ?? []) as AccessProfile[]);
       if (activeProfiles.length === 0) {
         setMessage('Tiada profil aktif ditemui untuk email ini.');
         setLoading(false);
