@@ -24,7 +24,7 @@ export const allRoles: UserRole[] = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMI
 export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/', roles: allRoles },
   { key: 'schools', label: 'Sekolah', href: '/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON'] },
-  { key: 'teachers', label: 'Guru & Pengguna', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'teachers', label: 'Guru & Pengguna', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
@@ -36,6 +36,7 @@ export const navItems: NavItem[] = [
   { key: 'reportSubject', label: 'Laporan Subjek', href: '/laporan/subjek', roles: allRoles },
   { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
+  { key: 'profile', label: 'Kemaskini Profil', href: '/profil', roles: allRoles, hidden: true },
   { key: 'changePassword', label: 'Tukar Password', href: '/tukar-password', roles: allRoles, hidden: true },
   { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },
   { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
@@ -95,6 +96,10 @@ export function canAccessPath(role: UserRole, pathname: string, allowedNav?: str
   }
 
   if (role === 'OWNER') {
+    return true;
+  }
+
+  if (matchedItem.hidden) {
     return true;
   }
 

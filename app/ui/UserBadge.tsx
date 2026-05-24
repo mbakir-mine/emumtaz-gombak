@@ -13,9 +13,14 @@ export default function UserBadge() {
         <strong>{profile ? roleLabel(profile.role) : 'Pengguna'}</strong>
         {profile?.nama && <small>{profile.nama}</small>}
       </div>
-      <Link className="user-switch-link" href="/akses">
-        Tukar Akses
-      </Link>
+      <div className="user-badge-actions">
+        <Link className="user-switch-link" href="/profil">
+          Kemaskini Profil
+        </Link>
+        <Link className="user-switch-link" href="/akses">
+          Tukar Akses
+        </Link>
+      </div>
     </div>
   );
 }
