@@ -59,7 +59,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         const profileResult = await withTimeout(
           Promise.resolve(supabase
             .from('app_users')
-            .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+            .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
             .eq('email', email.toLowerCase())
             .eq('status', 'AKTIF')
             .limit(10)),
@@ -92,6 +92,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         if (profiles.length > 1 && !selectedProfile) {
           router.replace('/akses');
+          return;
+        }
+
+        if (activeProfile.must_change_password && pathname !== '/tukar-password') {
+          router.replace('/tukar-password');
           return;
         }
 

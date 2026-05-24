@@ -9,6 +9,7 @@ export type AccessProfile = {
   zon: string | null;
   status: string;
   allowed_nav?: string[] | null;
+  must_change_password?: boolean | null;
 };
 
 export type NavItem = {

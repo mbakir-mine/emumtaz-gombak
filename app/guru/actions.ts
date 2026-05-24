@@ -37,6 +37,7 @@ export async function createTeacher(
       role,
       kod_sekolah: kodSekolah,
       status: 'AKTIF',
+      must_change_password: true,
     },
     {
       onConflict: 'email,role,kod_sekolah',
@@ -95,6 +96,7 @@ export async function importTeachers(
           : pickValue(row, ['kod_sekolah', 'kod sekolah', 'sekolah']).toUpperCase(),
         zon: role === 'ADMIN_ZON' ? pickValue(row, ['zon']).toUpperCase() : null,
         status: pickValue(row, ['status']).toUpperCase() || defaultStatus,
+        must_change_password: true,
       };
     })
     .filter((row) => row.nama && row.email && allowedImportRoles.includes(row.role));

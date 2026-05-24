@@ -40,7 +40,7 @@ export async function updateUserStatus(
     return { ok: false, message: 'Sila pilih zon untuk Admin Zon.' };
   }
 
-  const { data: user } = await supabase.from('app_users').select('role').eq('id', id).maybeSingle();
+  const { data: user } = await supabase.from('app_users').select('role,status').eq('id', id).maybeSingle();
 
   if (user?.role === 'OWNER') {
     return { ok: false, message: 'Akaun Pentadbir Utama tidak boleh diubah.' };
@@ -52,6 +52,7 @@ export async function updateUserStatus(
     zon?: string | null;
     kod_sekolah?: string | null;
     allowed_nav?: string[] | null;
+    must_change_password?: boolean;
   } = { role, status };
 
   if (role === 'ADMIN_DAERAH') {
@@ -65,6 +66,10 @@ export async function updateUserStatus(
   }
 
   updates.allowed_nav = allowedNav.length > 0 ? allowedNav : null;
+
+  if (status === 'AKTIF' && user?.status !== 'AKTIF') {
+    updates.must_change_password = true;
+  }
 
   const { error } = await supabase.from('app_users').update(updates).eq('id', id);
 

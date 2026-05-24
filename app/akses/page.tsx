@@ -37,7 +37,7 @@ export default function AksesPage() {
 
       const { data, error } = await supabase
         .from('app_users')
-        .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+        .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
         .eq('email', email)
         .eq('status', 'AKTIF')
         .order('role');

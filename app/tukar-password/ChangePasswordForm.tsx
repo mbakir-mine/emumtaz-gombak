@@ -55,12 +55,19 @@ export default function ChangePasswordForm() {
     }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       setMessage(`Gagal tukar password: ${error.message}`);
       return;
     }
+
+    await supabase
+      .from('app_users')
+      .update({ must_change_password: false })
+      .eq('email', email.toLowerCase());
+
+    setLoading(false);
 
     setCurrentPassword('');
     setNewPassword('');
