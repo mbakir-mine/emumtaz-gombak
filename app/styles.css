@@ -239,22 +239,26 @@ h1 {
 .user-badge {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  max-width: 320px;
+  min-width: 300px;
+  max-width: 380px;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card);
 }
 
-.user-badge div {
+.user-badge-info {
   display: grid;
   min-width: 0;
+  gap: 2px;
 }
 
 .user-badge-actions {
   display: flex;
   flex-wrap: wrap;
+  flex: 0 0 auto;
   gap: 8px;
   justify-content: flex-end;
 }
@@ -269,6 +273,19 @@ h1 {
 .user-badge small {
   margin-top: 2px;
   color: var(--muted);
+}
+
+.user-profile-link {
+  width: fit-content;
+  margin-top: 4px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-profile-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .user-badge button {
@@ -2179,7 +2196,7 @@ button:disabled {
     box-shadow: 0 8px 22px rgba(2, 46, 25, 0.06);
   }
 
-  .user-badge div {
+  .user-badge-info {
     min-width: 0;
     padding: 0;
     border-top: 0;
@@ -2196,6 +2213,7 @@ button:disabled {
   }
 
   .user-badge-link,
+  .user-profile-link,
   .user-switch-link,
   .user-badge button {
     min-height: 36px;
