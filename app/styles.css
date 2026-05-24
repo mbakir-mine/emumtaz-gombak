@@ -2619,9 +2619,9 @@ button:disabled {
 
   .topbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(128px, 0.48fr);
+    grid-template-columns: minmax(112px, 0.7fr) minmax(210px, 1fr);
     align-items: start;
-    gap: 10px;
+    gap: 8px;
     padding: 14px 12px;
   }
 
@@ -2636,19 +2636,50 @@ button:disabled {
   }
 
   .user-badge {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
     width: auto;
     min-width: 0;
     padding: 8px;
     border-radius: 10px;
   }
 
+  .user-badge-info {
+    min-width: 0;
+  }
+
   .user-badge strong {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
     font-size: 12px;
+    line-height: 1.15;
   }
 
   .user-badge small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
     font-size: 10px;
     line-height: 1.2;
+  }
+
+  .user-profile-link {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .user-badge-actions {
+    justify-content: flex-end;
+  }
+
+  .user-switch-link {
+    min-height: 38px;
+    padding: 0 10px;
+    text-align: center;
   }
 
   .welcome-title {
