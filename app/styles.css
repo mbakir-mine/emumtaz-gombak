@@ -288,6 +288,19 @@ h1 {
   white-space: nowrap;
 }
 
+.user-switch-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #fff8dc;
+  color: #7a560c;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .metric-grid,
 .card-grid {
   display: grid;
@@ -1241,6 +1254,52 @@ select {
 
 .register-card {
   width: min(100%, 560px);
+}
+
+.access-card {
+  width: min(100%, 720px);
+}
+
+.access-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.access-choice-card {
+  display: grid;
+  gap: 6px;
+  min-height: 128px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(237, 248, 239, 0.92)),
+    white;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.access-choice-card:hover,
+.access-choice-card:focus-visible {
+  border-color: #9dd6b3;
+  box-shadow: 0 12px 26px rgba(2, 46, 25, 0.1);
+}
+
+.access-choice-card span {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.access-choice-card strong {
+  font-size: 17px;
+}
+
+.access-choice-card small {
+  color: var(--muted);
 }
 
 .login-divider {

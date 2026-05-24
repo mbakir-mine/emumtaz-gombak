@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import { canAccessPath, choosePrimaryProfile, type AccessProfile } from '@/lib/access';
 
-const publicPaths = ['/login', '/daftar'];
+const selectedProfileKey = 'emumtaz_selected_profile_id';
+const publicPaths = ['/login', '/daftar', '/akses'];
 const AccessProfileContext = createContext<AccessProfile | null>(null);
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs = 20000): Promise<T> {
@@ -76,11 +77,21 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const activeProfile = choosePrimaryProfile((data ?? []) as AccessProfile[]);
+        const profiles = (data ?? []) as AccessProfile[];
+        const selectedProfileId = window.localStorage.getItem(selectedProfileKey);
+        const selectedProfile = selectedProfileId
+          ? profiles.find((item) => item.id === selectedProfileId) ?? null
+          : null;
+        const activeProfile = selectedProfile ?? (profiles.length === 1 ? profiles[0] : choosePrimaryProfile(profiles));
 
         if (!activeProfile) {
           setMessage('Akaun anda belum diaktifkan oleh Admin.');
           setReady(true);
+          return;
+        }
+
+        if (profiles.length > 1 && !selectedProfile) {
+          router.replace('/akses');
           return;
         }
 

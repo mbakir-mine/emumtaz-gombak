@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { roleLabel } from '@/lib/access';
 import { useAccessProfile } from './AuthGate';
 
@@ -12,6 +13,9 @@ export default function UserBadge() {
         <strong>{profile ? roleLabel(profile.role) : 'Pengguna'}</strong>
         {profile?.nama && <small>{profile.nama}</small>}
       </div>
+      <Link className="user-switch-link" href="/akses">
+        Tukar Akses
+      </Link>
     </div>
   );
 }

@@ -33,6 +33,7 @@ export default function LoginPage() {
       return;
     }
 
+    window.localStorage.removeItem('emumtaz_selected_profile_id');
     router.push('/');
   }
 
