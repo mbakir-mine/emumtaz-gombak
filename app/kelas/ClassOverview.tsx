@@ -44,14 +44,12 @@ function statsTitle(role: string | undefined) {
 
 function YearBreakdownCard({
   title,
-  subtitle,
   items,
   zone,
   schoolCode,
   onSelect,
 }: {
   title: string;
-  subtitle: string;
   items: ClassWithSchool[];
   zone?: string;
   schoolCode?: string;
@@ -61,7 +59,6 @@ function YearBreakdownCard({
     <article className="summary-card">
       <div>
         <h3>{title}</h3>
-        <p>{subtitle}</p>
       </div>
       <div className="year-stats">
         {years.map((year) => {
@@ -108,8 +105,8 @@ function TotalCard({
       <button className="summary-number" type="button" onClick={onSelect}>
         {total}
       </button>
-      {action}
       {children}
+      {action}
     </article>
   );
 }
@@ -199,7 +196,6 @@ export default function ClassOverview({
               <YearBreakdownCard
                 key={zone}
                 title={zoneLabel(zone)}
-                subtitle="Jumlah kelas mengikut Tahun 1 hingga 6"
                 items={visibleItems}
                 zone={zone}
                 onSelect={selectFilter}
@@ -218,7 +214,6 @@ export default function ClassOverview({
             />
             <YearBreakdownCard
               title={zoneLabel(profile.zon)}
-              subtitle="Jumlah kelas mengikut Tahun 1 hingga 6"
               items={visibleItems}
               zone={profile.zon ?? undefined}
               onSelect={selectFilter}
@@ -241,7 +236,6 @@ export default function ClassOverview({
             />
             <YearBreakdownCard
               title={school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah'}
-              subtitle="Jumlah kelas mengikut Tahun 1 hingga 6"
               items={visibleItems}
               schoolCode={profile.kod_sekolah ?? undefined}
               onSelect={selectFilter}
