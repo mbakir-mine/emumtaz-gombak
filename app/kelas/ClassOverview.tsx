@@ -68,6 +68,7 @@ function detailTitle(filter: ClassFilter, profileRole: string | undefined, schoo
   const currentYear = new Date().getFullYear();
 
   if (filter.mode === 'schoolSummary') {
+    if (filter.zone && filter.year) return `Senarai Kelas ${zoneLabel(filter.zone)} - Tahun ${filter.year} ${currentYear}`;
     if (filter.zone) return `Ringkasan Kelas ${zoneLabel(filter.zone)} ${currentYear}`;
     if (filter.schoolCode) return `Ringkasan Kelas ${schoolName ?? filter.schoolCode} ${currentYear}`;
     if (profileRole === 'ADMIN_ZON') return `Ringkasan Kelas Zon ${currentYear}`;
@@ -118,6 +119,7 @@ function YearBreakdownCard({
                 onClick={() =>
                   onSelect({
                     ...filter,
+                    mode: 'schoolSummary',
                     label: `${title} - Kelas Tahun ${year}`,
                   })
                 }
@@ -251,6 +253,7 @@ export default function ClassOverview({
     visibleItems.forEach((item) => {
       if (filter?.zone && item.school?.zon !== filter.zone) return;
       if (filter?.schoolCode && item.kod_sekolah !== filter.schoolCode) return;
+      if (filter?.year && item.tahun !== filter.year) return;
 
       const current =
         summaries.get(item.kod_sekolah) ??
@@ -267,7 +270,7 @@ export default function ClassOverview({
     });
 
     return [...summaries.values()].sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah));
-  }, [filter?.schoolCode, filter?.zone, visibleItems]);
+  }, [filter?.schoolCode, filter?.year, filter?.zone, visibleItems]);
 
   const isDistrictView = !profile || profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH';
   const isZoneView = profile?.role === 'ADMIN_ZON';
