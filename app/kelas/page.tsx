@@ -1,10 +1,10 @@
 import AppFrame from '../ui/AppFrame';
 import ClassForm from './ClassForm';
 import ClassOverview from './ClassOverview';
-import { getClasses, getSchools, getStudents } from '@/lib/data';
+import { getClasses, getSchools } from '@/lib/data';
 
 export default async function KelasPage() {
-  const [schools, classes, students] = await Promise.all([getSchools(), getClasses(), getStudents()]);
+  const [schools, classes] = await Promise.all([getSchools(), getClasses()]);
 
   return (
     <AppFrame title="Kelas" subtitle="Senarai kelas mengikut sekolah." active="classes">
@@ -16,7 +16,7 @@ export default async function KelasPage() {
         <ClassForm schools={schools} />
       </section>
 
-      <ClassOverview schools={schools} classes={classes} students={students} />
+      <ClassOverview schools={schools} classes={classes} />
     </AppFrame>
   );
 }
