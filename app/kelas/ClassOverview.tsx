@@ -16,9 +16,17 @@ type ClassWithSchool = ClassRecord & {
 
 type ClassFilter = {
   label: string;
+  mode?: 'classes' | 'schoolSummary';
   zone?: string;
   schoolCode?: string;
   year?: number;
+};
+
+type SchoolClassSummary = {
+  kod_sekolah: string;
+  nama_sekolah: string;
+  years: Record<number, number>;
+  total: number;
 };
 
 function zoneLabel(zon: string | null | undefined) {
@@ -149,6 +157,30 @@ export default function ClassOverview({
     return true;
   });
 
+  const schoolSummaries = useMemo<SchoolClassSummary[]>(() => {
+    const summaries = new Map<string, SchoolClassSummary>();
+
+    visibleItems.forEach((item) => {
+      if (filter?.zone && item.school?.zon !== filter.zone) return;
+      if (filter?.schoolCode && item.kod_sekolah !== filter.schoolCode) return;
+
+      const current =
+        summaries.get(item.kod_sekolah) ??
+        {
+          kod_sekolah: item.kod_sekolah,
+          nama_sekolah: item.school?.nama_sekolah ?? 'Sekolah belum ditemui',
+          years: {},
+          total: 0,
+        };
+
+      current.years[item.tahun] = (current.years[item.tahun] ?? 0) + 1;
+      current.total += 1;
+      summaries.set(item.kod_sekolah, current);
+    });
+
+    return [...summaries.values()].sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah));
+  }, [filter?.schoolCode, filter?.zone, visibleItems]);
+
   const isDistrictView = !profile || profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH';
   const isZoneView = profile?.role === 'ADMIN_ZON';
   const school = profile?.kod_sekolah ? schoolByCode.get(profile.kod_sekolah) : null;
@@ -177,7 +209,7 @@ export default function ClassOverview({
               title={totalTitle}
               total={visibleItems.length}
               action={addClassButton}
-              onSelect={() => selectFilter({ label: 'Semua kelas daerah' })}
+              onSelect={() => selectFilter({ label: 'Ringkasan kelas mengikut sekolah', mode: 'schoolSummary' })}
             >
               <div className="zone-mini-list">
                 {zones.map((zone) => (
@@ -257,11 +289,48 @@ export default function ClassOverview({
       {filter && (
         <section className="panel" id="senarai-kelas">
           <div className="panel-head">
-            <h2>Butiran Kelas</h2>
-            <span>{filteredItems.length} / {visibleItems.length} rekod</span>
+            <h2>{filter.mode === 'schoolSummary' ? 'Ringkasan Kelas Sekolah' : 'Butiran Kelas'}</h2>
+            <span>
+              {filter.mode === 'schoolSummary'
+                ? `${schoolSummaries.length} sekolah`
+                : `${filteredItems.length} / ${visibleItems.length} rekod`}
+            </span>
           </div>
 
-          {filteredItems.length === 0 ? (
+          {filter.mode === 'schoolSummary' ? (
+            schoolSummaries.length === 0 ? (
+              <p className="empty">Tiada rekod kelas untuk pilihan ini.</p>
+            ) : (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Kod Sekolah</th>
+                      <th>Nama Sekolah</th>
+                      {years.map((year) => (
+                        <th key={year}>Tahun {year}</th>
+                      ))}
+                      <th>Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schoolSummaries.map((item) => (
+                      <tr key={item.kod_sekolah}>
+                        <td>{item.kod_sekolah}</td>
+                        <td>{item.nama_sekolah}</td>
+                        {years.map((year) => (
+                          <td key={year}>{item.years[year] ?? 0}</td>
+                        ))}
+                        <td>
+                          <strong>{item.total}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : filteredItems.length === 0 ? (
           <p className="empty">Tiada kelas untuk pilihan ini.</p>
           ) : (
             <div className="table-scroll">
