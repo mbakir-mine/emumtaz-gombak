@@ -122,8 +122,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         }
 
         if (!canAccessPath(activeProfile.role, pathname, activeProfile.allowed_nav)) {
-          setMessage('Anda tidak mempunyai akses kepada modul ini.');
-          setReady(true);
+          router.replace('/');
           return;
         }
 
