@@ -1415,12 +1415,18 @@ th {
 
 .student-summary-card {
   min-height: 132px;
+  align-items: stretch;
 }
 
 .student-card-main {
   display: grid;
   align-content: start;
   min-width: 0;
+}
+
+.student-total-card .student-card-main {
+  align-content: space-between;
+  min-height: 92px;
 }
 
 .student-summary-card .school-count-button strong,
@@ -1436,6 +1442,15 @@ th {
 .student-year-list .school-count-button {
   justify-content: flex-end;
   width: 100%;
+}
+
+.student-count-list {
+  min-width: 156px;
+}
+
+.student-total-breakdown {
+  grid-auto-flow: row;
+  grid-template-rows: repeat(3, auto);
 }
 
 .student-year-list {

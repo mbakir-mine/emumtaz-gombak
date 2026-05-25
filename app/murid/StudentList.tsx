@@ -14,6 +14,7 @@ const yearOrder = [1, 2, 3, 4, 5, 6];
 
 type StudentFilter = {
   label: string;
+  category?: string;
   zone?: string;
   year?: number;
   gender?: string;
@@ -63,6 +64,10 @@ function studentZone(student: StudentRecord, schoolMap: Map<string, School>) {
   return schoolMap.get(student.kod_sekolah)?.zon ?? null;
 }
 
+function studentCategory(student: StudentRecord, schoolMap: Map<string, School>) {
+  return schoolMap.get(student.kod_sekolah)?.kategori?.toUpperCase() ?? null;
+}
+
 function studentYear(student: StudentRecord, classMap: Map<string, ClassRecord>) {
   if (!student.class_id) return null;
   return classMap.get(student.class_id)?.tahun ?? null;
@@ -75,6 +80,7 @@ function matchesFilter(
   classMap: Map<string, ClassRecord>,
 ) {
   if (!filter) return false;
+  if (filter.category && studentCategory(student, schoolMap) !== filter.category) return false;
   if (filter.zone && studentZone(student, schoolMap) !== filter.zone) return false;
   if (filter.year && studentYear(student, classMap) !== filter.year) return false;
   if (filter.gender && student.jantina !== filter.gender) return false;
@@ -104,6 +110,10 @@ function StudentSummaryCards({
 }) {
   const currentScope = scopeLabel(profile);
   const isDistrict = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
+  const categoryCounts = ['SRAI', 'SRA', 'KAFAI'].map((category) => ({
+    category,
+    count: students.filter((student) => studentCategory(student, schoolMap) === category).length,
+  }));
   const genderCounts = [
     { label: 'Lelaki', gender: 'L', count: students.filter((student) => student.jantina === 'L').length },
     { label: 'Perempuan', gender: 'P', count: students.filter((student) => student.jantina === 'P').length },
@@ -131,7 +141,20 @@ function StudentSummaryCards({
             </button>
           ) : null}
         </div>
-        <div className="metric-accent" aria-hidden="true" />
+        <div className="metric-breakdown student-count-list student-total-breakdown">
+          {categoryCounts.map((item) => (
+            <span key={item.category}>
+              <em>{item.category}</em>
+              <i>:</i>
+              <CountButton
+                filter={{ label: `${item.category} ${currentScope}`, category: item.category }}
+                onSelect={onSelect}
+              >
+                <b>{item.count}</b>
+              </CountButton>
+            </span>
+          ))}
+        </div>
       </article>
 
       <article className="metric dashboard-metric student-summary-card">
