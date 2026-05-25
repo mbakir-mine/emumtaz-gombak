@@ -1287,10 +1287,9 @@ th {
 }
 
 .teacher-summary-card {
-  display: flex;
+  display: grid;
   gap: 16px;
-  align-items: center;
-  justify-content: space-between;
+  align-content: space-between;
   min-height: 142px;
   padding: 18px;
   border: 1px solid var(--line);
@@ -1308,9 +1307,20 @@ th {
 .teacher-summary-card strong {
   display: block;
   margin-top: 8px;
-  color: var(--ink);
-  font-size: 34px;
+  color: var(--green);
+  font-size: 42px;
   line-height: 1;
+}
+
+.teacher-add-button {
+  align-self: end;
+}
+
+.teacher-add-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
 }
 
 .teacher-count-list {
@@ -2274,6 +2284,10 @@ button:disabled {
   }
 
   .teacher-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-add-panel {
     grid-template-columns: 1fr;
   }
 

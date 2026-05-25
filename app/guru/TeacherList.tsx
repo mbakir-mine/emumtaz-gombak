@@ -5,6 +5,8 @@ import type { School, UserRecord } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeUsers } from '../ui/scopedData';
+import TeacherForm from './TeacherForm';
+import TeacherImportForm from './TeacherImportForm';
 
 function accessLabel(user: UserRecord) {
   if (user.role === 'ADMIN_DAERAH') return 'Semua sekolah';
@@ -50,7 +52,24 @@ function filterUsers(users: UserRecord[], filter: UserFilter | null) {
   return users;
 }
 
-function TeacherSummaryCards({ users, schools }: { users: UserRecord[]; schools: School[] }) {
+function statsTitle(role: string | undefined) {
+  const currentYear = new Date().getFullYear();
+  if (role === 'ADMIN_ZON') return `Statistik Guru Zon ${currentYear}`;
+  if (role === 'ADMIN_SEKOLAH') return `Statistik Guru Sekolah ${currentYear}`;
+  return `Statistik Guru Daerah Gombak ${currentYear}`;
+}
+
+function TeacherSummaryCards({
+  users,
+  schools,
+  onToggleForm,
+  formOpen,
+}: {
+  users: UserRecord[];
+  schools: School[];
+  onToggleForm: () => void;
+  formOpen: boolean;
+}) {
   const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
   const zoneCounts = zoneOrder.map((zone) => ({
     zone,
@@ -64,15 +83,9 @@ function TeacherSummaryCards({ users, schools }: { users: UserRecord[]; schools:
           <span>Jumlah Keseluruhan</span>
           <strong>{users.length}</strong>
         </div>
-        <div className="teacher-count-list">
-          {countedRoles.map((role) => (
-            <span key={role}>
-              <em>{roleLabel(role)}</em>
-              <i>:</i>
-              <b>{countUsersByRole(users, role)}</b>
-            </span>
-          ))}
-        </div>
+        <button className="button summary-add-button teacher-add-button" type="button" onClick={onToggleForm}>
+          {formOpen ? 'TUTUP BORANG' : 'TAMBAH GURU'}
+        </button>
       </article>
 
       <article className="teacher-summary-card">
@@ -133,6 +146,7 @@ export default function TeacherList({ users, schools }: { users: UserRecord[]; s
   const profile = useAccessProfile();
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<UserFilter | null>(null);
+  const [showForms, setShowForms] = useState(false);
   const scopedUsers = useMemo(() => scopeUsers(profile, users, schools), [profile, schools, users]);
   const options = useMemo(() => userOptions(profile?.role), [profile?.role]);
   const filteredUsers = useMemo(() => {
@@ -152,7 +166,30 @@ export default function TeacherList({ users, schools }: { users: UserRecord[]; s
 
   return (
     <>
-      <TeacherSummaryCards users={scopedUsers} schools={schools} />
+      <div className="panel-head">
+        <h2>{statsTitle(profile?.role)}</h2>
+        <span>{scopedUsers.length} rekod pengguna</span>
+      </div>
+      <TeacherSummaryCards
+        users={scopedUsers}
+        schools={schools}
+        formOpen={showForms}
+        onToggleForm={() => setShowForms((value) => !value)}
+      />
+      {showForms && (
+        <div className="inline-add-panel teacher-add-panel">
+          <div>
+            <div className="panel-head">
+              <h3>Tambah Guru</h3>
+              <span>Profil akses sekolah</span>
+            </div>
+            <TeacherForm schools={schools} />
+          </div>
+          <div>
+            <TeacherImportForm />
+          </div>
+        </div>
+      )}
       <div className="panel-head">
         <h2>Senarai Pengguna Sekolah</h2>
         <span>
