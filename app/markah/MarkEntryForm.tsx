@@ -38,6 +38,7 @@ export default function MarkEntryForm({
       <table className="mark-entry-table">
         <thead>
           <tr>
+            <th>Bil</th>
             <th>Nama Murid</th>
             <th>Jantina</th>
             <th>Markah</th>
@@ -45,10 +46,11 @@ export default function MarkEntryForm({
           </tr>
         </thead>
         <tbody>
-          {students.map((student) => {
+          {students.map((student, index) => {
             const markah = marksByStudent.get(student.id) ?? null;
             return (
               <tr key={student.id}>
+                <td>{index + 1}</td>
                 <td>
                   <input type="hidden" name="student_id" value={student.id} />
                   {student.nama_murid}

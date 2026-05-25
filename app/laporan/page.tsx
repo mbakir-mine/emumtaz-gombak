@@ -43,6 +43,7 @@ export default async function LaporanPage() {
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Tahun</th>
                 <th>Peperiksaan</th>
                 <th>Sekolah</th>
@@ -53,8 +54,9 @@ export default async function LaporanPage() {
               </tr>
             </thead>
             <tbody>
-              {schoolSummaries.map((item) => (
+              {schoolSummaries.map((item, index) => (
                 <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.kod_sekolah}`}>
+                  <td>{index + 1}</td>
                   <td>{item.tahun_akademik}</td>
                   <td>{item.kod_peperiksaan}</td>
                   <td>{item.kod_sekolah}</td>
@@ -80,6 +82,7 @@ export default async function LaporanPage() {
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Peperiksaan</th>
                 <th>Sekolah</th>
                 <th>Nama Murid</th>
@@ -89,8 +92,9 @@ export default async function LaporanPage() {
               </tr>
             </thead>
             <tbody>
-              {topStudents.map((item) => (
+              {topStudents.map((item, index) => (
                 <tr key={`${item.kod_peperiksaan}-${item.student_id}`}>
+                  <td>{index + 1}</td>
                   <td>{item.kod_peperiksaan}</td>
                   <td>{item.kod_sekolah}</td>
                   <td>{item.nama_murid}</td>

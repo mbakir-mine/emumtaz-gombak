@@ -42,6 +42,7 @@ export default async function PerbandinganPage() {
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Sekolah</th>
                 <th>Nama Murid</th>
                 <th>Purata UPSA</th>
@@ -51,13 +52,14 @@ export default async function PerbandinganPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((item) => {
+              {rows.map((item, index) => {
                 const beza =
                   item.upsa !== undefined && item.uasa !== undefined && item.upsa !== null && item.uasa !== null
                     ? Number((item.uasa - item.upsa).toFixed(2))
                     : null;
                 return (
                   <tr key={item.key}>
+                    <td>{index + 1}</td>
                     <td>{item.kod_sekolah}</td>
                     <td>{item.nama_murid}</td>
                     <td>{item.upsa ?? '-'}</td>
@@ -74,4 +76,3 @@ export default async function PerbandinganPage() {
     </AppFrame>
   );
 }
-

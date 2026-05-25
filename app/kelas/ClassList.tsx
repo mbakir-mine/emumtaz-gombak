@@ -45,6 +45,7 @@ export default function ClassList({ classes, schools }: { classes: ClassRecord[]
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Sekolah</th>
                 <th>Tahun</th>
                 <th>Tahun Murid</th>
@@ -53,8 +54,9 @@ export default function ClassList({ classes, schools }: { classes: ClassRecord[]
               </tr>
             </thead>
             <tbody>
-              {filteredClasses.map((item) => (
+              {filteredClasses.map((item, index) => (
                 <tr key={item.id}>
+                  <td>{index + 1}</td>
                   <td>{item.kod_sekolah}</td>
                   <td>{item.tahun_akademik}</td>
                   <td>Tahun {item.tahun}</td>

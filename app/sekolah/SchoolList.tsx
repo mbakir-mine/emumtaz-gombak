@@ -266,6 +266,7 @@ export default function SchoolList({ schools }: { schools: School[] }) {
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Kod</th>
                 <th>Nama Sekolah</th>
                 <th>Kategori</th>
@@ -275,8 +276,9 @@ export default function SchoolList({ schools }: { schools: School[] }) {
               </tr>
             </thead>
             <tbody>
-              {filteredSchools.map((school) => (
+              {filteredSchools.map((school, index) => (
                 <tr key={school.kod_sekolah}>
+                  <td data-label="Bil">{index + 1}</td>
                   <td data-label="Kod">{school.kod_sekolah}</td>
                   <td data-label="Sekolah">{school.nama_sekolah}</td>
                   <td data-label="Kategori">{school.kategori}</td>

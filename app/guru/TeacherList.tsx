@@ -229,6 +229,7 @@ export default function TeacherList({ users, schools }: { users: UserRecord[]; s
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Akses</th>
                 <th>Nama</th>
                 <th>Email</th>
@@ -237,8 +238,9 @@ export default function TeacherList({ users, schools }: { users: UserRecord[]; s
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user, index) => (
                 <tr key={user.id}>
+                  <td>{index + 1}</td>
                   <td>{accessLabel(user)}</td>
                   <td>{user.nama}</td>
                   <td>{user.email}</td>

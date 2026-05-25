@@ -36,6 +36,7 @@ export default function SubjectReportTable({
         <table>
           <thead>
             <tr>
+              <th>Bil</th>
               <th>Tahun Akademik</th>
               <th>Peperiksaan</th>
               <th>Sekolah</th>
@@ -49,10 +50,11 @@ export default function SubjectReportTable({
             </tr>
           </thead>
           <tbody>
-            {scopedSummaries.map((item) => {
+            {scopedSummaries.map((item, index) => {
               const classRecord = classById.get(item.class_id);
               return (
                 <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.class_id}-${item.kod_subjek}`}>
+                  <td>{index + 1}</td>
                   <td>{item.tahun_akademik}</td>
                   <td>{item.kod_peperiksaan}</td>
                   <td>{item.kod_sekolah}</td>

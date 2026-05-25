@@ -39,6 +39,7 @@ export default function ClassReportTable({
         <table>
           <thead>
             <tr>
+              <th>Bil</th>
               <th>Tahun Akademik</th>
               <th>Peperiksaan</th>
               <th>Sekolah</th>
@@ -52,8 +53,9 @@ export default function ClassReportTable({
             </tr>
           </thead>
           <tbody>
-            {summaries.map((item) => (
+            {summaries.map((item, index) => (
               <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.class_id}`}>
+                <td>{index + 1}</td>
                 <td>{item.tahun_akademik}</td>
                 <td>{item.kod_peperiksaan}</td>
                 <td>{item.kod_sekolah}</td>

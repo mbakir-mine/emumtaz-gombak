@@ -440,6 +440,7 @@ export default function ClassOverview({
                 <table>
                   <thead>
                     <tr>
+                      <th>Bil</th>
                       <th>Kod Sekolah</th>
                       <th>Nama Sekolah</th>
                       <th>Bilangan Kelas</th>
@@ -449,8 +450,9 @@ export default function ClassOverview({
                     </tr>
                   </thead>
                   <tbody>
-                    {schoolSummaries.map((item) => (
+                    {schoolSummaries.map((item, index) => (
                       <tr key={item.kod_sekolah}>
+                        <td>{index + 1}</td>
                         <td>{item.kod_sekolah}</td>
                         <td>{item.nama_sekolah}</td>
                         <td>
@@ -477,7 +479,7 @@ export default function ClassOverview({
                       </tr>
                     ))}
                     <tr className="class-year-total-row">
-                      <td colSpan={2}>Jumlah Keseluruhan</td>
+                      <td colSpan={3}>Jumlah Keseluruhan</td>
                       <td>{schoolSummaryTotals.classes}</td>
                       <td>{schoolSummaryTotals.maleStudents}</td>
                       <td>{schoolSummaryTotals.femaleStudents}</td>
@@ -491,6 +493,7 @@ export default function ClassOverview({
                 <table>
                   <thead>
                     <tr>
+                      <th>Bil</th>
                       <th>Kod Sekolah</th>
                       <th>Nama Sekolah</th>
                       {years.map((year) => (
@@ -500,8 +503,9 @@ export default function ClassOverview({
                     </tr>
                   </thead>
                   <tbody>
-                    {schoolSummaries.map((item) => (
+                    {schoolSummaries.map((item, index) => (
                       <tr key={item.kod_sekolah}>
+                        <td>{index + 1}</td>
                         <td>{item.kod_sekolah}</td>
                         <td>{item.nama_sekolah}</td>
                         {years.map((year) => (
@@ -539,6 +543,7 @@ export default function ClassOverview({
                       <table className="class-year-table">
                         <thead>
                           <tr>
+                            <th>Bil</th>
                             <th>Tahun {group.year}</th>
                             <th>Lelaki</th>
                             <th>Perempuan</th>
@@ -546,8 +551,9 @@ export default function ClassOverview({
                           </tr>
                         </thead>
                         <tbody>
-                          {group.classes.map((item) => (
+                          {group.classes.map((item, index) => (
                             <tr key={item.id}>
+                              <td>{index + 1}</td>
                               <td>{item.nama_kelas}</td>
                               <td>{item.maleStudents}</td>
                               <td>{item.femaleStudents}</td>
@@ -555,7 +561,7 @@ export default function ClassOverview({
                             </tr>
                           ))}
                           <tr className="class-year-total-row">
-                            <td>Jumlah Tahun {group.year}</td>
+                            <td colSpan={2}>Jumlah Tahun {group.year}</td>
                             <td>{group.maleStudents}</td>
                             <td>{group.femaleStudents}</td>
                             <td>{group.totalStudents}</td>
@@ -574,6 +580,7 @@ export default function ClassOverview({
               <table>
                 <thead>
                   <tr>
+                    <th>Bil</th>
                     <th>Sekolah</th>
                     <th>Zon</th>
                     <th>Tahun</th>
@@ -583,8 +590,9 @@ export default function ClassOverview({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map((item) => (
+                  {filteredItems.map((item, index) => (
                     <tr key={item.id}>
+                      <td>{index + 1}</td>
                       <td>
                         <strong>{item.kod_sekolah}</strong>
                         <br />

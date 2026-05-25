@@ -283,6 +283,7 @@ export default function IndividualReportTable({
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Peperiksaan</th>
                 <th>Sekolah</th>
                 <th>Tahun</th>
@@ -294,12 +295,13 @@ export default function IndividualReportTable({
               </tr>
             </thead>
             <tbody>
-              {filteredSummaries.map((item) => {
+              {filteredSummaries.map((item, index) => {
                 const classRecord = classById.get(item.class_id);
                 const href = `/laporan/individu/cetak?student_id=${item.student_id}&tahun_akademik=${item.tahun_akademik}&kod_peperiksaan=${item.kod_peperiksaan}`;
 
                 return (
                   <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
+                    <td>{index + 1}</td>
                     <td>{item.kod_peperiksaan}</td>
                     <td>{item.kod_sekolah}</td>
                     <td>{classRecord ? `Tahun ${classRecord.tahun}` : '-'}</td>

@@ -87,6 +87,11 @@ function matchesFilter(
   return true;
 }
 
+function schoolLabel(kodSekolah: string, schoolMap: Map<string, School>) {
+  const school = schoolMap.get(kodSekolah);
+  return school ? `${school.kod_sekolah} - ${school.nama_sekolah}` : kodSekolah;
+}
+
 function canManageStudents(profile: AccessProfile | null) {
   return ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'].includes(profile?.role ?? '');
 }
@@ -268,7 +273,29 @@ export default function StudentList({
         .includes(term);
     });
   }, [classById, query, schoolMap, scopedStudents, selectedFilter]);
+  const schoolSummaries = useMemo(() => {
+    const grouped = new Map<string, { kodSekolah: string; male: number; female: number; total: number }>();
+
+    filteredStudents.forEach((student) => {
+      const current = grouped.get(student.kod_sekolah) ?? {
+        kodSekolah: student.kod_sekolah,
+        male: 0,
+        female: 0,
+        total: 0,
+      };
+
+      if (student.jantina === 'L') current.male += 1;
+      if (student.jantina === 'P') current.female += 1;
+      current.total += 1;
+      grouped.set(student.kod_sekolah, current);
+    });
+
+    return [...grouped.values()].sort((a, b) =>
+      schoolLabel(a.kodSekolah, schoolMap).localeCompare(schoolLabel(b.kodSekolah, schoolMap)),
+    );
+  }, [filteredStudents, schoolMap]);
   const shouldShowList = Boolean(selectedFilter) || query.trim().length > 0;
+  const showSchoolSummary = Boolean(selectedFilter) && query.trim().length === 0;
 
   return (
     <>
@@ -305,11 +332,13 @@ export default function StudentList({
 
       <div className="panel-head">
         <div>
-          <h2>Carian Murid</h2>
+          <h2>{showSchoolSummary ? 'Ringkasan Murid Mengikut Sekolah' : 'Carian Murid'}</h2>
           {selectedFilter ? <p className="table-note">Paparan: {selectedFilter.label}</p> : null}
         </div>
         <span>
-          {filteredStudents.length} / {scopedStudents.length} rekod
+          {showSchoolSummary
+            ? `${schoolSummaries.length} sekolah - ${filteredStudents.length} murid`
+            : `${filteredStudents.length} / ${scopedStudents.length} rekod`}
         </span>
       </div>
       <div className="search-row">
@@ -328,6 +357,33 @@ export default function StudentList({
         <p className="empty">Klik angka pada kad di atas atau gunakan carian untuk memaparkan senarai murid.</p>
       ) : filteredStudents.length === 0 ? (
         <p className="empty">Tiada murid sepadan dengan carian.</p>
+      ) : showSchoolSummary ? (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Bil</th>
+                <th>Kod Sekolah + Nama Sekolah</th>
+                <th>Murid Lelaki</th>
+                <th>Murid Perempuan</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schoolSummaries.map((item, index) => (
+                <tr key={item.kodSekolah}>
+                  <td>{index + 1}</td>
+                  <td>{schoolLabel(item.kodSekolah, schoolMap)}</td>
+                  <td>{item.male}</td>
+                  <td>{item.female}</td>
+                  <td>
+                    <strong>{item.total}</strong>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="table-scroll">
           <table>

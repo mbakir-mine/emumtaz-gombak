@@ -36,6 +36,7 @@ export default async function GuruKelasPage() {
           <table>
             <thead>
               <tr>
+                <th>Bil</th>
                 <th>Sekolah</th>
                 <th>Kelas</th>
                 <th>Guru</th>
@@ -43,8 +44,9 @@ export default async function GuruKelasPage() {
               </tr>
             </thead>
             <tbody>
-              {assignments.map((item) => (
+              {assignments.map((item, index) => (
                 <tr key={item.id}>
+                  <td>{index + 1}</td>
                   <td>{item.classes?.kod_sekolah}</td>
                   <td>
                     Tahun {item.classes?.tahun} - {item.classes?.nama_kelas}
@@ -60,4 +62,3 @@ export default async function GuruKelasPage() {
     </AppFrame>
   );
 }
-
