@@ -769,6 +769,23 @@ table {
   border-collapse: collapse;
 }
 
+.table-number-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.table-number-button:hover,
+.table-number-button:focus-visible {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 th,
 td {
   padding: 13px;

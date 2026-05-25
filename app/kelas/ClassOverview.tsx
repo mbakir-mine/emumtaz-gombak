@@ -355,7 +355,18 @@ export default function ClassOverview({
                           <td key={year}>{item.years[year] ?? 0}</td>
                         ))}
                         <td>
-                          <strong>{item.total}</strong>
+                          <button
+                            className="table-number-button"
+                            type="button"
+                            onClick={() =>
+                              selectFilter({
+                                label: `Senarai kelas ${item.nama_sekolah}`,
+                                schoolCode: item.kod_sekolah,
+                              })
+                            }
+                          >
+                            {item.total}
+                          </button>
                         </td>
                       </tr>
                     ))}
