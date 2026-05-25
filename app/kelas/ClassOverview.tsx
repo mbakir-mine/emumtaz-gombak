@@ -50,6 +50,26 @@ function statsTitle(role: string | undefined) {
   return `Statistik Kelas Daerah Gombak ${currentYear}`;
 }
 
+function detailTitle(filter: ClassFilter, profileRole: string | undefined, schoolName?: string) {
+  const currentYear = new Date().getFullYear();
+
+  if (filter.mode === 'schoolSummary') {
+    if (filter.zone) return `Ringkasan Kelas ${zoneLabel(filter.zone)} ${currentYear}`;
+    if (filter.schoolCode) return `Ringkasan Kelas ${schoolName ?? filter.schoolCode} ${currentYear}`;
+    if (profileRole === 'ADMIN_ZON') return `Ringkasan Kelas Zon ${currentYear}`;
+    if (profileRole === 'ADMIN_SEKOLAH') return `Ringkasan Kelas Sekolah ${currentYear}`;
+    return `Ringkasan Kelas Daerah Gombak ${currentYear}`;
+  }
+
+  if (filter.year && filter.zone) return `Senarai Kelas ${zoneLabel(filter.zone)} Tahun ${filter.year} ${currentYear}`;
+  if (filter.year && filter.schoolCode) {
+    return `Senarai Kelas ${schoolName ?? filter.schoolCode} Tahun ${filter.year} ${currentYear}`;
+  }
+  if (filter.zone) return `Senarai Kelas ${zoneLabel(filter.zone)} ${currentYear}`;
+  if (filter.schoolCode) return `Senarai Kelas ${schoolName ?? filter.schoolCode} ${currentYear}`;
+  return `Senarai Kelas ${currentYear}`;
+}
+
 function YearBreakdownCard({
   title,
   items,
@@ -216,7 +236,13 @@ export default function ClassOverview({
                   <button
                     type="button"
                     key={zone}
-                    onClick={() => selectFilter({ label: `${zoneLabel(zone)} - Semua kelas`, zone })}
+                    onClick={() =>
+                      selectFilter({
+                        label: `Ringkasan kelas ${zoneLabel(zone)}`,
+                        mode: 'schoolSummary',
+                        zone,
+                      })
+                    }
                   >
                     <span>{zoneLabel(zone)}</span>
                     <strong>{countClasses(visibleItems, { zone })}</strong>
@@ -242,7 +268,13 @@ export default function ClassOverview({
               title={totalTitle}
               total={visibleItems.length}
               action={addClassButton}
-              onSelect={() => selectFilter({ label: zoneLabel(profile.zon), zone: profile.zon ?? undefined })}
+              onSelect={() =>
+                selectFilter({
+                  label: `Ringkasan kelas ${zoneLabel(profile.zon)}`,
+                  mode: 'schoolSummary',
+                  zone: profile.zon ?? undefined,
+                })
+              }
             />
             <YearBreakdownCard
               title={zoneLabel(profile.zon)}
@@ -261,7 +293,8 @@ export default function ClassOverview({
               action={addClassButton}
               onSelect={() =>
                 selectFilter({
-                  label: school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah',
+                  label: `Ringkasan kelas ${school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah'}`,
+                  mode: 'schoolSummary',
                   schoolCode: profile.kod_sekolah ?? undefined,
                 })
               }
@@ -289,7 +322,7 @@ export default function ClassOverview({
       {filter && (
         <section className="panel" id="senarai-kelas">
           <div className="panel-head">
-            <h2>{filter.mode === 'schoolSummary' ? 'Ringkasan Kelas Sekolah' : 'Butiran Kelas'}</h2>
+            <h2>{detailTitle(filter, profile?.role, school?.nama_sekolah)}</h2>
             <span>
               {filter.mode === 'schoolSummary'
                 ? `${schoolSummaries.length} sekolah`
