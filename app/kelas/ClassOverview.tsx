@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { ClassRecord, School } from '@/lib/data';
+import type { ClassRecord, School, StudentRecord } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses } from '../ui/scopedData';
 import ClassForm from './ClassForm';
@@ -16,7 +16,7 @@ type ClassWithSchool = ClassRecord & {
 
 type ClassFilter = {
   label: string;
-  mode?: 'classes' | 'schoolSummary';
+  mode?: 'classes' | 'schoolSummary' | 'schoolClassDetail';
   zone?: string;
   schoolCode?: string;
   year?: number;
@@ -27,6 +27,12 @@ type SchoolClassSummary = {
   nama_sekolah: string;
   years: Record<number, number>;
   total: number;
+};
+
+type SchoolClassDetail = ClassWithSchool & {
+  maleStudents: number;
+  femaleStudents: number;
+  totalStudents: number;
 };
 
 function zoneLabel(zon: string | null | undefined) {
@@ -59,6 +65,10 @@ function detailTitle(filter: ClassFilter, profileRole: string | undefined, schoo
     if (profileRole === 'ADMIN_ZON') return `Ringkasan Kelas Zon ${currentYear}`;
     if (profileRole === 'ADMIN_SEKOLAH') return `Ringkasan Kelas Sekolah ${currentYear}`;
     return `Ringkasan Kelas Daerah Gombak ${currentYear}`;
+  }
+
+  if (filter.mode === 'schoolClassDetail' && filter.schoolCode) {
+    return `Senarai Kelas ${schoolName ?? filter.schoolCode} ${currentYear}`;
   }
 
   if (filter.year && filter.zone) return `Senarai Kelas ${zoneLabel(filter.zone)} Tahun ${filter.year} ${currentYear}`;
@@ -142,9 +152,11 @@ function TotalCard({
 export default function ClassOverview({
   schools,
   classes,
+  students,
 }: {
   schools: School[];
   classes: ClassRecord[];
+  students: StudentRecord[];
 }) {
   const profile = useAccessProfile();
   const [filter, setFilter] = useState<ClassFilter | null>(null);
@@ -177,6 +189,39 @@ export default function ClassOverview({
     return true;
   });
 
+  const schoolClassDetails = useMemo<SchoolClassDetail[]>(() => {
+    const studentCounts = new Map<string, { maleStudents: number; femaleStudents: number; totalStudents: number }>();
+
+    students.forEach((student) => {
+      if (!student.class_id || student.status !== 'AKTIF') return;
+      const current = studentCounts.get(student.class_id) ?? {
+        maleStudents: 0,
+        femaleStudents: 0,
+        totalStudents: 0,
+      };
+
+      if (student.jantina === 'L') current.maleStudents += 1;
+      if (student.jantina === 'P') current.femaleStudents += 1;
+      current.totalStudents += 1;
+      studentCounts.set(student.class_id, current);
+    });
+
+    return filteredItems
+      .map((item) => {
+        const counts = studentCounts.get(item.id) ?? {
+          maleStudents: 0,
+          femaleStudents: 0,
+          totalStudents: 0,
+        };
+
+        return {
+          ...item,
+          ...counts,
+        };
+      })
+      .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
+  }, [filteredItems, students]);
+
   const schoolSummaries = useMemo<SchoolClassSummary[]>(() => {
     const summaries = new Map<string, SchoolClassSummary>();
 
@@ -204,6 +249,7 @@ export default function ClassOverview({
   const isDistrictView = !profile || profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH';
   const isZoneView = profile?.role === 'ADMIN_ZON';
   const school = profile?.kod_sekolah ? schoolByCode.get(profile.kod_sekolah) : null;
+  const selectedSchool = filter?.schoolCode ? schoolByCode.get(filter.schoolCode) : school;
   const totalTitle = isDistrictView
     ? 'Jumlah kelas daerah'
     : isZoneView
@@ -322,10 +368,12 @@ export default function ClassOverview({
       {filter && (
         <section className="panel" id="senarai-kelas">
           <div className="panel-head">
-            <h2>{detailTitle(filter, profile?.role, school?.nama_sekolah)}</h2>
+            <h2>{detailTitle(filter, profile?.role, selectedSchool?.nama_sekolah)}</h2>
             <span>
               {filter.mode === 'schoolSummary'
                 ? `${schoolSummaries.length} sekolah`
+                : filter.mode === 'schoolClassDetail'
+                  ? `${schoolClassDetails.length} kelas`
                 : `${filteredItems.length} / ${visibleItems.length} rekod`}
             </span>
           </div>
@@ -361,12 +409,44 @@ export default function ClassOverview({
                             onClick={() =>
                               selectFilter({
                                 label: `Senarai kelas ${item.nama_sekolah}`,
+                                mode: 'schoolClassDetail',
                                 schoolCode: item.kod_sekolah,
                               })
                             }
                           >
                             {item.total}
                           </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : filter.mode === 'schoolClassDetail' ? (
+            schoolClassDetails.length === 0 ? (
+              <p className="empty">Tiada kelas untuk sekolah ini.</p>
+            ) : (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tahun</th>
+                      <th>Nama Kelas</th>
+                      <th>Murid Lelaki</th>
+                      <th>Murid Perempuan</th>
+                      <th>Jumlah Murid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schoolClassDetails.map((item) => (
+                      <tr key={item.id}>
+                        <td>Tahun {item.tahun}</td>
+                        <td>{item.nama_kelas}</td>
+                        <td>{item.maleStudents}</td>
+                        <td>{item.femaleStudents}</td>
+                        <td>
+                          <strong>{item.totalStudents}</strong>
                         </td>
                       </tr>
                     ))}
