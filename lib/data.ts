@@ -50,6 +50,38 @@ export type StudentRecord = {
   status: string;
 };
 
+export type StudentSchoolSummary = {
+  kod_sekolah: string;
+  nama_sekolah: string;
+  kategori: string;
+  zon: string | null;
+  jumlah_murid: number;
+  murid_lelaki: number;
+  murid_perempuan: number;
+};
+
+export type StudentPageOptions = {
+  page?: number;
+  pageSize?: number;
+  kodSekolah?: string;
+  classId?: string;
+  status?: string;
+  search?: string;
+};
+
+export type StudentPageResult = {
+  rows: StudentRecord[];
+  count: number;
+  page: number;
+  pageSize: number;
+};
+
+export type StudentSchoolSummaryOptions = {
+  kategori?: string;
+  zon?: string;
+  kodSekolah?: string;
+};
+
 export type UserRecord = {
   id: string;
   email: string;
@@ -654,6 +686,55 @@ export async function getClasses(): Promise<ClassRecord[]> {
 
 export async function getStudents(): Promise<StudentRecord[]> {
   return fetchStudentsInBatches();
+}
+
+export async function getStudentsPage(options: StudentPageOptions = {}): Promise<StudentPageResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const pageSize = Math.min(500, Math.max(1, options.pageSize ?? 100));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  if (!supabase) {
+    return { rows: [], count: 0, page, pageSize };
+  }
+
+  let query = supabase
+    .from('students')
+    .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status', { count: 'exact' });
+
+  if (options.kodSekolah) query = query.eq('kod_sekolah', options.kodSekolah);
+  if (options.classId) query = query.eq('class_id', options.classId);
+  if (options.status) query = query.eq('status', options.status);
+  if (options.search?.trim()) {
+    const term = options.search.trim().replaceAll('%', '').replaceAll(',', ' ');
+    query = query.or(`nama_murid.ilike.%${term}%,mykid.ilike.%${term}%,kod_sekolah.ilike.%${term}%`);
+  }
+
+  const { data, count, error } = await query
+    .order('kod_sekolah')
+    .order('nama_murid')
+    .range(from, to);
+
+  if (error) return { rows: [], count: 0, page, pageSize };
+  return { rows: data ?? [], count: count ?? 0, page, pageSize };
+}
+
+export async function getStudentSchoolSummaries(
+  options: StudentSchoolSummaryOptions = {},
+): Promise<StudentSchoolSummary[]> {
+  if (!supabase) return [];
+
+  let query = supabase
+    .from('v_student_school_summary')
+    .select('kod_sekolah,nama_sekolah,kategori,zon,jumlah_murid,murid_lelaki,murid_perempuan');
+
+  if (options.kategori) query = query.eq('kategori', options.kategori);
+  if (options.zon) query = query.eq('zon', options.zon);
+  if (options.kodSekolah) query = query.eq('kod_sekolah', options.kodSekolah);
+
+  const { data, error } = await query.order('kod_sekolah');
+  if (error) return [];
+  return (data ?? []) as StudentSchoolSummary[];
 }
 
 export async function getSchoolUsers(): Promise<UserRecord[]> {

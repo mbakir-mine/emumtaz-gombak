@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AccessProfile } from '@/lib/access';
-import type { ClassRecord, School, StudentRecord } from '@/lib/data';
+import type { ClassRecord, School, StudentRecord, StudentSchoolSummary } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
-import { scopeClasses, scopeStudents } from '../ui/scopedData';
+import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import StudentForm from './StudentForm';
 import StudentImportForm from './StudentImportForm';
 
@@ -87,6 +87,23 @@ function matchesFilter(
   return true;
 }
 
+function matchesSchoolSummary(summary: StudentSchoolSummary, filter: StudentFilter | null) {
+  if (!filter) return false;
+  if (filter.category && summary.kategori?.toUpperCase() !== filter.category) return false;
+  if (filter.zone && summary.zon !== filter.zone) return false;
+  return true;
+}
+
+function summaryCounts(summary: StudentSchoolSummary, gender?: string) {
+  const male = gender === 'P' ? 0 : summary.murid_lelaki;
+  const female = gender === 'L' ? 0 : summary.murid_perempuan;
+  return {
+    male,
+    female,
+    total: male + female,
+  };
+}
+
 function schoolLabel(kodSekolah: string, schoolMap: Map<string, School>) {
   const school = schoolMap.get(kodSekolah);
   return school ? `${school.kod_sekolah} - ${school.nama_sekolah}` : kodSekolah;
@@ -120,21 +137,22 @@ function BreakdownRow({
 
 function CategoryStudentCard({
   category,
-  students,
-  schoolMap,
+  summaries,
   onSelect,
 }: {
   category: string;
-  students: StudentRecord[];
-  schoolMap: Map<string, School>;
+  summaries: StudentSchoolSummary[];
   onSelect: (filter: StudentFilter) => void;
 }) {
-  const categoryStudents = students.filter((student) => studentCategory(student, schoolMap) === category);
-  const maleCount = categoryStudents.filter((student) => student.jantina === 'L').length;
-  const femaleCount = categoryStudents.filter((student) => student.jantina === 'P').length;
+  const categorySummaries = summaries.filter((summary) => summary.kategori?.toUpperCase() === category);
+  const categoryTotal = categorySummaries.reduce((total, summary) => total + summary.jumlah_murid, 0);
+  const maleCount = categorySummaries.reduce((total, summary) => total + summary.murid_lelaki, 0);
+  const femaleCount = categorySummaries.reduce((total, summary) => total + summary.murid_perempuan, 0);
   const zoneCounts = zoneOrder.map((zone) => ({
     zone,
-    count: categoryStudents.filter((student) => studentZone(student, schoolMap) === zone).length,
+    count: categorySummaries
+      .filter((summary) => summary.zon === zone)
+      .reduce((total, summary) => total + summary.jumlah_murid, 0),
   }));
 
   return (
@@ -142,7 +160,7 @@ function CategoryStudentCard({
       <div className="student-category-left">
         <h3>Murid Di {category}</h3>
         <CountButton filter={{ label: `Murid ${category}`, category }} onSelect={onSelect}>
-          <strong>{categoryStudents.length}</strong>
+          <strong>{categoryTotal}</strong>
         </CountButton>
         <div className="student-category-gender">
           <BreakdownRow
@@ -176,15 +194,13 @@ function CategoryStudentCard({
 
 function StudentSummaryCards({
   profile,
-  students,
-  schoolMap,
+  summaries,
   formOpen,
   onToggleForm,
   onSelect,
 }: {
   profile: AccessProfile | null;
-  students: StudentRecord[];
-  schoolMap: Map<string, School>;
+  summaries: StudentSchoolSummary[];
   formOpen: boolean;
   onToggleForm: () => void;
   onSelect: (filter: StudentFilter) => void;
@@ -192,8 +208,11 @@ function StudentSummaryCards({
   const currentScope = scopeLabel(profile);
   const categoryCounts = ['SRAI', 'SRA', 'KAFAI'].map((category) => ({
     category,
-    count: students.filter((student) => studentCategory(student, schoolMap) === category).length,
+    count: summaries
+      .filter((summary) => summary.kategori?.toUpperCase() === category)
+      .reduce((total, summary) => total + summary.jumlah_murid, 0),
   }));
+  const totalStudents = summaries.reduce((total, summary) => total + summary.jumlah_murid, 0);
 
   return (
     <div className="student-summary-grid student-summary-category-grid">
@@ -201,7 +220,7 @@ function StudentSummaryCards({
         <div className="student-card-main">
           <span>Jumlah Keseluruhan</span>
           <CountButton filter={{ label: `Semua murid ${currentScope}` }} onSelect={onSelect}>
-            <strong>{students.length}</strong>
+            <strong>{totalStudents}</strong>
           </CountButton>
           {canManageStudents(profile) ? (
             <button className="button summary-add-button student-add-button" type="button" onClick={onToggleForm}>
@@ -226,8 +245,7 @@ function StudentSummaryCards({
         <CategoryStudentCard
           key={category}
           category={category}
-          students={students}
-          schoolMap={schoolMap}
+          summaries={summaries}
           onSelect={onSelect}
         />
       ))}
@@ -239,10 +257,12 @@ export default function StudentList({
   students,
   classes,
   schools,
+  schoolSummaries,
 }: {
   students: StudentRecord[];
   classes: ClassRecord[];
   schools: School[];
+  schoolSummaries: StudentSchoolSummary[];
 }) {
   const profile = useAccessProfile();
   const [query, setQuery] = useState('');
@@ -254,6 +274,37 @@ export default function StudentList({
     [classes, profile, schools, students],
   );
   const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
+  const scopedSchoolCodes = useMemo(() => new Set(scopeSchools(profile, schools).map((school) => school.kod_sekolah)), [profile, schools]);
+  const fallbackSchoolSummaries = useMemo<StudentSchoolSummary[]>(() => {
+    const grouped = new Map<string, StudentSchoolSummary>();
+
+    scopedStudents.forEach((student) => {
+      const school = schoolMap.get(student.kod_sekolah);
+      const current = grouped.get(student.kod_sekolah) ?? {
+        kod_sekolah: student.kod_sekolah,
+        nama_sekolah: school?.nama_sekolah ?? student.kod_sekolah,
+        kategori: school?.kategori ?? '',
+        zon: school?.zon ?? null,
+        jumlah_murid: 0,
+        murid_lelaki: 0,
+        murid_perempuan: 0,
+      };
+
+      if (student.status === 'AKTIF') {
+        current.jumlah_murid += 1;
+        if (student.jantina === 'L') current.murid_lelaki += 1;
+        if (student.jantina === 'P') current.murid_perempuan += 1;
+      }
+
+      grouped.set(student.kod_sekolah, current);
+    });
+
+    return [...grouped.values()];
+  }, [schoolMap, scopedStudents]);
+  const scopedSchoolSummaries = useMemo(() => {
+    if (schoolSummaries.length === 0) return fallbackSchoolSummaries;
+    return schoolSummaries.filter((summary) => scopedSchoolCodes.has(summary.kod_sekolah));
+  }, [fallbackSchoolSummaries, schoolSummaries, scopedSchoolCodes]);
   const classById = useMemo(() => new Map(scopedClasses.map((item) => [item.id, item])), [scopedClasses]);
   const filteredStudents = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -273,27 +324,22 @@ export default function StudentList({
         .includes(term);
     });
   }, [classById, query, schoolMap, scopedStudents, selectedFilter]);
-  const schoolSummaries = useMemo(() => {
-    const grouped = new Map<string, { kodSekolah: string; male: number; female: number; total: number }>();
-
-    filteredStudents.forEach((student) => {
-      const current = grouped.get(student.kod_sekolah) ?? {
-        kodSekolah: student.kod_sekolah,
-        male: 0,
-        female: 0,
-        total: 0,
-      };
-
-      if (student.jantina === 'L') current.male += 1;
-      if (student.jantina === 'P') current.female += 1;
-      current.total += 1;
-      grouped.set(student.kod_sekolah, current);
-    });
-
-    return [...grouped.values()].sort((a, b) =>
-      schoolLabel(a.kodSekolah, schoolMap).localeCompare(schoolLabel(b.kodSekolah, schoolMap)),
-    );
-  }, [filteredStudents, schoolMap]);
+  const selectedSchoolSummaries = useMemo(() => {
+    if (!selectedFilter) return [];
+    return scopedSchoolSummaries
+      .filter((summary) => matchesSchoolSummary(summary, selectedFilter))
+      .map((summary) => {
+        const counts = summaryCounts(summary, selectedFilter.gender);
+        return {
+          kodSekolah: summary.kod_sekolah,
+          male: counts.male,
+          female: counts.female,
+          total: counts.total,
+        };
+      })
+      .filter((summary) => summary.total > 0)
+      .sort((a, b) => schoolLabel(a.kodSekolah, schoolMap).localeCompare(schoolLabel(b.kodSekolah, schoolMap)));
+  }, [schoolMap, scopedSchoolSummaries, selectedFilter]);
   const shouldShowList = Boolean(selectedFilter) || query.trim().length > 0;
   const showSchoolSummary = Boolean(selectedFilter) && query.trim().length === 0;
 
@@ -301,12 +347,11 @@ export default function StudentList({
     <>
       <div className="panel-head">
         <h2>{statsTitle(profile)}</h2>
-        <span>{scopedStudents.length} rekod murid</span>
+        <span>{scopedSchoolSummaries.reduce((total, summary) => total + summary.jumlah_murid, 0)} rekod murid</span>
       </div>
       <StudentSummaryCards
         profile={profile}
-        students={scopedStudents}
-        schoolMap={schoolMap}
+        summaries={scopedSchoolSummaries}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
         onSelect={setSelectedFilter}
@@ -337,7 +382,7 @@ export default function StudentList({
         </div>
         <span>
           {showSchoolSummary
-            ? `${schoolSummaries.length} sekolah - ${filteredStudents.length} murid`
+            ? `${selectedSchoolSummaries.length} sekolah - ${selectedSchoolSummaries.reduce((total, item) => total + item.total, 0)} murid`
             : `${filteredStudents.length} / ${scopedStudents.length} rekod`}
         </span>
       </div>
@@ -355,7 +400,9 @@ export default function StudentList({
       </div>
       {!shouldShowList ? (
         <p className="empty">Klik angka pada kad di atas atau gunakan carian untuk memaparkan senarai murid.</p>
-      ) : filteredStudents.length === 0 ? (
+      ) : showSchoolSummary && selectedSchoolSummaries.length === 0 ? (
+        <p className="empty">Tiada ringkasan sekolah sepadan dengan pilihan ini.</p>
+      ) : !showSchoolSummary && filteredStudents.length === 0 ? (
         <p className="empty">Tiada murid sepadan dengan carian.</p>
       ) : showSchoolSummary ? (
         <div className="table-scroll">
@@ -370,7 +417,7 @@ export default function StudentList({
               </tr>
             </thead>
             <tbody>
-              {schoolSummaries.map((item, index) => (
+              {selectedSchoolSummaries.map((item, index) => (
                 <tr key={item.kodSekolah}>
                   <td>{index + 1}</td>
                   <td>{schoolLabel(item.kodSekolah, schoolMap)}</td>
