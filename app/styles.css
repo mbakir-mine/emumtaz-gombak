@@ -1392,11 +1392,20 @@ th {
 }
 
 .student-year-list {
+  display: grid;
   grid-auto-flow: column;
   grid-template-rows: repeat(3, auto);
   column-gap: 14px;
   row-gap: 6px;
+  justify-content: end;
+  justify-items: end;
+  align-content: center;
   min-width: 230px;
+  min-height: 92px;
+  padding: 12px 24px 12px 12px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 201, 79, 0.82), rgba(226, 244, 232, 0.72));
 }
 
 .student-year-list span {
