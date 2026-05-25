@@ -1289,7 +1289,7 @@ th {
 .student-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 22px;
 }
 
@@ -1366,7 +1366,18 @@ th {
   text-align: right;
 }
 
-.student-summary-card .school-count-button strong {
+.student-summary-card {
+  min-height: 132px;
+}
+
+.student-card-main {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.student-summary-card .school-count-button strong,
+.student-summary-card > .student-card-main > strong {
   display: block;
   margin-top: 8px;
   color: var(--green);
@@ -1381,21 +1392,20 @@ th {
 }
 
 .student-year-list {
-  display: grid;
-  gap: 6px;
-  min-width: 190px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(244, 201, 79, 0.7), rgba(226, 244, 232, 0.7));
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto);
+  column-gap: 14px;
+  row-gap: 6px;
+  min-width: 230px;
 }
 
 .student-year-list span {
   display: grid;
-  grid-template-columns: minmax(82px, 1fr) 8px 36px;
-  gap: 5px;
+  grid-template-columns: max-content 7px minmax(24px, max-content);
+  gap: 4px;
   align-items: baseline;
   color: #263b2e;
+  font-size: 14px;
 }
 
 .student-year-list em,
@@ -1410,6 +1420,11 @@ th {
 .student-year-list b {
   color: #052615;
   text-align: right;
+}
+
+.student-add-button {
+  margin-top: auto;
+  align-self: end;
 }
 
 .list-choice-row {

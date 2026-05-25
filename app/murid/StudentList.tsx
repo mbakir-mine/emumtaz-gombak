@@ -119,26 +119,27 @@ function StudentSummaryCards({
 
   return (
     <div className={`student-summary-grid ${isDistrict ? '' : 'student-summary-grid-compact'}`}>
-      <article className="teacher-summary-card student-summary-card">
-        <div>
+      <article className="metric dashboard-metric student-summary-card student-total-card">
+        <div className="student-card-main">
           <span>Jumlah Keseluruhan</span>
           <CountButton filter={{ label: `Semua murid ${currentScope}` }} onSelect={onSelect}>
             <strong>{students.length}</strong>
           </CountButton>
+          {canManageStudents(profile) ? (
+            <button className="button summary-add-button student-add-button" type="button" onClick={onToggleForm}>
+              {formOpen ? 'TUTUP BORANG' : 'TAMBAH MURID'}
+            </button>
+          ) : null}
         </div>
-        {canManageStudents(profile) ? (
-          <button className="button summary-add-button teacher-add-button" type="button" onClick={onToggleForm}>
-            {formOpen ? 'TUTUP BORANG' : 'TAMBAH MURID'}
-          </button>
-        ) : null}
+        <div className="metric-accent" aria-hidden="true" />
       </article>
 
-      <article className="teacher-summary-card student-summary-card">
-        <div>
-          <span>Jumlah Mengikut Jantina</span>
+      <article className="metric dashboard-metric student-summary-card">
+        <div className="student-card-main">
+          <span>Jantina</span>
           <strong>{genderCounts.reduce((total, item) => total + item.count, 0)}</strong>
         </div>
-        <div className="teacher-count-list student-count-list">
+        <div className="metric-breakdown student-count-list">
           {genderCounts.map((item) => (
             <span key={item.gender}>
               <em>{item.label}</em>
@@ -152,12 +153,12 @@ function StudentSummaryCards({
       </article>
 
       {isDistrict ? (
-        <article className="teacher-summary-card student-summary-card">
-          <div>
-            <span>Jumlah Zon</span>
+        <article className="metric dashboard-metric student-summary-card">
+          <div className="student-card-main">
+            <span>Zon</span>
             <strong>{zoneCounts.reduce((total, item) => total + item.count, 0)}</strong>
           </div>
-          <div className="teacher-count-list student-count-list">
+          <div className="metric-breakdown student-count-list">
             {zoneCounts.map((item) => (
               <span key={item.zone}>
                 <em>{zoneText(item.zone)}</em>
@@ -171,12 +172,12 @@ function StudentSummaryCards({
         </article>
       ) : null}
 
-      <article className="teacher-summary-card student-summary-card">
-        <div>
-          <span>Jumlah Mengikut Tahun</span>
+      <article className="metric dashboard-metric student-summary-card">
+        <div className="student-card-main">
+          <span>Tahun</span>
           <strong>{yearCounts.reduce((total, item) => total + item.count, 0)}</strong>
         </div>
-        <div className="student-year-list">
+        <div className="metric-breakdown student-year-list">
           {yearCounts.map((item) => (
             <span key={item.year}>
               <em>Tahun {item.year}</em>
