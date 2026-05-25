@@ -786,6 +786,38 @@ table {
   text-underline-offset: 3px;
 }
 
+.class-year-list {
+  display: grid;
+  gap: 22px;
+}
+
+.class-year-block {
+  min-width: 0;
+}
+
+.class-year-table th:first-child {
+  width: 46%;
+}
+
+.class-year-table th,
+.class-year-table td {
+  text-align: center;
+}
+
+.class-year-table th:first-child,
+.class-year-table td:first-child {
+  text-align: left;
+}
+
+.class-year-total-row {
+  background: #f4fbf5;
+  font-weight: 800;
+}
+
+.class-year-total-row td {
+  border-top: 2px solid #a8cdb2;
+}
+
 th,
 td {
   padding: 13px;

@@ -35,6 +35,14 @@ type SchoolClassDetail = ClassWithSchool & {
   totalStudents: number;
 };
 
+type YearClassGroup = {
+  year: number;
+  classes: SchoolClassDetail[];
+  maleStudents: number;
+  femaleStudents: number;
+  totalStudents: number;
+};
+
 function zoneLabel(zon: string | null | undefined) {
   if (!zon) return 'Zon belum ditetapkan';
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
@@ -68,7 +76,7 @@ function detailTitle(filter: ClassFilter, profileRole: string | undefined, schoo
   }
 
   if (filter.mode === 'schoolClassDetail' && filter.schoolCode) {
-    return `Senarai Kelas ${schoolName ?? filter.schoolCode} ${currentYear}`;
+    return `Senarai Kelas ${filter.schoolCode} - ${schoolName ?? filter.schoolCode} ${currentYear}`;
   }
 
   if (filter.year && filter.zone) return `Senarai Kelas ${zoneLabel(filter.zone)} Tahun ${filter.year} ${currentYear}`;
@@ -221,6 +229,21 @@ export default function ClassOverview({
       })
       .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
   }, [filteredItems, students]);
+
+  const yearClassGroups = useMemo<YearClassGroup[]>(() => {
+    return years
+      .map((year) => {
+        const yearClasses = schoolClassDetails.filter((item) => item.tahun === year);
+        return {
+          year,
+          classes: yearClasses,
+          maleStudents: yearClasses.reduce((total, item) => total + item.maleStudents, 0),
+          femaleStudents: yearClasses.reduce((total, item) => total + item.femaleStudents, 0),
+          totalStudents: yearClasses.reduce((total, item) => total + item.totalStudents, 0),
+        };
+      })
+      .filter((group) => group.classes.length > 0);
+  }, [schoolClassDetails]);
 
   const schoolSummaries = useMemo<SchoolClassSummary[]>(() => {
     const summaries = new Map<string, SchoolClassSummary>();
@@ -427,31 +450,39 @@ export default function ClassOverview({
             schoolClassDetails.length === 0 ? (
               <p className="empty">Tiada kelas untuk sekolah ini.</p>
             ) : (
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tahun</th>
-                      <th>Nama Kelas</th>
-                      <th>Murid Lelaki</th>
-                      <th>Murid Perempuan</th>
-                      <th>Jumlah Murid</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schoolClassDetails.map((item) => (
-                      <tr key={item.id}>
-                        <td>Tahun {item.tahun}</td>
-                        <td>{item.nama_kelas}</td>
-                        <td>{item.maleStudents}</td>
-                        <td>{item.femaleStudents}</td>
-                        <td>
-                          <strong>{item.totalStudents}</strong>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="class-year-list">
+                {yearClassGroups.map((group) => (
+                  <div className="class-year-block" key={group.year}>
+                    <div className="table-scroll">
+                      <table className="class-year-table">
+                        <thead>
+                          <tr>
+                            <th>Tahun {group.year}</th>
+                            <th>Lelaki</th>
+                            <th>Perempuan</th>
+                            <th>Jumlah</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.classes.map((item) => (
+                            <tr key={item.id}>
+                              <td>{item.nama_kelas}</td>
+                              <td>{item.maleStudents}</td>
+                              <td>{item.femaleStudents}</td>
+                              <td>{item.totalStudents}</td>
+                            </tr>
+                          ))}
+                          <tr className="class-year-total-row">
+                            <td>Jumlah Tahun {group.year}</td>
+                            <td>{group.maleStudents}</td>
+                            <td>{group.femaleStudents}</td>
+                            <td>{group.totalStudents}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
               </div>
             )
           ) : filteredItems.length === 0 ? (
