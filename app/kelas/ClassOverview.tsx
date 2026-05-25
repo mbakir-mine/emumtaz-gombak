@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { ClassRecord, School } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses } from '../ui/scopedData';
+import ClassForm from './ClassForm';
 
 const years = [1, 2, 3, 4, 5, 6];
 const zones = ['BARAT', 'TENGAH', 'TIMUR'];
@@ -35,9 +36,10 @@ function countClasses(items: ClassWithSchool[], filter: Omit<ClassFilter, 'label
 }
 
 function statsTitle(role: string | undefined) {
-  if (role === 'ADMIN_ZON') return 'Statistik Kelas Zon';
-  if (role === 'ADMIN_SEKOLAH') return 'Statistik Kelas Sekolah';
-  return 'Statistik Kelas Daerah';
+  const currentYear = new Date().getFullYear();
+  if (role === 'ADMIN_ZON') return `Statistik Kelas Zon ${currentYear}`;
+  if (role === 'ADMIN_SEKOLAH') return `Statistik Kelas Sekolah ${currentYear}`;
+  return `Statistik Kelas Daerah Gombak ${currentYear}`;
 }
 
 function YearBreakdownCard({
@@ -78,7 +80,6 @@ function YearBreakdownCard({
                 }
               >
                 <strong>{classTotal}</strong>
-                <small>kelas</small>
               </button>
             </div>
           );
@@ -92,11 +93,13 @@ function TotalCard({
   title,
   total,
   children,
+  action,
   onSelect,
 }: {
   title: string;
   total: number;
   children?: ReactNode;
+  action?: ReactNode;
   onSelect: () => void;
 }) {
   return (
@@ -105,6 +108,7 @@ function TotalCard({
       <button className="summary-number" type="button" onClick={onSelect}>
         {total}
       </button>
+      {action}
       {children}
     </article>
   );
@@ -119,6 +123,7 @@ export default function ClassOverview({
 }) {
   const profile = useAccessProfile();
   const [filter, setFilter] = useState<ClassFilter | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const selectFilter = (nextFilter: ClassFilter) => {
     setFilter(nextFilter);
     window.setTimeout(() => {
@@ -150,6 +155,16 @@ export default function ClassOverview({
   const isDistrictView = !profile || profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH';
   const isZoneView = profile?.role === 'ADMIN_ZON';
   const school = profile?.kod_sekolah ? schoolByCode.get(profile.kod_sekolah) : null;
+  const totalTitle = isDistrictView
+    ? 'Jumlah kelas daerah'
+    : isZoneView
+      ? `Jumlah kelas ${zoneLabel(profile.zon)}`
+      : `Jumlah kelas ${school?.nama_sekolah ?? profile?.kod_sekolah ?? 'sekolah'}`;
+  const addClassButton = (
+    <button className="button summary-add-button" type="button" onClick={() => setShowAddForm((value) => !value)}>
+      {showAddForm ? 'TUTUP BORANG' : 'TAMBAH KELAS'}
+    </button>
+  );
 
   return (
     <>
@@ -162,8 +177,9 @@ export default function ClassOverview({
         {isDistrictView && (
           <div className="summary-grid">
             <TotalCard
-              title="Jumlah keseluruhan kelas"
+              title={totalTitle}
               total={visibleItems.length}
+              action={addClassButton}
               onSelect={() => selectFilter({ label: 'Semua kelas daerah' })}
             >
               <div className="zone-mini-list">
@@ -195,8 +211,9 @@ export default function ClassOverview({
         {isZoneView && (
           <div className="summary-grid summary-grid-zone">
             <TotalCard
-              title={`Jumlah kelas ${zoneLabel(profile.zon)}`}
+              title={totalTitle}
               total={visibleItems.length}
+              action={addClassButton}
               onSelect={() => selectFilter({ label: zoneLabel(profile.zon), zone: profile.zon ?? undefined })}
             />
             <YearBreakdownCard
@@ -212,8 +229,9 @@ export default function ClassOverview({
         {profile?.role === 'ADMIN_SEKOLAH' && (
           <div className="summary-grid summary-grid-zone">
             <TotalCard
-              title={`Jumlah kelas ${school?.nama_sekolah ?? profile.kod_sekolah ?? 'sekolah'}`}
+              title={totalTitle}
               total={visibleItems.length}
+              action={addClassButton}
               onSelect={() =>
                 selectFilter({
                   label: school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah',
@@ -228,6 +246,16 @@ export default function ClassOverview({
               schoolCode={profile.kod_sekolah ?? undefined}
               onSelect={selectFilter}
             />
+          </div>
+        )}
+
+        {showAddForm && (
+          <div className="inline-add-panel">
+            <div className="panel-head">
+              <h3>Tambah Kelas</h3>
+              <span>Tahun murid menentukan set subjek</span>
+            </div>
+            <ClassForm schools={schools} />
           </div>
         )}
       </section>
