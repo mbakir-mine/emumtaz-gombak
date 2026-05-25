@@ -27,6 +27,9 @@ type SchoolClassSummary = {
   nama_sekolah: string;
   years: Record<number, number>;
   total: number;
+  maleStudents: number;
+  femaleStudents: number;
+  totalStudents: number;
 };
 
 type SchoolClassDetail = ClassWithSchool & {
@@ -199,12 +202,12 @@ export default function ClassOverview({
     return true;
   });
 
-  const schoolClassDetails = useMemo<SchoolClassDetail[]>(() => {
-    const studentCounts = new Map<string, { maleStudents: number; femaleStudents: number; totalStudents: number }>();
+  const studentCountsByClass = useMemo(() => {
+    const counts = new Map<string, { maleStudents: number; femaleStudents: number; totalStudents: number }>();
 
     students.forEach((student) => {
       if (!student.class_id || student.status !== 'AKTIF') return;
-      const current = studentCounts.get(student.class_id) ?? {
+      const current = counts.get(student.class_id) ?? {
         maleStudents: 0,
         femaleStudents: 0,
         totalStudents: 0,
@@ -213,12 +216,16 @@ export default function ClassOverview({
       if (student.jantina === 'L') current.maleStudents += 1;
       if (student.jantina === 'P') current.femaleStudents += 1;
       current.totalStudents += 1;
-      studentCounts.set(student.class_id, current);
+      counts.set(student.class_id, current);
     });
 
+    return counts;
+  }, [students]);
+
+  const schoolClassDetails = useMemo<SchoolClassDetail[]>(() => {
     return filteredItems
       .map((item) => {
-        const counts = studentCounts.get(item.id) ?? {
+        const counts = studentCountsByClass.get(item.id) ?? {
           maleStudents: 0,
           femaleStudents: 0,
           totalStudents: 0,
@@ -230,7 +237,7 @@ export default function ClassOverview({
         };
       })
       .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
-  }, [filteredItems, students]);
+  }, [filteredItems, studentCountsByClass]);
 
   const yearClassGroups = useMemo<YearClassGroup[]>(() => {
     return years
@@ -262,15 +269,36 @@ export default function ClassOverview({
           nama_sekolah: item.school?.nama_sekolah ?? 'Sekolah belum ditemui',
           years: {},
           total: 0,
+          maleStudents: 0,
+          femaleStudents: 0,
+          totalStudents: 0,
         };
+      const studentCounts = studentCountsByClass.get(item.id) ?? {
+        maleStudents: 0,
+        femaleStudents: 0,
+        totalStudents: 0,
+      };
 
       current.years[item.tahun] = (current.years[item.tahun] ?? 0) + 1;
       current.total += 1;
+      current.maleStudents += studentCounts.maleStudents;
+      current.femaleStudents += studentCounts.femaleStudents;
+      current.totalStudents += studentCounts.totalStudents;
       summaries.set(item.kod_sekolah, current);
     });
 
     return [...summaries.values()].sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah));
-  }, [filter?.schoolCode, filter?.year, filter?.zone, visibleItems]);
+  }, [filter?.schoolCode, filter?.year, filter?.zone, studentCountsByClass, visibleItems]);
+
+  const schoolSummaryTotals = schoolSummaries.reduce(
+    (total, item) => ({
+      classes: total.classes + item.total,
+      maleStudents: total.maleStudents + item.maleStudents,
+      femaleStudents: total.femaleStudents + item.femaleStudents,
+      totalStudents: total.totalStudents + item.totalStudents,
+    }),
+    { classes: 0, maleStudents: 0, femaleStudents: 0, totalStudents: 0 },
+  );
 
   const isDistrictView = !profile || profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH';
   const isZoneView = profile?.role === 'ADMIN_ZON';
@@ -407,6 +435,57 @@ export default function ClassOverview({
           {filter.mode === 'schoolSummary' ? (
             schoolSummaries.length === 0 ? (
               <p className="empty">Tiada rekod kelas untuk pilihan ini.</p>
+            ) : filter.year ? (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Kod Sekolah</th>
+                      <th>Nama Sekolah</th>
+                      <th>Bilangan Kelas</th>
+                      <th>Murid Lelaki</th>
+                      <th>Murid Perempuan</th>
+                      <th>Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schoolSummaries.map((item) => (
+                      <tr key={item.kod_sekolah}>
+                        <td>{item.kod_sekolah}</td>
+                        <td>{item.nama_sekolah}</td>
+                        <td>
+                          <button
+                            className="table-number-button"
+                            type="button"
+                            onClick={() =>
+                              selectFilter({
+                                label: `Senarai kelas ${item.nama_sekolah}`,
+                                mode: 'schoolClassDetail',
+                                schoolCode: item.kod_sekolah,
+                                year: filter.year,
+                              })
+                            }
+                          >
+                            {item.total}
+                          </button>
+                        </td>
+                        <td>{item.maleStudents}</td>
+                        <td>{item.femaleStudents}</td>
+                        <td>
+                          <strong>{item.totalStudents}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="class-year-total-row">
+                      <td colSpan={2}>Jumlah Keseluruhan</td>
+                      <td>{schoolSummaryTotals.classes}</td>
+                      <td>{schoolSummaryTotals.maleStudents}</td>
+                      <td>{schoolSummaryTotals.femaleStudents}</td>
+                      <td>{schoolSummaryTotals.totalStudents}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="table-scroll">
                 <table>
