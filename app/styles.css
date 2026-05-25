@@ -1709,6 +1709,11 @@ select {
   background: #fbfdf9;
 }
 
+.teacher-report-filter {
+  grid-template-columns: repeat(2, minmax(180px, 320px));
+  justify-content: start;
+}
+
 .print-report-title {
   display: none;
   margin-bottom: 18px;

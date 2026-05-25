@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
-import type { ClassRecord, School, StudentSummaryRecord } from '@/lib/data';
+import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
 import { gradeForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
@@ -18,10 +18,12 @@ export default function IndividualReportTable({
   schools,
   classes,
   summaries,
+  teacherClassAssignments,
 }: {
   schools: School[];
   classes: ClassRecord[];
   summaries: StudentSummaryRecord[];
+  teacherClassAssignments: TeacherClassAssignment[];
 }) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -31,10 +33,27 @@ export default function IndividualReportTable({
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
+  const [selectedExam, setSelectedExam] = useState('');
 
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const classById = useMemo(() => new Map(scopedClasses.map((item) => [item.id, item])), [scopedClasses]);
+  const isClassTeacher = profile?.role === 'GURU_KELAS';
+  const teacherClassIds = useMemo(() => {
+    if (!isClassTeacher || !profile) return new Set<string>();
+    return new Set(
+      teacherClassAssignments
+        .filter((assignment) => assignment.user_id === profile.id)
+        .map((assignment) => assignment.class_id),
+    );
+  }, [isClassTeacher, profile, teacherClassAssignments]);
+  const teacherSummaries = useMemo(() => {
+    return summaries.filter((item) => teacherClassIds.has(item.class_id));
+  }, [summaries, teacherClassIds]);
+  const teacherExamOptions = useMemo(() => {
+    return [...new Set(teacherSummaries.filter((item) => item.tahun_akademik === selectedYear).map((item) => item.kod_peperiksaan))]
+      .sort();
+  }, [selectedYear, teacherSummaries]);
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
   const effectiveSchool = profile?.role === 'ADMIN_SEKOLAH' ? profile.kod_sekolah ?? '' : selectedSchool;
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
@@ -55,6 +74,109 @@ export default function IndividualReportTable({
     if (selectedClass && item.class_id !== selectedClass) return false;
     return true;
   });
+  const teacherFilteredSummaries = useMemo(() => {
+    if (!selectedExam) return [];
+    return teacherSummaries
+      .filter((item) => item.tahun_akademik === selectedYear && item.kod_peperiksaan === selectedExam)
+      .sort((a, b) => (b.purata ?? -1) - (a.purata ?? -1) || (b.jumlah_markah ?? -1) - (a.jumlah_markah ?? -1));
+  }, [selectedExam, selectedYear, teacherSummaries]);
+  const rankedTeacherSummaries = teacherFilteredSummaries.map((item, index, rows) => {
+    const previous = rows[index - 1];
+    const rank =
+      previous && previous.purata === item.purata && previous.jumlah_markah === item.jumlah_markah
+        ? rows.findIndex((row) => row.purata === item.purata && row.jumlah_markah === item.jumlah_markah) + 1
+        : index + 1;
+
+    return { item, rank };
+  });
+
+  if (isClassTeacher) {
+    return (
+      <>
+        <div className="panel-head">
+          <div>
+            <h2>Laporan Individu Murid</h2>
+            <p className="table-note">Pilih tahun akademik dan jenis peperiksaan untuk melihat senarai kelas anda.</p>
+          </div>
+          <span>{rankedTeacherSummaries.length} rekod</span>
+        </div>
+
+        <div className="report-filter-grid teacher-report-filter no-print">
+          <label>
+            Tahun Akademik
+            <select
+              value={selectedYear}
+              onChange={(event) => {
+                setSelectedYear(Number(event.target.value));
+                setSelectedExam('');
+              }}
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Jenis Peperiksaan
+            <select value={selectedExam} onChange={(event) => setSelectedExam(event.target.value)}>
+              <option value="">Pilih peperiksaan</option>
+              {teacherExamOptions.map((exam) => (
+                <option key={exam} value={exam}>
+                  {exam}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {teacherClassIds.size === 0 ? (
+          <p className="empty">Kelas belum ditetapkan kepada akaun guru kelas ini.</p>
+        ) : !selectedExam ? (
+          <p className="empty">Pilih jenis peperiksaan untuk memaparkan senarai murid.</p>
+        ) : rankedTeacherSummaries.length === 0 ? (
+          <p className="empty">Tiada laporan murid untuk pilihan ini.</p>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bil</th>
+                  <th>Nama Murid</th>
+                  <th>Jumlah Markah</th>
+                  <th>Peratus</th>
+                  <th>Pangkat</th>
+                  <th>Kedudukan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankedTeacherSummaries.map(({ item, rank }, index) => {
+                  const href = `/laporan/individu/cetak?student_id=${item.student_id}&tahun_akademik=${item.tahun_akademik}&kod_peperiksaan=${item.kod_peperiksaan}`;
+
+                  return (
+                    <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <Link className="text-link" href={href}>
+                          {item.nama_murid}
+                        </Link>
+                      </td>
+                      <td>{item.jumlah_markah ?? '-'}</td>
+                      <td>{item.purata !== null && item.purata !== undefined ? `${item.purata}%` : '-'}</td>
+                      <td>{gradeForMark(item.purata)}</td>
+                      <td>{rank} / {rankedTeacherSummaries.length}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <>

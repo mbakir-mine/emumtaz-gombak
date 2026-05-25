@@ -48,7 +48,8 @@ export default async function CetakLaporanIndividuPage({
             <p className="table-note">Semak slip, kemudian cetak atau simpan sebagai PDF.</p>
           </div>
           <div className="row-actions">
-            <PrintButton />
+            <PrintButton label="CETAK" />
+            <PrintButton label="CETAK PDF" />
             <Link className="button secondary" href="/laporan/individu">
               Kembali
             </Link>
