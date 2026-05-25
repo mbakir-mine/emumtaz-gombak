@@ -1958,17 +1958,17 @@ select {
 
 .mark-entry-table th,
 .mark-entry-table td {
-  padding: 7px 13px;
+  padding: 4px 13px;
 }
 
 .mark-entry-table td {
-  height: 46px;
+  height: 36px;
 }
 
 .mark-entry-table .mark-input {
-  min-height: 34px;
+  min-height: 30px;
   max-width: 96px;
-  padding: 7px 10px;
+  padding: 4px 10px;
 }
 
 .mark-actions {
