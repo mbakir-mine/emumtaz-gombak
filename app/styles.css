@@ -1585,7 +1585,7 @@ th {
 
 .student-category-left {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto;
   gap: 5px;
   align-content: start;
 }
@@ -1612,8 +1612,18 @@ th {
 .student-category-gender {
   display: grid;
   gap: 4px;
-  align-content: end;
-  margin-top: 8px;
+  align-content: start;
+  justify-items: start;
+  margin-top: 18px;
+}
+
+.student-category-gender .student-breakdown-row {
+  grid-template-columns: max-content 10px minmax(28px, max-content);
+  justify-content: start;
+}
+
+.student-category-gender .student-breakdown-row em {
+  text-align: left;
 }
 
 .student-category-gender .school-count-button b,
@@ -1629,10 +1639,14 @@ th {
   align-content: center;
   min-height: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(207, 224, 207, 0.58);
+  border: 0;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(246, 251, 247, 0.72));
+    linear-gradient(135deg, rgba(244, 201, 79, 0.82), rgba(226, 244, 232, 0.72));
+}
+
+.student-category-zones .student-breakdown-row {
+  grid-template-columns: minmax(86px, 1fr) 10px minmax(34px, max-content);
 }
 
 .list-choice-row {
