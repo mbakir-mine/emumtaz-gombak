@@ -1286,6 +1286,17 @@ th {
   margin-bottom: 22px;
 }
 
+.student-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.student-summary-grid-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .teacher-summary-card {
   display: grid;
   gap: 16px;
@@ -1351,6 +1362,52 @@ th {
 }
 
 .teacher-count-list b {
+  color: #052615;
+  text-align: right;
+}
+
+.student-summary-card .school-count-button strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--green);
+  font-size: 42px;
+  line-height: 1;
+}
+
+.student-count-list .school-count-button,
+.student-year-list .school-count-button {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.student-year-list {
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(244, 201, 79, 0.7), rgba(226, 244, 232, 0.7));
+}
+
+.student-year-list span {
+  display: grid;
+  grid-template-columns: minmax(82px, 1fr) 8px 36px;
+  gap: 5px;
+  align-items: baseline;
+  color: #263b2e;
+}
+
+.student-year-list em,
+.student-year-list i {
+  font-style: normal;
+}
+
+.student-year-list em {
+  text-align: right;
+}
+
+.student-year-list b {
   color: #052615;
   text-align: right;
 }
@@ -1793,6 +1850,14 @@ select {
   padding: 0 12px;
 }
 
+.cell-subtext {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .access-checks {
   display: grid;
   grid-column: 1 / -1;
@@ -2231,7 +2296,9 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .school-summary-grid {
+  .school-summary-grid,
+  .student-summary-grid,
+  .student-summary-grid-compact {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -2481,6 +2548,8 @@ button:disabled {
 
   .summary-grid,
   .summary-grid-zone,
+  .student-summary-grid,
+  .student-summary-grid-compact,
   .year-stats {
     grid-template-columns: 1fr;
   }
@@ -2489,7 +2558,8 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .teacher-summary-grid {
+  .teacher-summary-grid,
+  .student-summary-grid {
     gap: 10px;
     margin-bottom: 16px;
   }
@@ -2503,12 +2573,14 @@ button:disabled {
     font-size: 28px;
   }
 
-  .teacher-count-list {
+  .teacher-count-list,
+  .student-year-list {
     min-width: 174px;
     padding: 9px 10px;
   }
 
-  .teacher-count-list span {
+  .teacher-count-list span,
+  .student-year-list span {
     grid-template-columns: minmax(96px, 1fr) 7px 28px;
     font-size: 12px;
   }
