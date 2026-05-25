@@ -252,7 +252,7 @@ export default function StudentList({
         onSelect={setSelectedFilter}
       />
       {showForms && (
-        <div className="inline-add-panel teacher-add-panel">
+        <div className="inline-add-panel student-add-panel">
           <div>
             <div className="panel-head">
               <h3>Tambah Murid</h3>

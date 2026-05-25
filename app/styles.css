@@ -1334,6 +1334,53 @@ th {
   margin-bottom: 22px;
 }
 
+.student-add-panel {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 22px;
+  padding-bottom: 28px;
+}
+
+.student-add-panel > div {
+  min-width: 0;
+}
+
+.student-add-panel .panel-head {
+  display: flex;
+  min-height: 36px;
+  margin-bottom: 16px;
+}
+
+.student-add-panel .panel-head h3 {
+  margin-bottom: 0;
+}
+
+.student-add-panel .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.student-add-panel .form-grid label:nth-of-type(5),
+.student-add-panel .form-grid .form-actions {
+  grid-column: 1 / 2;
+}
+
+.student-add-panel .import-form {
+  grid-template-columns: minmax(0, 1.2fr) minmax(150px, 0.8fr) minmax(190px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.student-add-panel .import-form > div:first-child {
+  align-self: start;
+}
+
+.student-add-panel .import-form .form-actions {
+  grid-column: 1 / 2;
+}
+
 .teacher-count-list {
   display: grid;
   gap: 6px;
@@ -2385,6 +2432,21 @@ button:disabled {
 
   .teacher-add-panel {
     grid-template-columns: 1fr;
+  }
+
+  .student-add-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .student-add-panel .form-grid,
+  .student-add-panel .import-form {
+    grid-template-columns: 1fr;
+  }
+
+  .student-add-panel .form-grid label:nth-of-type(5),
+  .student-add-panel .form-grid .form-actions,
+  .student-add-panel .import-form .form-actions {
+    grid-column: 1 / -1;
   }
 
   .inline-form label {
