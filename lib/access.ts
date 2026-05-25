@@ -26,7 +26,7 @@ export const navItems: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/', roles: allRoles },
   { key: 'schools', label: 'Sekolah', href: '/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON'] },
   { key: 'teachers', label: 'Guru & Pengguna', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
-  { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },

@@ -540,6 +540,114 @@ h1 {
   line-height: 1;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summary-grid-zone {
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 2fr);
+}
+
+.summary-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.summary-card h3 {
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.summary-card p,
+.summary-card span,
+.summary-card small {
+  color: var(--muted);
+}
+
+.summary-card-compact {
+  align-content: start;
+}
+
+.summary-number {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.summary-number:hover,
+.year-stat button:hover strong,
+.zone-mini-list button:hover strong {
+  color: var(--blue);
+}
+
+.zone-mini-list {
+  display: grid;
+  gap: 8px;
+}
+
+.zone-mini-list button,
+.year-stat,
+.year-stat button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+}
+
+.zone-mini-list button,
+.year-stat button {
+  cursor: pointer;
+}
+
+.zone-mini-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.year-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.year-stat {
+  display: grid;
+  gap: 4px;
+  min-height: 88px;
+  padding: 12px;
+  text-align: left;
+}
+
+.year-stat button {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  text-align: left;
+}
+
+.year-stat strong {
+  color: var(--green);
+  font-size: 28px;
+  line-height: 1;
+}
+
 .school-count-button b {
   color: #052615;
 }
@@ -1987,6 +2095,11 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .summary-grid,
+  .summary-grid-zone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .school-summary-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2227,6 +2340,12 @@ button:disabled {
 
   .metric-grid,
   .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid,
+  .summary-grid-zone,
+  .year-stats {
     grid-template-columns: 1fr;
   }
 
