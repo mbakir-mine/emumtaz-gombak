@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { navItems, visibleNavItems } from '@/lib/access';
 import { supabase } from '@/lib/supabase';
@@ -77,7 +78,7 @@ export default function SidebarNav({ active }: { active: string }) {
     router.replace('/login');
   }
 
-  const groups = groupedMenu
+  const groups = useMemo(() => groupedMenu
     .map((group) => {
       const children = group.items
         .filter((key) => {
@@ -100,16 +101,32 @@ export default function SidebarNav({ active }: { active: string }) {
         isActive: group.key === active || group.items.includes(active) || pathActive,
       };
     })
-    .filter((group) => group.children.length > 0);
+    .filter((group) => group.children.length > 0), [active, allItemMap, pathname, profile, visibleKeys]);
+  const activeGroupKey = groups.find((group) => group.isActive)?.key ?? null;
+  const [openGroupKey, setOpenGroupKey] = useState<string | null>(activeGroupKey);
+
+  useEffect(() => {
+    setOpenGroupKey(activeGroupKey);
+  }, [activeGroupKey]);
 
   return (
     <nav className="nav">
       {groups.map((group) => (
-        <div className="nav-group" key={group.key}>
-          <Link className={`nav-group-link ${group.isActive ? 'active' : ''}`} href={group.href}>
-            {group.label}
-          </Link>
-          {group.isActive && group.children.length > 1 && (
+        <div className={`nav-group ${openGroupKey === group.key ? 'nav-group-open' : ''}`} key={group.key}>
+          {group.children.length > 1 ? (
+            <button
+              className={`nav-group-link nav-menu-trigger ${group.isActive ? 'active' : ''}`}
+              type="button"
+              onClick={() => setOpenGroupKey((current) => (current === group.key ? null : group.key))}
+            >
+              {group.label}
+            </button>
+          ) : (
+            <Link className={`nav-group-link ${group.isActive ? 'active' : ''}`} href={group.href}>
+              {group.label}
+            </Link>
+          )}
+          {openGroupKey === group.key && group.children.length > 1 && (
             <div className="nav-submenu">
               {group.children.map((item) => (
                 <Link

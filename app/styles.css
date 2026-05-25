@@ -80,12 +80,21 @@ a {
 }
 
 .nav a,
+.nav-menu-trigger,
 .nav-logout {
   padding: 11px 12px;
   border-radius: 8px;
   color: #dbe4ef;
   font: inherit;
   font-weight: 700;
+}
+
+.nav-menu-trigger {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .nav-group-link {
@@ -101,6 +110,8 @@ a {
 
 .nav a:hover,
 .nav a.active,
+.nav-menu-trigger:hover,
+.nav-menu-trigger.active,
 .nav-group-link:hover,
 .nav-group-link.active {
   background: var(--nav-2);
@@ -1995,12 +2006,11 @@ button:disabled {
 
   .nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 0 -16px;
     padding: 0 16px 4px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    overflow: visible;
   }
 
   .nav::-webkit-scrollbar {
@@ -2012,6 +2022,7 @@ button:disabled {
   }
 
   .nav a,
+  .nav-menu-trigger,
   .nav-logout {
     flex: 0 0 auto;
     padding: 10px 13px;
@@ -2023,6 +2034,8 @@ button:disabled {
 
   .nav a:hover,
   .nav a.active,
+  .nav-menu-trigger:hover,
+  .nav-menu-trigger.active,
   .nav-group-link:hover,
   .nav-group-link.active {
     background: linear-gradient(135deg, rgba(244, 201, 79, 0.94), rgba(226, 244, 232, 0.9));
@@ -2031,10 +2044,13 @@ button:disabled {
   }
 
   .nav-submenu {
-    position: absolute;
-    z-index: 40;
-    min-width: 180px;
-    margin-top: 6px;
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+    margin-top: 8px;
     padding: 8px;
     border: 1px solid rgba(244, 201, 79, 0.22);
     border-radius: 12px;
@@ -2047,6 +2063,15 @@ button:disabled {
     border: 0;
     background: transparent;
     font-size: 13px;
+  }
+
+  .nav-group-open {
+    flex-basis: 100%;
+    order: 20;
+  }
+
+  .nav-group-open .nav-group-link {
+    width: fit-content;
   }
 
   .nav-logout {
@@ -2260,6 +2285,7 @@ button:disabled {
   }
 
   .nav a,
+  .nav-menu-trigger,
   .nav-logout {
     padding: 9px 11px;
     border-radius: 10px;
@@ -2729,6 +2755,7 @@ button:disabled {
   }
 
   .nav a,
+  .nav-menu-trigger,
   .nav-logout {
     padding: 8px 10px;
     border-radius: 9px;
