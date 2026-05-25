@@ -91,11 +91,69 @@ function canManageStudents(profile: AccessProfile | null) {
   return ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'].includes(profile?.role ?? '');
 }
 
+function CategoryStudentCard({
+  category,
+  students,
+  schoolMap,
+  onSelect,
+}: {
+  category: string;
+  students: StudentRecord[];
+  schoolMap: Map<string, School>;
+  onSelect: (filter: StudentFilter) => void;
+}) {
+  const categoryStudents = students.filter((student) => studentCategory(student, schoolMap) === category);
+  const maleCount = categoryStudents.filter((student) => student.jantina === 'L').length;
+  const femaleCount = categoryStudents.filter((student) => student.jantina === 'P').length;
+  const zoneCounts = zoneOrder.map((zone) => ({
+    zone,
+    count: categoryStudents.filter((student) => studentZone(student, schoolMap) === zone).length,
+  }));
+
+  return (
+    <article className="student-category-card">
+      <div className="student-category-left">
+        <h3>Murid Di {category}:</h3>
+        <CountButton filter={{ label: `Murid ${category}`, category }} onSelect={onSelect}>
+          <strong>{categoryStudents.length}</strong>
+        </CountButton>
+        <div className="student-category-gender">
+          <span>
+            L :
+            <CountButton filter={{ label: `Murid lelaki ${category}`, category, gender: 'L' }} onSelect={onSelect}>
+              <b>{maleCount}</b>
+            </CountButton>
+          </span>
+          <span>
+            P :
+            <CountButton filter={{ label: `Murid perempuan ${category}`, category, gender: 'P' }} onSelect={onSelect}>
+              <b>{femaleCount}</b>
+            </CountButton>
+          </span>
+        </div>
+      </div>
+      <div className="student-category-zones">
+        {zoneCounts.map((item) => (
+          <span key={item.zone}>
+            <em>{zoneText(item.zone)}</em>
+            <i>:</i>
+            <CountButton
+              filter={{ label: `${category} ${zoneText(item.zone)}`, category, zone: item.zone }}
+              onSelect={onSelect}
+            >
+              <b>{item.count}</b>
+            </CountButton>
+          </span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 function StudentSummaryCards({
   profile,
   students,
   schoolMap,
-  classMap,
   formOpen,
   onToggleForm,
   onSelect,
@@ -103,32 +161,18 @@ function StudentSummaryCards({
   profile: AccessProfile | null;
   students: StudentRecord[];
   schoolMap: Map<string, School>;
-  classMap: Map<string, ClassRecord>;
   formOpen: boolean;
   onToggleForm: () => void;
   onSelect: (filter: StudentFilter) => void;
 }) {
   const currentScope = scopeLabel(profile);
-  const isDistrict = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
   const categoryCounts = ['SRAI', 'SRA', 'KAFAI'].map((category) => ({
     category,
     count: students.filter((student) => studentCategory(student, schoolMap) === category).length,
   }));
-  const genderCounts = [
-    { label: 'Lelaki', gender: 'L', count: students.filter((student) => student.jantina === 'L').length },
-    { label: 'Perempuan', gender: 'P', count: students.filter((student) => student.jantina === 'P').length },
-  ];
-  const yearCounts = yearOrder.map((year) => ({
-    year,
-    count: students.filter((student) => studentYear(student, classMap) === year).length,
-  }));
-  const zoneCounts = zoneOrder.map((zone) => ({
-    zone,
-    count: students.filter((student) => studentZone(student, schoolMap) === zone).length,
-  }));
 
   return (
-    <div className={`student-summary-grid ${isDistrict ? '' : 'student-summary-grid-compact'}`}>
+    <div className="student-summary-grid student-summary-category-grid">
       <article className="metric dashboard-metric student-summary-card student-total-card">
         <div className="student-card-main">
           <span>Jumlah Keseluruhan</span>
@@ -157,64 +201,15 @@ function StudentSummaryCards({
         </div>
       </article>
 
-      <article className="metric dashboard-metric student-summary-card">
-        <div className="student-card-main">
-          <span>Jantina</span>
-          <strong>{genderCounts.reduce((total, item) => total + item.count, 0)}</strong>
-        </div>
-        <div className="metric-breakdown student-count-list">
-          {genderCounts.map((item) => (
-            <span key={item.gender}>
-              <em>{item.label}</em>
-              <i>:</i>
-              <CountButton filter={{ label: `${item.label} ${currentScope}`, gender: item.gender }} onSelect={onSelect}>
-                <b>{item.count}</b>
-              </CountButton>
-            </span>
-          ))}
-        </div>
-      </article>
-
-      {isDistrict ? (
-        <article className="metric dashboard-metric student-summary-card">
-          <div className="student-card-main">
-            <span>Zon</span>
-            <strong>{zoneCounts.reduce((total, item) => total + item.count, 0)}</strong>
-          </div>
-          <div className="metric-breakdown student-count-list">
-            {zoneCounts.map((item) => (
-              <span key={item.zone}>
-                <em>{zoneText(item.zone)}</em>
-                <i>:</i>
-                <CountButton filter={{ label: `${zoneText(item.zone)} - Semua murid`, zone: item.zone }} onSelect={onSelect}>
-                  <b>{item.count}</b>
-                </CountButton>
-              </span>
-            ))}
-          </div>
-        </article>
-      ) : null}
-
-      <article className="metric dashboard-metric student-summary-card">
-        <div className="student-card-main">
-          <span>Tahun</span>
-          <strong>{yearCounts.reduce((total, item) => total + item.count, 0)}</strong>
-        </div>
-        <div className="metric-breakdown student-year-list">
-          {yearCounts.map((item) => (
-            <span key={item.year}>
-              <em>Tahun {item.year}</em>
-              <i>:</i>
-              <CountButton
-                filter={{ label: `${currentScope} - Tahun ${item.year}`, year: item.year }}
-                onSelect={onSelect}
-              >
-                <b>{item.count}</b>
-              </CountButton>
-            </span>
-          ))}
-        </div>
-      </article>
+      {['SRAI', 'SRA', 'KAFAI'].map((category) => (
+        <CategoryStudentCard
+          key={category}
+          category={category}
+          students={students}
+          schoolMap={schoolMap}
+          onSelect={onSelect}
+        />
+      ))}
     </div>
   );
 }
@@ -269,7 +264,6 @@ export default function StudentList({
         profile={profile}
         students={scopedStudents}
         schoolMap={schoolMap}
-        classMap={classById}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
         onSelect={setSelectedFilter}
