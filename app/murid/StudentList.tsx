@@ -91,6 +91,28 @@ function canManageStudents(profile: AccessProfile | null) {
   return ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'].includes(profile?.role ?? '');
 }
 
+function BreakdownRow({
+  label,
+  filter,
+  count,
+  onSelect,
+}: {
+  label: string;
+  filter: StudentFilter;
+  count: number;
+  onSelect: (filter: StudentFilter) => void;
+}) {
+  return (
+    <span className="student-breakdown-row">
+      <em>{label}</em>
+      <i>:</i>
+      <CountButton filter={filter} onSelect={onSelect}>
+        <b>{count}</b>
+      </CountButton>
+    </span>
+  );
+}
+
 function CategoryStudentCard({
   category,
   students,
@@ -113,37 +135,34 @@ function CategoryStudentCard({
   return (
     <article className="student-category-card">
       <div className="student-category-left">
-        <h3>Murid Di {category}:</h3>
+        <h3>Murid Di {category}</h3>
         <CountButton filter={{ label: `Murid ${category}`, category }} onSelect={onSelect}>
           <strong>{categoryStudents.length}</strong>
         </CountButton>
         <div className="student-category-gender">
-          <span>
-            L :
-            <CountButton filter={{ label: `Murid lelaki ${category}`, category, gender: 'L' }} onSelect={onSelect}>
-              <b>{maleCount}</b>
-            </CountButton>
-          </span>
-          <span>
-            P :
-            <CountButton filter={{ label: `Murid perempuan ${category}`, category, gender: 'P' }} onSelect={onSelect}>
-              <b>{femaleCount}</b>
-            </CountButton>
-          </span>
+          <BreakdownRow
+            label="L"
+            filter={{ label: `Murid lelaki ${category}`, category, gender: 'L' }}
+            count={maleCount}
+            onSelect={onSelect}
+          />
+          <BreakdownRow
+            label="P"
+            filter={{ label: `Murid perempuan ${category}`, category, gender: 'P' }}
+            count={femaleCount}
+            onSelect={onSelect}
+          />
         </div>
       </div>
       <div className="student-category-zones">
         {zoneCounts.map((item) => (
-          <span key={item.zone}>
-            <em>{zoneText(item.zone)}</em>
-            <i>:</i>
-            <CountButton
-              filter={{ label: `${category} ${zoneText(item.zone)}`, category, zone: item.zone }}
-              onSelect={onSelect}
-            >
-              <b>{item.count}</b>
-            </CountButton>
-          </span>
+          <BreakdownRow
+            key={item.zone}
+            label={zoneText(item.zone)}
+            filter={{ label: `${category} ${zoneText(item.zone)}`, category, zone: item.zone }}
+            count={item.count}
+            onSelect={onSelect}
+          />
         ))}
       </div>
     </article>
@@ -187,16 +206,13 @@ function StudentSummaryCards({
         </div>
         <div className="metric-breakdown student-count-list student-total-breakdown">
           {categoryCounts.map((item) => (
-            <span key={item.category}>
-              <em>{item.category}</em>
-              <i>:</i>
-              <CountButton
-                filter={{ label: `${item.category} ${currentScope}`, category: item.category }}
-                onSelect={onSelect}
-              >
-                <b>{item.count}</b>
-              </CountButton>
-            </span>
+            <BreakdownRow
+              key={item.category}
+              label={item.category}
+              filter={{ label: `${item.category} ${currentScope}`, category: item.category }}
+              count={item.count}
+              onSelect={onSelect}
+            />
           ))}
         </div>
       </article>
