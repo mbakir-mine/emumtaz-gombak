@@ -18,7 +18,7 @@ const groupedMenu = [
     key: 'schoolSetup',
     label: 'Tetapan Sekolah',
     href: '/sekolah',
-    items: ['schools', 'teachers', 'teacherSubjects', 'classes', 'students'],
+    items: ['schools', 'teachers', 'teacherSubjects', 'classes', 'students', 'studentPromotion'],
   },
   {
     key: 'scoring',
@@ -52,6 +52,7 @@ const childLabels: Record<string, string> = {
   teacherSubjects: 'Guru Subjek',
   classes: 'Kelas',
   students: 'Murid',
+  studentPromotion: 'Naik Tahun',
   setup: 'Akses Markah',
   marks: 'Kelas',
   reports: 'Pusat Laporan',

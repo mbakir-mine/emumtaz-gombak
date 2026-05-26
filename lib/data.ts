@@ -82,6 +82,24 @@ export type StudentSchoolSummaryOptions = {
   kodSekolah?: string;
 };
 
+export type StudentEnrollmentDetail = {
+  id: string;
+  student_id: string;
+  tahun_akademik: number;
+  kod_sekolah: string;
+  class_id: string | null;
+  status: string;
+  catatan: string | null;
+  mykid: string;
+  nama_murid: string;
+  jantina: string | null;
+  tahun: number | null;
+  nama_kelas: string | null;
+  nama_sekolah: string | null;
+  kategori: string | null;
+  zon: string | null;
+};
+
 export type UserRecord = {
   id: string;
   email: string;
@@ -735,6 +753,21 @@ export async function getStudentSchoolSummaries(
   const { data, error } = await query.order('kod_sekolah');
   if (error) return [];
   return (data ?? []) as StudentSchoolSummary[];
+}
+
+export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('v_student_enrollment_detail')
+    .select('*')
+    .order('tahun_akademik', { ascending: false })
+    .order('kod_sekolah')
+    .order('tahun')
+    .order('nama_kelas')
+    .order('nama_murid');
+
+  if (error) return [];
+  return data ?? [];
 }
 
 export async function getSchoolUsers(): Promise<UserRecord[]> {

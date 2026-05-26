@@ -1984,6 +1984,160 @@ select {
   -webkit-overflow-scrolling: touch;
 }
 
+.promotion-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.promotion-hero {
+  background:
+    linear-gradient(135deg, rgba(4, 120, 87, 0.08), rgba(37, 99, 235, 0.05)),
+    var(--card);
+}
+
+.promotion-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(160px, 220px) minmax(140px, 180px) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.promotion-check-all {
+  display: grid;
+  gap: 7px;
+  min-height: 69px;
+  align-content: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.promotion-check-all label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.promotion-check-all small {
+  color: var(--muted);
+}
+
+.promotion-action-form {
+  display: flex;
+  align-items: end;
+}
+
+.promotion-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.promotion-card {
+  position: relative;
+  min-height: 132px;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at right bottom, rgba(183, 121, 31, 0.12) 0 32%, transparent 33%),
+    linear-gradient(135deg, #ffffff 0%, #f1fbf6 100%);
+  box-shadow: 0 12px 28px rgba(16, 32, 51, 0.06);
+}
+
+.promotion-card::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f7d46a, rgba(247, 212, 106, 0.32));
+}
+
+.promotion-card span,
+.promotion-card small {
+  display: block;
+  color: var(--muted);
+}
+
+.promotion-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  color: var(--green);
+  font-size: 38px;
+  line-height: 1;
+}
+
+.promotion-card-ready::after {
+  background: linear-gradient(135deg, #86efac, rgba(134, 239, 172, 0.32));
+}
+
+.promotion-card-review::after {
+  background: linear-gradient(135deg, #facc15, rgba(250, 204, 21, 0.3));
+}
+
+.promotion-card-finish::after {
+  background: linear-gradient(135deg, #93c5fd, rgba(147, 197, 253, 0.3));
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 10px 12px;
+  vertical-align: top;
+}
+
+.compact-table td small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.promotion-row-check,
+.promotion-check-all input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--green);
+}
+
+.promotion-target-select {
+  min-width: 220px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.promotion-status {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 112px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-naik-tahun {
+  background: var(--green-2);
+  color: var(--green);
+}
+
+.status-perlu-semakan {
+  background: #fff6df;
+  color: #8a5a08;
+}
+
+.status-tamat {
+  background: #eef4ff;
+  color: var(--blue);
+}
+
 .search-row {
   margin: 14px 0 18px;
 }
