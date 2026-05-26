@@ -2130,6 +2130,21 @@ select {
   font-size: 14px;
 }
 
+.promotion-bulk-select,
+.promotion-row-select {
+  min-width: 240px;
+  padding: 8px 10px;
+  border-color: #cfe4d6;
+  background: #fbfffc;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.promotion-bulk-select {
+  min-width: 220px;
+  font-weight: 800;
+}
+
 .promotion-target-label {
   display: inline-flex;
   align-items: center;
