@@ -1997,7 +1997,7 @@ select {
 
 .promotion-toolbar {
   display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(160px, 220px) minmax(140px, 180px) auto;
+  grid-template-columns: minmax(140px, 180px) minmax(130px, 160px) minmax(260px, 1.2fr) minmax(220px, 1fr) auto;
   gap: 14px;
   align-items: end;
 }
@@ -2107,6 +2107,23 @@ select {
   accent-color: var(--green);
 }
 
+.promotion-table-check {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.promotion-table-check input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--green);
+}
+
 .promotion-target-select {
   min-width: 220px;
   padding: 8px 10px;
@@ -2136,6 +2153,27 @@ select {
 .status-tamat {
   background: #eef4ff;
   color: var(--blue);
+}
+
+@media (max-width: 1180px) {
+  .promotion-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .promotion-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .promotion-toolbar,
+  .promotion-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .promotion-action-form .button {
+    width: 100%;
+  }
 }
 
 .search-row {

@@ -54,6 +54,8 @@ export default function PromotionPlanner({
   const defaultSourceYear = years.includes(currentYear) ? currentYear : years[0] ?? currentYear;
   const [sourceYear, setSourceYear] = useState(defaultSourceYear);
   const [targetYear, setTargetYear] = useState(defaultSourceYear + 1);
+  const [sourceClassId, setSourceClassId] = useState('');
+  const [bulkTargetClassId, setBulkTargetClassId] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [targetClassByStudent, setTargetClassByStudent] = useState<Record<string, string>>({});
   const [state, action, pending] = useActionState(promoteStudents, initialState);
@@ -61,7 +63,7 @@ export default function PromotionPlanner({
   const classById = useMemo(() => new Map(classes.map((item) => [item.id, item])), [classes]);
   const schoolByCode = useMemo(() => new Map(schools.map((item) => [item.kod_sekolah, item])), [schools]);
 
-  const sourceRows = useMemo<PromotionRow[]>(() => {
+  const allSourceRows = useMemo<PromotionRow[]>(() => {
     const enrollmentRows = enrollments.filter(
       (item) => item.tahun_akademik === sourceYear && item.status === 'AKTIF',
     );
@@ -108,14 +110,29 @@ export default function PromotionPlanner({
       });
   }, [classById, classes, enrollments, schoolByCode, sourceYear, students, targetYear]);
 
+  const sourceClasses = useMemo(
+    () =>
+      classes
+        .filter((item) => item.tahun_akademik === sourceYear && item.status === 'AKTIF')
+        .sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah) || a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas)),
+    [classes, sourceYear],
+  );
+
+  const selectedSourceClass = sourceClassId ? classById.get(sourceClassId) : undefined;
+
+  const sourceRows = useMemo(
+    () => (sourceClassId ? allSourceRows.filter((item) => item.sourceClass?.id === sourceClassId) : []),
+    [allSourceRows, sourceClassId],
+  );
+
   const summary = useMemo(
     () => ({
       total: sourceRows.length,
-      promoted: sourceRows.filter((item) => item.status === 'NAIK_TAHUN').length,
-      review: sourceRows.filter((item) => item.status === 'PERLU_SEMAKAN').length,
+      promoted: sourceRows.filter((item) => item.status !== 'TAMAT' && targetClassByStudent[item.student.id]).length,
+      review: sourceRows.filter((item) => item.status !== 'TAMAT' && !targetClassByStudent[item.student.id]).length,
       graduate: sourceRows.filter((item) => item.status === 'TAMAT').length,
     }),
-    [sourceRows],
+    [sourceRows, targetClassByStudent],
   );
 
   const targetClasses = useMemo(
@@ -123,12 +140,25 @@ export default function PromotionPlanner({
     [classes, targetYear],
   );
 
-  useEffect(() => {
-    setSelectedIds(new Set(sourceRows.filter((item) => item.status !== 'PERLU_SEMAKAN').map((item) => item.student.id)));
-    setTargetClassByStudent(
-      Object.fromEntries(sourceRows.filter((item) => item.targetClass).map((item) => [item.student.id, item.targetClass!.id])),
+  const bulkTargetOptions = useMemo(() => {
+    if (!selectedSourceClass || selectedSourceClass.tahun >= 6) return [];
+    return targetClasses.filter(
+      (item) => item.kod_sekolah === selectedSourceClass.kod_sekolah && item.tahun === selectedSourceClass.tahun + 1,
     );
-  }, [sourceRows]);
+  }, [selectedSourceClass, targetClasses]);
+
+  useEffect(() => {
+    setSourceClassId(sourceClasses[0]?.id ?? '');
+  }, [sourceClasses]);
+
+  useEffect(() => {
+    const defaultTargetClass = bulkTargetOptions[0]?.id ?? '';
+    setBulkTargetClassId(defaultTargetClass);
+    setSelectedIds(new Set());
+    setTargetClassByStudent(
+      Object.fromEntries(sourceRows.map((item) => [item.student.id, item.targetClass?.id ?? defaultTargetClass])),
+    );
+  }, [bulkTargetOptions, sourceRows]);
 
   const selectedCount = selectedIds.size;
   const allSelected = sourceRows.length > 0 && selectedIds.size === sourceRows.length;
@@ -151,6 +181,14 @@ export default function PromotionPlanner({
       else next.delete(studentId);
       return next;
     });
+  }
+
+  function updateBulkTarget(classId: string) {
+    setBulkTargetClassId(classId);
+    setTargetClassByStudent((current) => ({
+      ...current,
+      ...Object.fromEntries(sourceRows.map((item) => [item.student.id, classId])),
+    }));
   }
 
   return (
@@ -198,13 +236,40 @@ export default function PromotionPlanner({
             />
           </label>
 
-          <div className="promotion-check-all">
-            <label>
-              <input type="checkbox" checked={allSelected} onChange={(event) => toggleAll(event.target.checked)} />
-              Pilih Semua
-            </label>
-            <small>{selectedCount} dipilih</small>
-          </div>
+          <label>
+            Kelas semasa
+            <select value={sourceClassId} onChange={(event) => setSourceClassId(event.target.value)}>
+              {sourceClasses.length === 0 ? <option value="">Tiada kelas</option> : null}
+              {sourceClasses.map((item) => {
+                const school = schoolByCode.get(item.kod_sekolah);
+                return (
+                  <option key={item.id} value={item.id}>
+                    {item.kod_sekolah} - Tahun {item.tahun} {item.nama_kelas}
+                    {school ? ` (${school.nama_sekolah})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+
+          <label>
+            Kelas tahun baharu
+            <select
+              value={bulkTargetClassId}
+              onChange={(event) => updateBulkTarget(event.target.value)}
+              disabled={bulkTargetOptions.length === 0}
+            >
+              {selectedSourceClass?.tahun === 6 ? <option value="">Tamat Tahun 6</option> : null}
+              {selectedSourceClass?.tahun !== 6 && bulkTargetOptions.length === 0 ? (
+                <option value="">Tiada kelas padanan</option>
+              ) : null}
+              {bulkTargetOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  Tahun {item.tahun} - {item.nama_kelas}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <div className="promotion-action-form">
             <button className="button" type="submit" disabled={pending || selectedCount === 0}>
@@ -220,12 +285,12 @@ export default function PromotionPlanner({
         <div className="promotion-card">
           <span>Jumlah calon</span>
           <strong>{summary.total}</strong>
-          <small>Murid aktif tahun {sourceYear}</small>
+          <small>{selectedSourceClass ? `Tahun ${selectedSourceClass.tahun} ${selectedSourceClass.nama_kelas}` : `Tahun ${sourceYear}`}</small>
         </div>
         <div className="promotion-card promotion-card-ready">
-          <span>Boleh dinaikkan</span>
-          <strong>{summary.promoted}</strong>
-          <small>Kelas baharu telah dipadankan</small>
+          <span>Dipilih</span>
+          <strong>{selectedCount}</strong>
+          <small>Murid yang akan diproses</small>
         </div>
         <div className="promotion-card promotion-card-review">
           <span>Perlu semakan</span>
@@ -259,26 +324,25 @@ export default function PromotionPlanner({
                   <th>Kelas Semasa</th>
                   <th>Kelas Cadangan</th>
                   <th>Status</th>
+                  <th>
+                    <label className="promotion-table-check">
+                      <span>Pindah Semua</span>
+                      <input type="checkbox" checked={allSelected} onChange={(event) => toggleAll(event.target.checked)} />
+                    </label>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sourceRows.map((item, index) => {
                   const hasSelectedTarget = Boolean(targetClassByStudent[item.student.id]);
+                  const isSelected = selectedIds.has(item.student.id);
                   const displayStatus =
                     item.status === 'TAMAT' ? 'TAMAT' : hasSelectedTarget ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN';
 
                   return (
                     <tr key={item.student.id}>
                       <td>{index + 1}</td>
-                      <td>
-                        <input
-                          aria-label={`Pilih ${item.student.nama_murid}`}
-                          checked={selectedIds.has(item.student.id)}
-                          className="promotion-row-check"
-                          type="checkbox"
-                          onChange={(event) => toggleStudent(item.student.id, event.target.checked)}
-                        />
-                      </td>
+                      <td>{isSelected ? 'Dipilih' : '-'}</td>
                       <td>
                         <strong>{item.student.nama_murid}</strong>
                         <small>{item.student.mykid}</small>
@@ -329,6 +393,15 @@ export default function PromotionPlanner({
                               ? 'Tamat'
                               : 'Perlu Semakan'}
                         </span>
+                      </td>
+                      <td>
+                        <input
+                          aria-label={`Pindah ${item.student.nama_murid}`}
+                          checked={isSelected}
+                          className="promotion-row-check"
+                          type="checkbox"
+                          onChange={(event) => toggleStudent(item.student.id, event.target.checked)}
+                        />
                       </td>
                     </tr>
                   );
