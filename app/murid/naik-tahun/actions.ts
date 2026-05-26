@@ -62,6 +62,39 @@ function selectedTarget(formData: FormData, studentId: string, targetClasses: Ta
   return targetClasses.find((item) => item.id === targetClassId) ?? null;
 }
 
+async function resolveTargetClass(formData: FormData, studentId: string, targetClasses: TargetClass[]) {
+  const targetClassId = String(formData.get(`target_class_id__${studentId}`) ?? '').trim();
+  if (!targetClassId || !supabase) return null;
+
+  if (!targetClassId.startsWith('NEW__')) {
+    return targetClasses.find((item) => item.id === targetClassId) ?? null;
+  }
+
+  const [, kodSekolah, tahunText, classNameText] = targetClassId.split('__');
+  const tahun = Number(tahunText);
+  const namaKelas = (classNameText ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+
+  if (!kodSekolah || !tahun || !namaKelas) return null;
+
+  const { data, error } = await supabase
+    .from('classes')
+    .upsert(
+      {
+        kod_sekolah: kodSekolah,
+        tahun_akademik: Number(formData.get('target_year')),
+        tahun,
+        nama_kelas: namaKelas,
+        status: 'AKTIF',
+      },
+      { onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas' },
+    )
+    .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas')
+    .single();
+
+  if (error) return null;
+  return data as TargetClass;
+}
+
 export async function promoteStudents(
   _previousState: PromotionActionState,
   formData: FormData,
@@ -127,10 +160,15 @@ export async function promoteStudents(
     return { ok: false, message: 'Pilih sekurang-kurangnya seorang murid untuk diproses.' };
   }
 
-  const planned = selectedSources.map((source) => ({
-    source,
-    targetClass: selectedTarget(formData, source.student_id, targetClasses) ?? findTargetClass(source.classes, targetClasses),
-  }));
+  const planned = await Promise.all(
+    selectedSources.map(async (source) => ({
+      source,
+      targetClass:
+        (await resolveTargetClass(formData, source.student_id, targetClasses)) ??
+        selectedTarget(formData, source.student_id, targetClasses) ??
+        findTargetClass(source.classes, targetClasses),
+    })),
+  );
 
   const promotable = planned.filter(
     (item) => item.source.classes && item.source.classes.tahun < 6 && item.targetClass,

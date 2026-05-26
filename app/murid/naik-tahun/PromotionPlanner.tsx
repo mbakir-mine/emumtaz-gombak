@@ -8,8 +8,15 @@ type PromotionRow = {
   student: StudentRecord;
   school?: School;
   sourceClass?: ClassRecord;
-  targetClass?: ClassRecord;
+  targetClassId?: string;
   status: 'NAIK_TAHUN' | 'PERLU_SEMAKAN' | 'TAMAT';
+};
+
+type TargetOption = {
+  value: string;
+  tahun: number;
+  nama_kelas: string;
+  exists: boolean;
 };
 
 const initialState = {
@@ -29,6 +36,53 @@ function findTargetClass(sourceClass: ClassRecord | undefined, targetClasses: Cl
   );
   const sourceStem = classStem(sourceClass.nama_kelas);
   return candidates.find((item) => classStem(item.nama_kelas) === sourceStem) ?? candidates[0];
+}
+
+function nextClassName(sourceClass: ClassRecord) {
+  return `${sourceClass.tahun + 1} ${classStem(sourceClass.nama_kelas)}`;
+}
+
+function newClassValue(sourceClass: ClassRecord, className = nextClassName(sourceClass)) {
+  return ['NEW', sourceClass.kod_sekolah, sourceClass.tahun + 1, targetSafeName(className)].join('__');
+}
+
+function targetSafeName(name: string) {
+  return name.replaceAll('__', ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function targetOptionsForClass(sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]): TargetOption[] {
+  if (!sourceClass || sourceClass.tahun >= 6) return [];
+  const targetTahun = sourceClass.tahun + 1;
+  const existing = targetClasses
+    .filter((item) => item.kod_sekolah === sourceClass.kod_sekolah && item.tahun === targetTahun)
+    .sort((a, b) => a.nama_kelas.localeCompare(b.nama_kelas));
+  const existingOptions = existing.map((item) => ({
+    value: item.id,
+    tahun: item.tahun,
+    nama_kelas: item.nama_kelas,
+    exists: true,
+  }));
+  const suggestedName = nextClassName(sourceClass);
+  const hasSuggested = existingOptions.some((item) => classStem(item.nama_kelas) === classStem(suggestedName));
+
+  return hasSuggested
+    ? existingOptions
+    : [
+        {
+          value: newClassValue(sourceClass, suggestedName),
+          tahun: targetTahun,
+          nama_kelas: suggestedName,
+          exists: false,
+        },
+        ...existingOptions,
+      ];
+}
+
+function defaultTargetValue(sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]) {
+  if (!sourceClass || sourceClass.tahun >= 6) return '';
+  const options = targetOptionsForClass(sourceClass, targetClasses);
+  const sourceStem = classStem(sourceClass.nama_kelas);
+  return options.find((item) => classStem(item.nama_kelas) === sourceStem)?.value ?? options[0]?.value ?? '';
 }
 
 function availableYears(classes: ClassRecord[], enrollments: StudentEnrollmentDetail[]) {
@@ -81,13 +135,13 @@ export default function PromotionPlanner({
           class_id: item.class_id,
           status: item.status,
         };
-        const targetClass = findTargetClass(sourceClass, targetClasses);
+        const targetClassId = defaultTargetValue(sourceClass, targetClasses);
         return {
           student,
           school: schoolByCode.get(item.kod_sekolah),
           sourceClass,
-          targetClass,
-          status: sourceClass?.tahun === 6 ? 'TAMAT' : targetClass ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN',
+          targetClassId,
+          status: sourceClass?.tahun === 6 ? 'TAMAT' : targetClassId ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN',
         };
       });
     }
@@ -99,13 +153,13 @@ export default function PromotionPlanner({
       })
       .filter(({ sourceClass, student }) => sourceClass?.tahun_akademik === sourceYear && student.status === 'AKTIF')
       .map(({ student, sourceClass }) => {
-        const targetClass = findTargetClass(sourceClass, targetClasses);
+        const targetClassId = defaultTargetValue(sourceClass, targetClasses);
         return {
           student,
           school: schoolByCode.get(student.kod_sekolah),
           sourceClass,
-          targetClass,
-          status: sourceClass?.tahun === 6 ? 'TAMAT' : targetClass ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN',
+          targetClassId,
+          status: sourceClass?.tahun === 6 ? 'TAMAT' : targetClassId ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN',
         };
       });
   }, [classById, classes, enrollments, schoolByCode, sourceYear, students, targetYear]);
@@ -141,10 +195,7 @@ export default function PromotionPlanner({
   );
 
   const bulkTargetOptions = useMemo(() => {
-    if (!selectedSourceClass || selectedSourceClass.tahun >= 6) return [];
-    return targetClasses.filter(
-      (item) => item.kod_sekolah === selectedSourceClass.kod_sekolah && item.tahun === selectedSourceClass.tahun + 1,
-    );
+    return targetOptionsForClass(selectedSourceClass, targetClasses);
   }, [selectedSourceClass, targetClasses]);
 
   useEffect(() => {
@@ -152,22 +203,19 @@ export default function PromotionPlanner({
   }, [sourceClasses]);
 
   useEffect(() => {
-    const defaultTargetClass = bulkTargetOptions[0]?.id ?? '';
+    const defaultTargetClass = defaultTargetValue(selectedSourceClass, targetClasses) || bulkTargetOptions[0]?.value || '';
     setBulkTargetClassId(defaultTargetClass);
     setSelectedIds(new Set());
     setTargetClassByStudent(
-      Object.fromEntries(sourceRows.map((item) => [item.student.id, item.targetClass?.id ?? defaultTargetClass])),
+      Object.fromEntries(sourceRows.map((item) => [item.student.id, item.targetClassId ?? defaultTargetClass])),
     );
-  }, [bulkTargetOptions, sourceRows]);
+  }, [bulkTargetOptions, selectedSourceClass, sourceRows, targetClasses]);
 
   const selectedCount = selectedIds.size;
   const allSelected = sourceRows.length > 0 && selectedIds.size === sourceRows.length;
 
   function targetOptionsFor(row: PromotionRow) {
-    if (!row.sourceClass || row.sourceClass.tahun >= 6) return [];
-    return targetClasses.filter(
-      (item) => item.kod_sekolah === row.sourceClass?.kod_sekolah && item.tahun === row.sourceClass.tahun + 1,
-    );
+    return targetOptionsForClass(row.sourceClass, targetClasses);
   }
 
   function toggleAll(checked: boolean) {
@@ -264,8 +312,9 @@ export default function PromotionPlanner({
                 <option value="">Tiada kelas padanan</option>
               ) : null}
               {bulkTargetOptions.map((item) => (
-                <option key={item.id} value={item.id}>
+                <option key={item.value} value={item.value}>
                   Tahun {item.tahun} - {item.nama_kelas}
+                  {item.exists ? '' : ' (cipta baharu)'}
                 </option>
               ))}
             </select>
@@ -376,8 +425,9 @@ export default function PromotionPlanner({
                             }
                           >
                             {targetOptionsFor(item).map((targetClass) => (
-                              <option key={targetClass.id} value={targetClass.id}>
+                              <option key={targetClass.value} value={targetClass.value}>
                                 Tahun {targetClass.tahun} - {targetClass.nama_kelas}
+                                {targetClass.exists ? '' : ' (cipta baharu)'}
                               </option>
                             ))}
                           </select>
