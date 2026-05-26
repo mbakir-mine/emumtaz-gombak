@@ -68,3 +68,40 @@ set allowed_nav = array_append(allowed_nav, 'studentPromotion')
 where role in ('OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH')
   and allowed_nav is not null
   and not ('studentPromotion' = any(allowed_nav));
+
+drop trigger if exists trg_create_next_year_class on classes;
+
+create or replace function create_next_year_class()
+returns trigger as $$
+declare
+  next_name text;
+begin
+  if pg_trigger_depth() > 1 or new.tahun >= 6 then
+    return new;
+  end if;
+
+  next_name := (new.tahun + 1)::text || ' ' || regexp_replace(new.nama_kelas, '^\s*\d+\s*', '');
+
+  insert into classes (kod_sekolah, tahun_akademik, tahun, nama_kelas, status)
+  values (new.kod_sekolah, new.tahun_akademik + 1, new.tahun + 1, upper(next_name), 'AKTIF')
+  on conflict (kod_sekolah, tahun_akademik, tahun, nama_kelas) do nothing;
+
+  return new;
+end;
+$$ language plpgsql;
+
+insert into classes (kod_sekolah, tahun_akademik, tahun, nama_kelas, status)
+select
+  c.kod_sekolah,
+  c.tahun_akademik + 1,
+  c.tahun + 1,
+  upper((c.tahun + 1)::text || ' ' || regexp_replace(c.nama_kelas, '^\s*\d+\s*', '')),
+  'AKTIF'
+from classes c
+where c.tahun < 6
+on conflict (kod_sekolah, tahun_akademik, tahun, nama_kelas) do nothing;
+
+create trigger trg_create_next_year_class
+after insert on classes
+for each row
+execute function create_next_year_class();

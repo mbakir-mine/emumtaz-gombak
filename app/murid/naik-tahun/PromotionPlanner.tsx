@@ -28,16 +28,6 @@ function classStem(name: string) {
   return name.replace(/^\s*\d+\s*/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
-function findTargetClass(sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]) {
-  if (!sourceClass || sourceClass.tahun >= 6) return undefined;
-
-  const candidates = targetClasses.filter(
-    (item) => item.kod_sekolah === sourceClass.kod_sekolah && item.tahun === sourceClass.tahun + 1,
-  );
-  const sourceStem = classStem(sourceClass.nama_kelas);
-  return candidates.find((item) => classStem(item.nama_kelas) === sourceStem) ?? candidates[0];
-}
-
 function nextClassName(sourceClass: ClassRecord) {
   return `${sourceClass.tahun + 1} ${classStem(sourceClass.nama_kelas)}`;
 }
@@ -83,6 +73,13 @@ function defaultTargetValue(sourceClass: ClassRecord | undefined, targetClasses:
   const options = targetOptionsForClass(sourceClass, targetClasses);
   const sourceStem = classStem(sourceClass.nama_kelas);
   return options.find((item) => classStem(item.nama_kelas) === sourceStem)?.value ?? options[0]?.value ?? '';
+}
+
+function targetLabelFromValue(value: string, sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]) {
+  if (!sourceClass || sourceClass.tahun >= 6) return 'Tamat persekolahan';
+  const option = targetOptionsForClass(sourceClass, targetClasses).find((item) => item.value === value);
+  if (!option) return 'Belum dipadankan';
+  return `Tahun ${option.tahun} - ${option.nama_kelas}${option.exists ? '' : ' (akan dicipta)'}`;
 }
 
 function availableYears(classes: ClassRecord[], enrollments: StudentEnrollmentDetail[]) {
@@ -213,10 +210,6 @@ export default function PromotionPlanner({
 
   const selectedCount = selectedIds.size;
   const allSelected = sourceRows.length > 0 && selectedIds.size === sourceRows.length;
-
-  function targetOptionsFor(row: PromotionRow) {
-    return targetOptionsForClass(row.sourceClass, targetClasses);
-  }
 
   function toggleAll(checked: boolean) {
     setSelectedIds(checked ? new Set(sourceRows.map((item) => item.student.id)) : new Set());
@@ -367,7 +360,6 @@ export default function PromotionPlanner({
               <thead>
                 <tr>
                   <th>BIL</th>
-                  <th>Pilih</th>
                   <th>Nama Murid</th>
                   <th>Sekolah</th>
                   <th>Kelas Semasa</th>
@@ -391,7 +383,6 @@ export default function PromotionPlanner({
                   return (
                     <tr key={item.student.id}>
                       <td>{index + 1}</td>
-                      <td>{isSelected ? 'Dipilih' : '-'}</td>
                       <td>
                         <strong>{item.student.nama_murid}</strong>
                         <small>{item.student.mykid}</small>
@@ -411,29 +402,9 @@ export default function PromotionPlanner({
                         )}
                       </td>
                       <td>
-                        {item.status === 'TAMAT' ? (
-                          'Tamat persekolahan'
-                        ) : targetOptionsFor(item).length > 0 ? (
-                          <select
-                            className="promotion-target-select"
-                            value={targetClassByStudent[item.student.id] ?? ''}
-                            onChange={(event) =>
-                              setTargetClassByStudent((current) => ({
-                                ...current,
-                                [item.student.id]: event.target.value,
-                              }))
-                            }
-                          >
-                            {targetOptionsFor(item).map((targetClass) => (
-                              <option key={targetClass.value} value={targetClass.value}>
-                                Tahun {targetClass.tahun} - {targetClass.nama_kelas}
-                                {targetClass.exists ? '' : ' (cipta baharu)'}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span>Belum dipadankan</span>
-                        )}
+                        <span className="promotion-target-label">
+                          {targetLabelFromValue(targetClassByStudent[item.student.id] ?? '', item.sourceClass, targetClasses)}
+                        </span>
                       </td>
                       <td>
                         <span className={`promotion-status status-${displayStatus.toLowerCase().replace('_', '-')}`}>

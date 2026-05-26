@@ -2130,6 +2130,19 @@ select {
   font-size: 14px;
 }
 
+.promotion-target-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #cfe4d6;
+  border-radius: 8px;
+  background: #f5fbf7;
+  color: #064e3b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .promotion-status {
   display: inline-flex;
   justify-content: center;

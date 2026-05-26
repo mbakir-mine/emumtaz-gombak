@@ -8,6 +8,14 @@ export type ClassActionState = {
   message: string;
 };
 
+function classStem(name: string) {
+  return name.replace(/^\s*\d+\s*/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function nextClassName(tahun: number, namaKelas: string) {
+  return `${tahun + 1} ${classStem(namaKelas)}`;
+}
+
 export async function createClass(
   _previousState: ClassActionState,
   formData: FormData,
@@ -25,7 +33,7 @@ export async function createClass(
     return { ok: false, message: 'Lengkapkan semua medan kelas.' };
   }
 
-  const { error } = await supabase.from('classes').upsert(
+  const rows = [
     {
       kod_sekolah: kodSekolah,
       tahun_akademik: tahunAkademik,
@@ -33,10 +41,21 @@ export async function createClass(
       nama_kelas: namaKelas,
       status: 'AKTIF',
     },
-    {
-      onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas',
-    },
-  );
+  ];
+
+  if (tahun < 6) {
+    rows.push({
+      kod_sekolah: kodSekolah,
+      tahun_akademik: tahunAkademik + 1,
+      tahun: tahun + 1,
+      nama_kelas: nextClassName(tahun, namaKelas),
+      status: 'AKTIF',
+    });
+  }
+
+  const { error } = await supabase.from('classes').upsert(rows, {
+    onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas',
+  });
 
   if (error) {
     return { ok: false, message: `Gagal simpan kelas: ${error.message}` };
@@ -44,5 +63,11 @@ export async function createClass(
 
   revalidatePath('/kelas');
   revalidatePath('/');
-  return { ok: true, message: `Kelas ${namaKelas} berjaya disimpan.` };
+  return {
+    ok: true,
+    message:
+      tahun < 6
+        ? `Kelas ${namaKelas} berjaya disimpan bersama kelas cadangan ${nextClassName(tahun, namaKelas)} untuk ${tahunAkademik + 1}.`
+        : `Kelas ${namaKelas} berjaya disimpan.`,
+  };
 }
