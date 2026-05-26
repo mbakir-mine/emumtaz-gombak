@@ -42,7 +42,11 @@ function targetSafeName(name: string) {
   return name.replaceAll('__', ' ').replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
-function targetOptionsForClass(sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]): TargetOption[] {
+function targetOptionsForClass(
+  sourceClass: ClassRecord | undefined,
+  targetClasses: ClassRecord[],
+  sourceClasses: ClassRecord[],
+): TargetOption[] {
   if (!sourceClass || sourceClass.tahun >= 6) return [];
   const targetTahun = sourceClass.tahun + 1;
   const existing = targetClasses
@@ -54,25 +58,33 @@ function targetOptionsForClass(sourceClass: ClassRecord | undefined, targetClass
     nama_kelas: item.nama_kelas,
     exists: true,
   }));
-  const suggestedName = nextClassName(sourceClass);
-  const hasSuggested = existingOptions.some((item) => classStem(item.nama_kelas) === classStem(suggestedName));
+  const existingStems = new Set(existingOptions.map((item) => classStem(item.nama_kelas)));
+  const generatedOptions = sourceClasses
+    .filter((item) => item.kod_sekolah === sourceClass.kod_sekolah && item.tahun === sourceClass.tahun)
+    .map((item) => {
+      const namaKelas = nextClassName(item);
+      return {
+        value: newClassValue(item, namaKelas),
+        tahun: targetTahun,
+        nama_kelas: namaKelas,
+        exists: false,
+      };
+    })
+    .filter((item) => !existingStems.has(classStem(item.nama_kelas)))
+    .sort((a, b) => a.nama_kelas.localeCompare(b.nama_kelas));
 
-  return hasSuggested
-    ? existingOptions
-    : [
-        {
-          value: newClassValue(sourceClass, suggestedName),
-          tahun: targetTahun,
-          nama_kelas: suggestedName,
-          exists: false,
-        },
-        ...existingOptions,
-      ];
+  return [...existingOptions, ...generatedOptions].sort(
+    (a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas),
+  );
 }
 
-function defaultTargetValue(sourceClass: ClassRecord | undefined, targetClasses: ClassRecord[]) {
+function defaultTargetValue(
+  sourceClass: ClassRecord | undefined,
+  targetClasses: ClassRecord[],
+  sourceClasses: ClassRecord[],
+) {
   if (!sourceClass || sourceClass.tahun >= 6) return '';
-  const options = targetOptionsForClass(sourceClass, targetClasses);
+  const options = targetOptionsForClass(sourceClass, targetClasses, sourceClasses);
   const sourceStem = classStem(sourceClass.nama_kelas);
   return options.find((item) => classStem(item.nama_kelas) === sourceStem)?.value ?? options[0]?.value ?? '';
 }
@@ -141,7 +153,7 @@ export default function PromotionPlanner({
           class_id: item.class_id,
           status: item.status,
         };
-        const targetClassId = defaultTargetValue(sourceClass, targetClasses);
+        const targetClassId = defaultTargetValue(sourceClass, targetClasses, scopedClasses);
         return {
           student,
           school: schoolByCode.get(item.kod_sekolah),
@@ -159,7 +171,7 @@ export default function PromotionPlanner({
       })
       .filter(({ sourceClass, student }) => sourceClass?.tahun_akademik === sourceYear && student.status === 'AKTIF')
       .map(({ student, sourceClass }) => {
-        const targetClassId = defaultTargetValue(sourceClass, targetClasses);
+        const targetClassId = defaultTargetValue(sourceClass, targetClasses, scopedClasses);
         return {
           student,
           school: schoolByCode.get(student.kod_sekolah),
@@ -201,20 +213,21 @@ export default function PromotionPlanner({
   );
 
   const bulkTargetOptions = useMemo(() => {
-    return targetOptionsForClass(selectedSourceClass, targetClasses);
-  }, [selectedSourceClass, targetClasses]);
+    return targetOptionsForClass(selectedSourceClass, targetClasses, sourceClasses);
+  }, [selectedSourceClass, sourceClasses, targetClasses]);
 
   useEffect(() => {
     setSourceClassId(sourceClasses[0]?.id ?? '');
   }, [sourceClasses]);
 
   useEffect(() => {
-    const defaultTargetClass = defaultTargetValue(selectedSourceClass, targetClasses) || bulkTargetOptions[0]?.value || '';
+    const defaultTargetClass =
+      defaultTargetValue(selectedSourceClass, targetClasses, sourceClasses) || bulkTargetOptions[0]?.value || '';
     setBulkTargetClassId(defaultTargetClass);
     setTargetClassByStudent(
       Object.fromEntries(sourceRows.map((item) => [item.student.id, item.targetClassId ?? defaultTargetClass])),
     );
-  }, [bulkTargetOptions, selectedSourceClass, sourceRows, targetClasses]);
+  }, [bulkTargetOptions, selectedSourceClass, sourceClasses, sourceRows, targetClasses]);
 
   const selectedCount = sourceRows.length;
 
@@ -385,7 +398,7 @@ export default function PromotionPlanner({
                               }))
                             }
                           >
-                            {targetOptionsForClass(item.sourceClass, targetClasses).map((targetClass) => (
+                            {targetOptionsForClass(item.sourceClass, targetClasses, sourceClasses).map((targetClass) => (
                               <option key={targetClass.value} value={targetClass.value}>
                                 Tahun {targetClass.tahun} - {targetClass.nama_kelas}
                               </option>
