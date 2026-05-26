@@ -9,6 +9,7 @@ import { scopeClasses, scopeSchools } from '../ui/scopedData';
 const initialState = {
   ok: false,
   message: '',
+  needsConfirmation: false,
 };
 
 export default function StudentForm({
@@ -83,6 +84,11 @@ export default function StudentForm({
         <button className="button" type="submit" disabled={pending}>
           {pending ? 'Menyimpan...' : 'Simpan Murid'}
         </button>
+        {state.needsConfirmation && (
+          <button className="button secondary" type="submit" name="confirm_transfer" value="YA" disabled={pending}>
+            SAHKAN PINDAH
+          </button>
+        )}
         {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
       </div>
     </form>

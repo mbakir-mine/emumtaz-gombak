@@ -455,7 +455,7 @@ export default function StudentList({
                       <strong>{student.nama_murid}</strong>
                       <small className="cell-subtext">{student.mykid}</small>
                     </td>
-                    <td>{student.kod_sekolah}</td>
+                    <td>{schoolLabel(student.kod_sekolah, schoolMap)}</td>
                     <td>{classRecord ? `Tahun ${classRecord.tahun}` : '-'}</td>
                     <td>{classRecord ? classRecord.nama_kelas : 'Tiada kelas'}</td>
                     <td>{student.jantina ? genderLabel(student.jantina) : '-'}</td>
