@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { ClassRecord, School, StudentEnrollmentDetail, StudentRecord } from '@/lib/data';
+import { useAccessProfile } from '../../ui/AuthGate';
+import { scopeClasses, scopeSchools, scopeStudents } from '../../ui/scopedData';
 import { promoteStudents } from './actions';
 
 type PromotionRow = {
@@ -79,7 +81,7 @@ function targetLabelFromValue(value: string, sourceClass: ClassRecord | undefine
   if (!sourceClass || sourceClass.tahun >= 6) return 'Tamat persekolahan';
   const option = targetOptionsForClass(sourceClass, targetClasses).find((item) => item.value === value);
   if (!option) return 'Belum dipadankan';
-  return `Tahun ${option.tahun} - ${option.nama_kelas}${option.exists ? '' : ' (akan dicipta)'}`;
+  return `Tahun ${option.tahun} - ${option.nama_kelas}`;
 }
 
 function availableYears(classes: ClassRecord[], enrollments: StudentEnrollmentDetail[]) {
@@ -100,7 +102,22 @@ export default function PromotionPlanner({
   students: StudentRecord[];
   enrollments: StudentEnrollmentDetail[];
 }) {
-  const years = availableYears(classes, enrollments);
+  const profile = useAccessProfile();
+  const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
+  const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
+  const scopedStudents = useMemo(
+    () => scopeStudents(profile, students, classes, schools),
+    [classes, profile, schools, students],
+  );
+  const allowedSchoolCodes = useMemo(
+    () => new Set(scopedSchools.map((school) => school.kod_sekolah)),
+    [scopedSchools],
+  );
+  const scopedEnrollments = useMemo(
+    () => enrollments.filter((item) => allowedSchoolCodes.has(item.kod_sekolah)),
+    [allowedSchoolCodes, enrollments],
+  );
+  const years = availableYears(scopedClasses, scopedEnrollments);
   const currentYear = new Date().getFullYear();
   const defaultSourceYear = years.includes(currentYear) ? currentYear : years[0] ?? currentYear;
   const [sourceYear, setSourceYear] = useState(defaultSourceYear);
@@ -111,14 +128,14 @@ export default function PromotionPlanner({
   const [targetClassByStudent, setTargetClassByStudent] = useState<Record<string, string>>({});
   const [state, action, pending] = useActionState(promoteStudents, initialState);
 
-  const classById = useMemo(() => new Map(classes.map((item) => [item.id, item])), [classes]);
-  const schoolByCode = useMemo(() => new Map(schools.map((item) => [item.kod_sekolah, item])), [schools]);
+  const classById = useMemo(() => new Map(scopedClasses.map((item) => [item.id, item])), [scopedClasses]);
+  const schoolByCode = useMemo(() => new Map(scopedSchools.map((item) => [item.kod_sekolah, item])), [scopedSchools]);
 
   const allSourceRows = useMemo<PromotionRow[]>(() => {
-    const enrollmentRows = enrollments.filter(
+    const enrollmentRows = scopedEnrollments.filter(
       (item) => item.tahun_akademik === sourceYear && item.status === 'AKTIF',
     );
-    const targetClasses = classes.filter((item) => item.tahun_akademik === targetYear && item.status === 'AKTIF');
+    const targetClasses = scopedClasses.filter((item) => item.tahun_akademik === targetYear && item.status === 'AKTIF');
 
     if (enrollmentRows.length > 0) {
       return enrollmentRows.map((item) => {
@@ -143,7 +160,7 @@ export default function PromotionPlanner({
       });
     }
 
-    return students
+    return scopedStudents
       .map((student) => {
         const sourceClass = student.class_id ? classById.get(student.class_id) : undefined;
         return { student, sourceClass };
@@ -159,14 +176,14 @@ export default function PromotionPlanner({
           status: sourceClass?.tahun === 6 ? 'TAMAT' : targetClassId ? 'NAIK_TAHUN' : 'PERLU_SEMAKAN',
         };
       });
-  }, [classById, classes, enrollments, schoolByCode, sourceYear, students, targetYear]);
+  }, [classById, scopedEnrollments, schoolByCode, scopedClasses, scopedStudents, sourceYear, targetYear]);
 
   const sourceClasses = useMemo(
     () =>
-      classes
+      scopedClasses
         .filter((item) => item.tahun_akademik === sourceYear && item.status === 'AKTIF')
         .sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah) || a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas)),
-    [classes, sourceYear],
+    [scopedClasses, sourceYear],
   );
 
   const selectedSourceClass = sourceClassId ? classById.get(sourceClassId) : undefined;
@@ -187,8 +204,8 @@ export default function PromotionPlanner({
   );
 
   const targetClasses = useMemo(
-    () => classes.filter((item) => item.tahun_akademik === targetYear && item.status === 'AKTIF'),
-    [classes, targetYear],
+    () => scopedClasses.filter((item) => item.tahun_akademik === targetYear && item.status === 'AKTIF'),
+    [scopedClasses, targetYear],
   );
 
   const bulkTargetOptions = useMemo(() => {
@@ -307,7 +324,6 @@ export default function PromotionPlanner({
               {bulkTargetOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   Tahun {item.tahun} - {item.nama_kelas}
-                  {item.exists ? '' : ' (cipta baharu)'}
                 </option>
               ))}
             </select>
@@ -361,7 +377,6 @@ export default function PromotionPlanner({
                 <tr>
                   <th>BIL</th>
                   <th>Nama Murid</th>
-                  <th>Sekolah</th>
                   <th>Kelas Semasa</th>
                   <th>Kelas Cadangan</th>
                   <th>Status</th>
@@ -386,10 +401,6 @@ export default function PromotionPlanner({
                       <td>
                         <strong>{item.student.nama_murid}</strong>
                         <small>{item.student.mykid}</small>
-                      </td>
-                      <td>
-                        <strong>{item.student.kod_sekolah}</strong>
-                        <small>{item.school?.nama_sekolah ?? '-'}</small>
                       </td>
                       <td>
                         {item.sourceClass ? (

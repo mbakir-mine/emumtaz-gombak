@@ -65,9 +65,14 @@ left join schools sc on sc.kod_sekolah = se.kod_sekolah;
 
 update app_users
 set allowed_nav = array_append(allowed_nav, 'studentPromotion')
-where role in ('OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH')
+where role in ('OWNER', 'ADMIN_SEKOLAH')
   and allowed_nav is not null
   and not ('studentPromotion' = any(allowed_nav));
+
+update app_users
+set allowed_nav = array_remove(allowed_nav, 'studentPromotion')
+where role in ('ADMIN_DAERAH', 'ADMIN_ZON')
+  and allowed_nav is not null;
 
 drop trigger if exists trg_create_next_year_class on classes;
 
