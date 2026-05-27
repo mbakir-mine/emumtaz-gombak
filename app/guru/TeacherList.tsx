@@ -52,6 +52,23 @@ function filterUsers(users: UserRecord[], filter: UserFilter | null) {
   return users;
 }
 
+function teacherIdsByYear(
+  users: UserRecord[],
+  classAssignments: TeacherClassAssignment[],
+  subjectAssignments: TeacherSubjectAssignment[],
+  year: number,
+) {
+  const scopedUserIds = new Set(users.map((user) => user.id));
+  const teacherIds = new Set<string>();
+  classAssignments.forEach((item) => {
+    if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
+  });
+  subjectAssignments.forEach((item) => {
+    if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
+  });
+  return teacherIds;
+}
+
 function statsTitle(role: string | undefined) {
   const currentYear = new Date().getFullYear();
   if (role === 'ADMIN_ZON') return `Statistik Guru Zon ${currentYear}`;
@@ -67,6 +84,7 @@ function TeacherSummaryCards({
   subjectAssignments,
   onToggleForm,
   formOpen,
+  onSelectYear,
 }: {
   users: UserRecord[];
   schools: School[];
@@ -75,21 +93,15 @@ function TeacherSummaryCards({
   subjectAssignments: TeacherSubjectAssignment[];
   onToggleForm: () => void;
   formOpen: boolean;
+  onSelectYear: (year: number) => void;
 }) {
   const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
-  const scopedUserIds = useMemo(() => new Set(users.map((user) => user.id)), [users]);
   const zoneCounts = zoneOrder.map((zone) => ({
     zone,
     count: users.filter((user) => userZone(user, schoolMap) === zone).length,
   }));
   const teacherByYear = [1, 2, 3, 4, 5, 6].map((year) => {
-    const teacherIds = new Set<string>();
-    classAssignments.forEach((item) => {
-      if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
-    });
-    subjectAssignments.forEach((item) => {
-      if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
-    });
+    const teacherIds = teacherIdsByYear(users, classAssignments, subjectAssignments, year);
     return { year, count: teacherIds.size };
   });
   const isSchoolAdmin = role === 'ADMIN_SEKOLAH';
@@ -114,12 +126,23 @@ function TeacherSummaryCards({
             {isSchoolAdmin ? schoolTeacherTotal : users.filter((user) => user.kod_sekolah).length}
           </strong>
         </div>
-        <div className="teacher-count-list">
+        <div className={`teacher-count-list ${isSchoolAdmin ? 'teacher-count-list-year' : ''}`}>
           {(isSchoolAdmin ? teacherByYear : ['SRAI', 'SRA', 'KAFAI']).map((item) => (
             <span key={typeof item === 'string' ? item : item.year}>
               <em>{typeof item === 'string' ? item : `Tahun ${item.year}`}</em>
               <i>:</i>
-              <b>{typeof item === 'string' ? countUsersByCategory(users, schoolMap, item) : item.count}</b>
+              {typeof item === 'string' ? (
+                <b>{countUsersByCategory(users, schoolMap, item)}</b>
+              ) : (
+                <button
+                  type="button"
+                  className="teacher-count-button"
+                  onClick={() => onSelectYear(item.year)}
+                  aria-label={`Papar guru Tahun ${item.year}`}
+                >
+                  {item.count}
+                </button>
+              )}
             </span>
           ))}
         </div>
@@ -179,23 +202,31 @@ export default function TeacherList({
   const profile = useAccessProfile();
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<UserFilter | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showForms, setShowForms] = useState(false);
   const scopedUsers = useMemo(() => scopeUsers(profile, users, schools), [profile, schools, users]);
   const options = useMemo(() => userOptions(profile?.role), [profile?.role]);
   const filteredUsers = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const baseUsers = selectedFilter ? filterUsers(scopedUsers, selectedFilter) : [];
+    const yearTeacherIds = selectedYear
+      ? teacherIdsByYear(scopedUsers, classAssignments, subjectAssignments, selectedYear)
+      : null;
+    const baseUsers = selectedYear
+      ? scopedUsers.filter((user) => yearTeacherIds?.has(user.id))
+      : selectedFilter
+        ? filterUsers(scopedUsers, selectedFilter)
+        : [];
     if (!term) return baseUsers;
 
-    return (selectedFilter ? baseUsers : scopedUsers).filter((user) =>
+    return (selectedFilter || selectedYear ? baseUsers : scopedUsers).filter((user) =>
       [accessLabel(user), user.nama, user.email, roleLabel(user.role), user.role, user.status]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [query, scopedUsers, selectedFilter]);
-  const shouldShowList = Boolean(selectedFilter) || query.trim().length > 0;
+  }, [classAssignments, query, scopedUsers, selectedFilter, selectedYear, subjectAssignments]);
+  const shouldShowList = Boolean(selectedFilter) || Boolean(selectedYear) || query.trim().length > 0;
 
   return (
     <>
@@ -211,6 +242,11 @@ export default function TeacherList({
         subjectAssignments={subjectAssignments}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
+        onSelectYear={(year) => {
+          setSelectedYear(year);
+          setSelectedFilter(null);
+          setQuery('');
+        }}
       />
       {showForms && (
         <div className="inline-add-panel teacher-add-panel">
@@ -227,7 +263,7 @@ export default function TeacherList({
         </div>
       )}
       <div className="panel-head">
-        <h2>Senarai Pengguna Sekolah</h2>
+        <h2>{selectedYear ? `Senarai Guru Tahun ${selectedYear}` : 'Senarai Pengguna Sekolah'}</h2>
         <span>
           {filteredUsers.length} / {scopedUsers.length} rekod
         </span>
@@ -238,7 +274,10 @@ export default function TeacherList({
             key={option.key}
             type="button"
             className={selectedFilter?.key === option.key ? 'button' : 'button soft'}
-            onClick={() => setSelectedFilter(option)}
+            onClick={() => {
+              setSelectedFilter(option);
+              setSelectedYear(null);
+            }}
           >
             {option.label}
           </button>
@@ -250,7 +289,10 @@ export default function TeacherList({
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
-            if (event.target.value.trim()) setSelectedFilter(null);
+            if (event.target.value.trim()) {
+              setSelectedFilter(null);
+              setSelectedYear(null);
+            }
           }}
           placeholder="Cari nama guru, email, role atau status"
           aria-label="Cari guru"

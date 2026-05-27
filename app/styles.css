@@ -820,9 +820,11 @@ table {
 
 th,
 td {
-  padding: 13px;
+  padding: 9px 13px;
   border-bottom: 1px solid var(--line);
   text-align: left;
+  line-height: 1.3;
+  vertical-align: middle;
 }
 
 th {
@@ -1399,6 +1401,13 @@ th {
     linear-gradient(135deg, rgba(244, 201, 79, 0.7), rgba(226, 244, 232, 0.7));
 }
 
+.teacher-count-list-year {
+  grid-template-columns: repeat(2, minmax(128px, 1fr));
+  column-gap: 28px;
+  row-gap: 8px;
+  align-content: center;
+}
+
 .teacher-count-list span {
   display: grid;
   grid-template-columns: minmax(104px, 1fr) 8px 32px;
@@ -1419,6 +1428,24 @@ th {
 .teacher-count-list b {
   color: #052615;
   text-align: right;
+}
+
+.teacher-count-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  font-weight: 800;
+  text-align: right;
+  cursor: pointer;
+}
+
+.teacher-count-button:hover,
+.teacher-count-button:focus-visible {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .student-summary-card {
