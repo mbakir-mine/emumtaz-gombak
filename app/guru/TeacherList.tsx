@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { School, UserRecord } from '@/lib/data';
+import type { School, TeacherClassAssignment, TeacherSubjectAssignment, UserRecord } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeUsers } from '../ui/scopedData';
@@ -62,22 +62,41 @@ function statsTitle(role: string | undefined) {
 function TeacherSummaryCards({
   users,
   schools,
+  role,
+  classAssignments,
+  subjectAssignments,
   onToggleForm,
   formOpen,
 }: {
   users: UserRecord[];
   schools: School[];
+  role?: string;
+  classAssignments: TeacherClassAssignment[];
+  subjectAssignments: TeacherSubjectAssignment[];
   onToggleForm: () => void;
   formOpen: boolean;
 }) {
   const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
+  const scopedUserIds = useMemo(() => new Set(users.map((user) => user.id)), [users]);
   const zoneCounts = zoneOrder.map((zone) => ({
     zone,
     count: users.filter((user) => userZone(user, schoolMap) === zone).length,
   }));
+  const teacherByYear = [1, 2, 3, 4, 5, 6].map((year) => {
+    const teacherIds = new Set<string>();
+    classAssignments.forEach((item) => {
+      if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
+    });
+    subjectAssignments.forEach((item) => {
+      if (item.classes?.tahun === year && scopedUserIds.has(item.user_id)) teacherIds.add(item.user_id);
+    });
+    return { year, count: teacherIds.size };
+  });
+  const isSchoolAdmin = role === 'ADMIN_SEKOLAH';
+  const schoolTeacherTotal = users.filter((user) => teacherRoles.includes(user.role)).length;
 
   return (
-    <div className="teacher-summary-grid">
+    <div className={`teacher-summary-grid ${isSchoolAdmin ? 'teacher-summary-grid-school' : ''}`}>
       <article className="teacher-summary-card">
         <div>
           <span>Jumlah Keseluruhan</span>
@@ -90,35 +109,39 @@ function TeacherSummaryCards({
 
       <article className="teacher-summary-card">
         <div>
-          <span>Jumlah Mengikut Kategori</span>
-          <strong>{users.filter((user) => user.kod_sekolah).length}</strong>
+          <span>{isSchoolAdmin ? 'Jumlah Guru Mengikut Tahun' : 'Jumlah Mengikut Kategori'}</span>
+          <strong>
+            {isSchoolAdmin ? schoolTeacherTotal : users.filter((user) => user.kod_sekolah).length}
+          </strong>
         </div>
         <div className="teacher-count-list">
-          {['SRAI', 'SRA', 'KAFAI'].map((category) => (
-            <span key={category}>
-              <em>{category}</em>
+          {(isSchoolAdmin ? teacherByYear : ['SRAI', 'SRA', 'KAFAI']).map((item) => (
+            <span key={typeof item === 'string' ? item : item.year}>
+              <em>{typeof item === 'string' ? item : `Tahun ${item.year}`}</em>
               <i>:</i>
-              <b>{countUsersByCategory(users, schoolMap, category)}</b>
+              <b>{typeof item === 'string' ? countUsersByCategory(users, schoolMap, item) : item.count}</b>
             </span>
           ))}
         </div>
       </article>
 
-      <article className="teacher-summary-card">
-        <div>
-          <span>Jumlah Zon</span>
-          <strong>{zoneCounts.reduce((total, item) => total + item.count, 0)}</strong>
-        </div>
-        <div className="teacher-count-list">
-          {zoneCounts.map((item) => (
-            <span key={item.zone}>
-              <em>Zon {item.zone.charAt(0) + item.zone.slice(1).toLowerCase()}</em>
-              <i>:</i>
-              <b>{item.count}</b>
-            </span>
-          ))}
-        </div>
-      </article>
+      {!isSchoolAdmin && (
+        <article className="teacher-summary-card">
+          <div>
+            <span>Jumlah Zon</span>
+            <strong>{zoneCounts.reduce((total, item) => total + item.count, 0)}</strong>
+          </div>
+          <div className="teacher-count-list">
+            {zoneCounts.map((item) => (
+              <span key={item.zone}>
+                <em>Zon {item.zone.charAt(0) + item.zone.slice(1).toLowerCase()}</em>
+                <i>:</i>
+                <b>{item.count}</b>
+              </span>
+            ))}
+          </div>
+        </article>
+      )}
     </div>
   );
 }
@@ -142,7 +165,17 @@ function userOptions(role: string | undefined): UserFilter[] {
   ];
 }
 
-export default function TeacherList({ users, schools }: { users: UserRecord[]; schools: School[] }) {
+export default function TeacherList({
+  users,
+  schools,
+  classAssignments,
+  subjectAssignments,
+}: {
+  users: UserRecord[];
+  schools: School[];
+  classAssignments: TeacherClassAssignment[];
+  subjectAssignments: TeacherSubjectAssignment[];
+}) {
   const profile = useAccessProfile();
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<UserFilter | null>(null);
@@ -173,6 +206,9 @@ export default function TeacherList({ users, schools }: { users: UserRecord[]; s
       <TeacherSummaryCards
         users={scopedUsers}
         schools={schools}
+        role={profile?.role}
+        classAssignments={classAssignments}
+        subjectAssignments={subjectAssignments}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
       />

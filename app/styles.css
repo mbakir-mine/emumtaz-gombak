@@ -1286,6 +1286,10 @@ th {
   margin-bottom: 22px;
 }
 
+.teacher-summary-grid-school {
+  grid-template-columns: minmax(280px, 0.75fr) minmax(420px, 1fr);
+}
+
 .student-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
