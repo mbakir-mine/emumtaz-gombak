@@ -803,7 +803,15 @@ table {
 }
 
 .class-year-table th:first-child {
-  width: 46%;
+  width: 64px;
+}
+
+.class-year-table th:nth-child(2) {
+  width: 34%;
+}
+
+.class-year-table th:nth-child(3) {
+  width: 30%;
 }
 
 .class-year-table th,
@@ -813,6 +821,13 @@ table {
 
 .class-year-table th:first-child,
 .class-year-table td:first-child {
+  text-align: left;
+}
+
+.class-year-table th:nth-child(2),
+.class-year-table td:nth-child(2),
+.class-year-table th:nth-child(3),
+.class-year-table td:nth-child(3) {
   text-align: left;
 }
 

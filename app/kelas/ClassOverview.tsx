@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { ClassRecord, School, StudentRecord } from '@/lib/data';
+import type { ClassRecord, School, StudentRecord, TeacherClassAssignment } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses } from '../ui/scopedData';
 import ClassForm from './ClassForm';
@@ -36,6 +36,7 @@ type SchoolClassDetail = ClassWithSchool & {
   maleStudents: number;
   femaleStudents: number;
   totalStudents: number;
+  classTeacherName: string;
 };
 
 type YearClassGroup = {
@@ -80,6 +81,11 @@ function detailTitle(filter: ClassFilter, profileRole: string | undefined, schoo
   }
 
   if (filter.mode === 'schoolClassDetail' && filter.schoolCode) {
+    if (profileRole === 'ADMIN_SEKOLAH') {
+      if (filter.year) return `Senarai Kelas Tahun ${filter.year} ${currentYear}`;
+      return `Senarai Kelas ${currentYear}`;
+    }
+    if (filter.year) return `Senarai Kelas ${schoolName ?? filter.schoolCode} Tahun ${filter.year} ${currentYear}`;
     return `Senarai Kelas ${filter.schoolCode} - ${schoolName ?? filter.schoolCode} ${currentYear}`;
   }
 
@@ -166,10 +172,12 @@ export default function ClassOverview({
   schools,
   classes,
   students,
+  teacherClassAssignments,
 }: {
   schools: School[];
   classes: ClassRecord[];
   students: StudentRecord[];
+  teacherClassAssignments: TeacherClassAssignment[];
 }) {
   const profile = useAccessProfile();
   const [filter, setFilter] = useState<ClassFilter | null>(null);
@@ -222,6 +230,20 @@ export default function ClassOverview({
     return counts;
   }, [students]);
 
+  const teacherNameByClass = useMemo(() => {
+    const names = new Map<string, string[]>();
+
+    teacherClassAssignments.forEach((assignment) => {
+      const teacherName = assignment.users?.nama;
+      if (!teacherName) return;
+      const current = names.get(assignment.class_id) ?? [];
+      if (!current.includes(teacherName)) current.push(teacherName);
+      names.set(assignment.class_id, current);
+    });
+
+    return new Map([...names.entries()].map(([classId, teacherNames]) => [classId, teacherNames.join(', ')]));
+  }, [teacherClassAssignments]);
+
   const schoolClassDetails = useMemo<SchoolClassDetail[]>(() => {
     return filteredItems
       .map((item) => {
@@ -234,10 +256,11 @@ export default function ClassOverview({
         return {
           ...item,
           ...counts,
+          classTeacherName: teacherNameByClass.get(item.id) ?? 'Belum ditetapkan',
         };
       })
       .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
-  }, [filteredItems, studentCountsByClass]);
+  }, [filteredItems, studentCountsByClass, teacherNameByClass]);
 
   const yearClassGroups = useMemo<YearClassGroup[]>(() => {
     return years
@@ -559,7 +582,8 @@ export default function ClassOverview({
                         <thead>
                           <tr>
                             <th>Bil</th>
-                            <th>Tahun {group.year}</th>
+                            <th>Nama Kelas</th>
+                            <th>Guru Kelas</th>
                             <th>Lelaki</th>
                             <th>Perempuan</th>
                             <th>Jumlah</th>
@@ -570,13 +594,14 @@ export default function ClassOverview({
                             <tr key={item.id}>
                               <td>{index + 1}</td>
                               <td>{item.nama_kelas}</td>
+                              <td>{item.classTeacherName}</td>
                               <td>{item.maleStudents}</td>
                               <td>{item.femaleStudents}</td>
                               <td>{item.totalStudents}</td>
                             </tr>
                           ))}
                           <tr className="class-year-total-row">
-                            <td colSpan={2}>Jumlah Tahun {group.year}</td>
+                            <td colSpan={3}>Jumlah Tahun {group.year}</td>
                             <td>{group.maleStudents}</td>
                             <td>{group.femaleStudents}</td>
                             <td>{group.totalStudents}</td>
