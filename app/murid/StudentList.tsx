@@ -14,10 +14,12 @@ const yearOrder = [1, 2, 3, 4, 5, 6];
 
 type StudentFilter = {
   label: string;
+  mode?: 'schoolSummary' | 'studentList';
   category?: string;
   zone?: string;
   year?: number;
   gender?: string;
+  schoolCode?: string;
 };
 
 function zoneText(zon: string | null | undefined) {
@@ -80,6 +82,7 @@ function matchesFilter(
   classMap: Map<string, ClassRecord>,
 ) {
   if (!filter) return false;
+  if (filter.schoolCode && student.kod_sekolah !== filter.schoolCode) return false;
   if (filter.category && studentCategory(student, schoolMap) !== filter.category) return false;
   if (filter.zone && studentZone(student, schoolMap) !== filter.zone) return false;
   if (filter.year && studentYear(student, classMap) !== filter.year) return false;
@@ -89,6 +92,7 @@ function matchesFilter(
 
 function matchesSchoolSummary(summary: StudentSchoolSummary, filter: StudentFilter | null) {
   if (!filter) return false;
+  if (filter.schoolCode && summary.kod_sekolah !== filter.schoolCode) return false;
   if (filter.category && summary.kategori?.toUpperCase() !== filter.category) return false;
   if (filter.zone && summary.zon !== filter.zone) return false;
   return true;
@@ -107,6 +111,16 @@ function summaryCounts(summary: StudentSchoolSummary, gender?: string) {
 function schoolLabel(kodSekolah: string, schoolMap: Map<string, School>) {
   const school = schoolMap.get(kodSekolah);
   return school ? `${school.kod_sekolah} - ${school.nama_sekolah}` : kodSekolah;
+}
+
+function studentListFilter(baseFilter: StudentFilter, kodSekolah: string, label: string, gender?: string): StudentFilter {
+  return {
+    ...baseFilter,
+    label,
+    mode: 'studentList',
+    schoolCode: kodSekolah,
+    gender: gender ?? baseFilter.gender,
+  };
 }
 
 function canManageStudents(profile: AccessProfile | null) {
@@ -341,7 +355,8 @@ export default function StudentList({
       .sort((a, b) => schoolLabel(a.kodSekolah, schoolMap).localeCompare(schoolLabel(b.kodSekolah, schoolMap)));
   }, [schoolMap, scopedSchoolSummaries, selectedFilter]);
   const shouldShowList = Boolean(selectedFilter) || query.trim().length > 0;
-  const showSchoolSummary = Boolean(selectedFilter) && query.trim().length === 0;
+  const showSchoolSummary =
+    Boolean(selectedFilter) && selectedFilter?.mode !== 'studentList' && query.trim().length === 0;
 
   return (
     <>
@@ -421,10 +436,61 @@ export default function StudentList({
                 <tr key={item.kodSekolah}>
                   <td>{index + 1}</td>
                   <td>{schoolLabel(item.kodSekolah, schoolMap)}</td>
-                  <td>{item.male}</td>
-                  <td>{item.female}</td>
                   <td>
-                    <strong>{item.total}</strong>
+                    <button
+                      className="table-number-button"
+                      type="button"
+                      onClick={() =>
+                        selectedFilter &&
+                        setSelectedFilter(
+                          studentListFilter(
+                            selectedFilter,
+                            item.kodSekolah,
+                            `Senarai murid lelaki ${schoolLabel(item.kodSekolah, schoolMap)}`,
+                            'L',
+                          ),
+                        )
+                      }
+                    >
+                      {item.male}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      className="table-number-button"
+                      type="button"
+                      onClick={() =>
+                        selectedFilter &&
+                        setSelectedFilter(
+                          studentListFilter(
+                            selectedFilter,
+                            item.kodSekolah,
+                            `Senarai murid perempuan ${schoolLabel(item.kodSekolah, schoolMap)}`,
+                            'P',
+                          ),
+                        )
+                      }
+                    >
+                      {item.female}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      className="table-number-button"
+                      type="button"
+                      onClick={() =>
+                        selectedFilter &&
+                        setSelectedFilter(
+                          studentListFilter(
+                            selectedFilter,
+                            item.kodSekolah,
+                            `Senarai murid ${schoolLabel(item.kodSekolah, schoolMap)}`,
+                          ),
+                        )
+                      }
+                    >
+                      {item.total}
+                    </button>
                   </td>
                 </tr>
               ))}

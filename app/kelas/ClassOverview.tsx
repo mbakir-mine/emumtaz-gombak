@@ -509,7 +509,22 @@ export default function ClassOverview({
                         <td>{item.kod_sekolah}</td>
                         <td>{item.nama_sekolah}</td>
                         {years.map((year) => (
-                          <td key={year}>{item.years[year] ?? 0}</td>
+                          <td key={year}>
+                            <button
+                              className="table-number-button"
+                              type="button"
+                              onClick={() =>
+                                selectFilter({
+                                  label: `Senarai kelas ${item.nama_sekolah} Tahun ${year}`,
+                                  mode: 'schoolClassDetail',
+                                  schoolCode: item.kod_sekolah,
+                                  year,
+                                })
+                              }
+                            >
+                              {item.years[year] ?? 0}
+                            </button>
+                          </td>
                         ))}
                         <td>
                           <button
