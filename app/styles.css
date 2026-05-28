@@ -1277,6 +1277,29 @@ th {
   gap: 14px 16px;
 }
 
+.class-form-grid {
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  gap: 14px 16px;
+}
+
+.class-form-grid label {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.class-form-grid label > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.class-form-grid .form-actions {
+  grid-column: 1 / -1;
+  padding-left: 136px;
+}
+
 .inline-form {
   gap: 12px 16px;
 }
@@ -2875,6 +2898,14 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .class-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .class-form-grid .form-actions {
+    grid-column: 1 / -1;
+  }
+
   .teacher-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2905,6 +2936,15 @@ button:disabled {
   .inline-form label {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .class-form-grid label {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .class-form-grid .form-actions {
+    padding-left: 0;
   }
 
   .inline-form .form-actions {
