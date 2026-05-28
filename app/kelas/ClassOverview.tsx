@@ -122,7 +122,7 @@ function YearBreakdownCard({
                 onClick={() =>
                   onSelect({
                     ...filter,
-                    mode: 'schoolSummary',
+                    mode: schoolCode ? 'schoolClassDetail' : 'schoolSummary',
                     label: `${title} - Kelas Tahun ${year}`,
                   })
                 }
@@ -393,8 +393,8 @@ export default function ClassOverview({
               action={addClassButton}
               onSelect={() =>
                 selectFilter({
-                  label: `Ringkasan kelas ${school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah'}`,
-                  mode: 'schoolSummary',
+                  label: `Senarai kelas ${school?.nama_sekolah ?? profile.kod_sekolah ?? 'Sekolah'}`,
+                  mode: 'schoolClassDetail',
                   schoolCode: profile.kod_sekolah ?? undefined,
                 })
               }
