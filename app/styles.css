@@ -814,6 +814,13 @@ table {
   width: 30%;
 }
 
+.class-year-table th:nth-last-child(-n + 3),
+.class-year-table td:nth-last-child(-n + 3) {
+  width: 120px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .class-year-table th,
 .class-year-table td {
   text-align: center;
@@ -829,6 +836,11 @@ table {
 .class-year-table th:nth-child(3),
 .class-year-table td:nth-child(3) {
   text-align: left;
+}
+
+.class-year-table th:nth-last-child(-n + 3),
+.class-year-table td:nth-last-child(-n + 3) {
+  text-align: center;
 }
 
 .class-year-total-row {
