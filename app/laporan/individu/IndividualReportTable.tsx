@@ -39,6 +39,7 @@ export default function IndividualReportTable({
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const classById = useMemo(() => new Map(scopedClasses.map((item) => [item.id, item])), [scopedClasses]);
   const isClassTeacher = profile?.role === 'GURU_KELAS';
+  const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const teacherClassIds = useMemo(() => {
     if (!isClassTeacher || !profile) return new Set<string>();
     return new Set(
@@ -206,44 +207,47 @@ export default function IndividualReportTable({
           </select>
         </label>
 
-        <label>
-          Zon
-          <select
-            value={effectiveZone}
-            onChange={(event) => {
-              setSelectedZone(event.target.value);
-              setSelectedSchool('');
-              setSelectedClass('');
-            }}
-            disabled={profile?.role === 'ADMIN_ZON' || profile?.role === 'ADMIN_SEKOLAH'}
-          >
-            <option value="">Semua zon</option>
-            {zoneOptions.map((zon) => (
-              <option key={zon} value={zon}>
-                {zoneLabel(zon)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!isSchoolAdmin && (
+          <label>
+            Zon
+            <select
+              value={effectiveZone}
+              onChange={(event) => {
+                setSelectedZone(event.target.value);
+                setSelectedSchool('');
+                setSelectedClass('');
+              }}
+              disabled={profile?.role === 'ADMIN_ZON'}
+            >
+              <option value="">Semua zon</option>
+              {zoneOptions.map((zon) => (
+                <option key={zon} value={zon}>
+                  {zoneLabel(zon)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
-        <label>
-          Sekolah
-          <select
-            value={effectiveSchool}
-            onChange={(event) => {
-              setSelectedSchool(event.target.value);
-              setSelectedClass('');
-            }}
-            disabled={profile?.role === 'ADMIN_SEKOLAH'}
-          >
-            <option value="">Semua sekolah</option>
-            {schoolOptions.map((school) => (
-              <option key={school.kod_sekolah} value={school.kod_sekolah}>
-                {school.kod_sekolah} - {school.nama_sekolah}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!isSchoolAdmin && (
+          <label>
+            Sekolah
+            <select
+              value={effectiveSchool}
+              onChange={(event) => {
+                setSelectedSchool(event.target.value);
+                setSelectedClass('');
+              }}
+            >
+              <option value="">Semua sekolah</option>
+              {schoolOptions.map((school) => (
+                <option key={school.kod_sekolah} value={school.kod_sekolah}>
+                  {school.kod_sekolah} - {school.nama_sekolah}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label>
           Tahun Murid
@@ -285,8 +289,8 @@ export default function IndividualReportTable({
               <tr>
                 <th>Bil</th>
                 <th>Peperiksaan</th>
-                <th>Sekolah</th>
-                <th>Tahun</th>
+                {!isSchoolAdmin && <th>Sekolah</th>}
+                {!isSchoolAdmin && <th>Tahun</th>}
                 <th>Kelas</th>
                 <th>Nama Murid</th>
                 <th>Bil Subjek</th>
@@ -300,12 +304,12 @@ export default function IndividualReportTable({
                 const href = `/laporan/individu/cetak?student_id=${item.student_id}&tahun_akademik=${item.tahun_akademik}&kod_peperiksaan=${item.kod_peperiksaan}`;
 
                 return (
-                  <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
-                    <td>{index + 1}</td>
-                    <td>{item.kod_peperiksaan}</td>
-                    <td>{item.kod_sekolah}</td>
-                    <td>{classRecord ? `Tahun ${classRecord.tahun}` : '-'}</td>
-                    <td>{classRecord?.nama_kelas ?? '-'}</td>
+                    <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
+                      <td>{index + 1}</td>
+                      <td>{item.kod_peperiksaan}</td>
+                      {!isSchoolAdmin && <td>{item.kod_sekolah}</td>}
+                      {!isSchoolAdmin && <td>{classRecord ? `Tahun ${classRecord.tahun}` : '-'}</td>}
+                      <td>{classRecord?.nama_kelas ?? '-'}</td>
                     <td>
                       <Link className="text-link" href={href}>
                         {item.nama_murid}
