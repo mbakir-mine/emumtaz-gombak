@@ -9,6 +9,69 @@ export type TeacherActionState = {
   message: string;
 };
 
+const allowedStatuses = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
+
+function normalizeStatus(value: FormDataEntryValue | null) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+export async function updateTeacherStatus(formData: FormData) {
+  if (!supabase) return;
+
+  const id = String(formData.get('id') ?? '').trim();
+  const status = normalizeStatus(formData.get('status'));
+
+  if (!id || !allowedStatuses.includes(status)) return;
+
+  await supabase
+    .from('app_users')
+    .update({ status })
+    .eq('id', id)
+    .in('role', ['GURU_KELAS', 'GURU_SUBJEK']);
+
+  revalidatePath('/guru');
+  revalidatePath('/pengguna');
+  revalidatePath('/');
+}
+
+export async function bulkUpdateTeacherStatus(
+  _previousState: TeacherActionState,
+  formData: FormData,
+): Promise<TeacherActionState> {
+  if (!supabase) {
+    return { ok: false, message: 'Supabase belum disambungkan.' };
+  }
+
+  const status = normalizeStatus(formData.get('status'));
+  const ids = formData
+    .getAll('user_ids')
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  if (!allowedStatuses.includes(status)) {
+    return { ok: false, message: 'Sila pilih status yang sah.' };
+  }
+
+  if (ids.length === 0) {
+    return { ok: false, message: 'Tiada guru dipilih untuk dikemaskini.' };
+  }
+
+  const { error } = await supabase
+    .from('app_users')
+    .update({ status })
+    .in('id', ids)
+    .in('role', ['GURU_KELAS', 'GURU_SUBJEK']);
+
+  if (error) {
+    return { ok: false, message: `Gagal kemaskini status guru: ${error.message}` };
+  }
+
+  revalidatePath('/guru');
+  revalidatePath('/pengguna');
+  revalidatePath('/');
+  return { ok: true, message: `${ids.length} status guru berjaya dikemaskini kepada ${status}.` };
+}
+
 export async function createTeacher(
   _previousState: TeacherActionState,
   formData: FormData,

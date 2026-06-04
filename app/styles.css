@@ -1401,6 +1401,47 @@ th {
   margin-bottom: 22px;
 }
 
+.teacher-status-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.teacher-status-toolbar label {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 240px);
+  gap: 10px;
+  align-items: center;
+}
+
+.teacher-status-toolbar span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.teacher-status-toolbar select,
+.status-select-form select {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.status-select-form {
+  margin: 0;
+}
+
+.status-select-form select {
+  min-width: 132px;
+}
+
+.user-status-toolbar {
+  margin-top: -4px;
+  margin-bottom: 14px;
+}
+
 .student-add-panel {
   display: grid;
   grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);

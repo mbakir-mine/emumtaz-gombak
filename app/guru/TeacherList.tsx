@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import type { School, TeacherClassAssignment, TeacherSubjectAssignment, UserRecord } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeUsers } from '../ui/scopedData';
+import { bulkUpdateTeacherStatus, updateTeacherStatus } from './actions';
 import TeacherForm from './TeacherForm';
 import TeacherImportForm from './TeacherImportForm';
 
@@ -20,6 +21,12 @@ const adminRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'];
 const teacherRoles = ['GURU_KELAS', 'GURU_SUBJEK'];
 const countedRoles = ['ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
 const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
+const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
+
+const bulkStatusInitialState = {
+  ok: false,
+  message: '',
+};
 
 type UserFilter = {
   key: 'all' | 'admin' | 'teacher';
@@ -43,6 +50,16 @@ function countUsersByRole(users: UserRecord[], role: string) {
 
 function countUsersByCategory(users: UserRecord[], schools: Map<string, School>, category: string) {
   return users.filter((user) => schoolCategory(user, schools) === category).length;
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    MENUNGGU: 'Menunggu',
+    AKTIF: 'Aktif',
+    DIGANTUNG: 'Digantung',
+  };
+
+  return labels[status] ?? status;
 }
 
 function filterUsers(users: UserRecord[], filter: UserFilter | null) {
@@ -204,6 +221,7 @@ export default function TeacherList({
   const [selectedFilter, setSelectedFilter] = useState<UserFilter | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [showForms, setShowForms] = useState(false);
+  const [bulkStatusState, bulkStatusAction] = useActionState(bulkUpdateTeacherStatus, bulkStatusInitialState);
   const scopedUsers = useMemo(() => scopeUsers(profile, users, schools), [profile, schools, users]);
   const options = useMemo(() => userOptions(profile?.role), [profile?.role]);
   const filteredUsers = useMemo(() => {
@@ -227,6 +245,7 @@ export default function TeacherList({
     );
   }, [classAssignments, query, scopedUsers, selectedFilter, selectedYear, subjectAssignments]);
   const shouldShowList = Boolean(selectedFilter) || Boolean(selectedYear) || query.trim().length > 0;
+  const bulkStatusUsers = filteredUsers.filter((user) => teacherRoles.includes(user.role));
 
   return (
     <>
@@ -268,6 +287,33 @@ export default function TeacherList({
           {filteredUsers.length} / {scopedUsers.length} rekod
         </span>
       </div>
+      {shouldShowList && bulkStatusUsers.length > 0 && (
+        <form action={bulkStatusAction} className="teacher-status-toolbar">
+          <label>
+            <span>Status Semua</span>
+            <select
+              name="status"
+              defaultValue=""
+              onChange={(event) => {
+                if (event.currentTarget.value) event.currentTarget.form?.requestSubmit();
+              }}
+            >
+              <option value="">Pilih status</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {statusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {bulkStatusUsers.map((user) => (
+            <input key={user.id} type="hidden" name="user_ids" value={user.id} />
+          ))}
+          {bulkStatusState.message && (
+            <p className={bulkStatusState.ok ? 'form-success' : 'form-message'}>{bulkStatusState.message}</p>
+          )}
+        </form>
+      )}
       <div className="list-choice-row">
         {options.map((option) => (
           <button
@@ -323,7 +369,27 @@ export default function TeacherList({
                   <td>{user.nama}</td>
                   <td>{user.email}</td>
                   <td>{roleLabel(user.role)}</td>
-                  <td>{user.status}</td>
+                  <td>
+                    {teacherRoles.includes(user.role) ? (
+                      <form action={updateTeacherStatus} className="status-select-form">
+                        <input type="hidden" name="id" value={user.id} />
+                        <select
+                          name="status"
+                          defaultValue={user.status}
+                          aria-label={`Status ${user.nama}`}
+                          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                        >
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>
+                              {statusLabel(status)}
+                            </option>
+                          ))}
+                        </select>
+                      </form>
+                    ) : (
+                      user.status
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

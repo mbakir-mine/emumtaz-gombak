@@ -1,8 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import type { School, UserRecord } from '@/lib/data';
+import { bulkUpdateUserStatusOnly, updateUserStatusOnly } from './actions';
+
+const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
+const bulkStatusInitialState = {
+  ok: false,
+  message: '',
+};
 
 function roleLabel(role: string) {
   const labels: Record<string, string> = {
@@ -43,54 +50,109 @@ function UserTable({
   users,
   schoolNames,
   emptyText,
+  bulkLabel,
 }: {
   users: UserRecord[];
   schoolNames: Map<string, string>;
   emptyText: string;
+  bulkLabel: string;
 }) {
+  const [bulkStatusState, bulkStatusAction] = useActionState(bulkUpdateUserStatusOnly, bulkStatusInitialState);
+  const editableUsers = users.filter((user) => user.role !== 'OWNER');
+
   if (users.length === 0) {
     return <p className="empty">{emptyText}</p>;
   }
 
   return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Bil</th>
-            <th>Nama</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Akses</th>
-            <th>Status</th>
-            <th>Tindakan</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user, index) => (
-            <tr key={user.id}>
-              <td>{index + 1}</td>
-              <td>
-                <Link className="text-link" href={`/pengguna/${user.id}`}>
-                  {user.nama}
-                </Link>
-              </td>
-              <td>{user.email}</td>
-              <td>{roleLabel(user.role)}</td>
-              <td>{accessLabel(user, schoolNames)}</td>
-              <td>
-                <span className={`status-badge status-${user.status.toLowerCase()}`}>{statusLabel(user.status)}</span>
-              </td>
-              <td>
-                <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
-                  Profil
-                </Link>
-              </td>
-            </tr>
+    <>
+      {editableUsers.length > 0 && (
+        <form action={bulkStatusAction} className="teacher-status-toolbar user-status-toolbar">
+          <label>
+            <span>{bulkLabel}</span>
+            <select
+              name="status"
+              defaultValue=""
+              onChange={(event) => {
+                if (event.currentTarget.value) event.currentTarget.form?.requestSubmit();
+              }}
+            >
+              <option value="">Pilih status</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {statusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {editableUsers.map((user) => (
+            <input key={user.id} type="hidden" name="user_ids" value={user.id} />
           ))}
-        </tbody>
-      </table>
-    </div>
+          {bulkStatusState.message && (
+            <p className={bulkStatusState.ok ? 'form-success' : 'form-message'}>{bulkStatusState.message}</p>
+          )}
+        </form>
+      )}
+
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Bil</th>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Akses</th>
+              <th>Status</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user, index) => (
+              <tr key={user.id}>
+                <td>{index + 1}</td>
+                <td>
+                  <Link className="text-link" href={`/pengguna/${user.id}`}>
+                    {user.nama}
+                  </Link>
+                </td>
+                <td>{user.email}</td>
+                <td>{roleLabel(user.role)}</td>
+                <td>{accessLabel(user, schoolNames)}</td>
+                <td>
+                  {user.role === 'OWNER' ? (
+                    <span className={`status-badge status-${user.status.toLowerCase()}`}>
+                      {statusLabel(user.status)}
+                    </span>
+                  ) : (
+                    <form action={updateUserStatusOnly} className="status-select-form">
+                      <input type="hidden" name="id" value={user.id} />
+                      <select
+                        name="status"
+                        defaultValue={user.status}
+                        aria-label={`Status ${user.nama}`}
+                        onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                      >
+                        {statusOptions.map((status) => (
+                          <option key={status} value={status}>
+                            {statusLabel(status)}
+                          </option>
+                        ))}
+                      </select>
+                    </form>
+                  )}
+                </td>
+                <td>
+                  <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
+                    Profil
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -160,7 +222,12 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
           <h2>Permohonan Menunggu</h2>
           <span>{pendingUsers.length} rekod</span>
         </div>
-        <UserTable users={pendingUsers} schoolNames={schoolNames} emptyText="Tiada permohonan baru." />
+        <UserTable
+          users={pendingUsers}
+          schoolNames={schoolNames}
+          emptyText="Tiada permohonan baru."
+          bulkLabel="Status Semua"
+        />
       </section>
 
       <section className="panel">
@@ -168,7 +235,12 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
           <h2>Pengguna Aktif</h2>
           <span>{activeUsers.length} rekod</span>
         </div>
-        <UserTable users={activeUsers} schoolNames={schoolNames} emptyText="Belum ada pengguna aktif." />
+        <UserTable
+          users={activeUsers}
+          schoolNames={schoolNames}
+          emptyText="Belum ada pengguna aktif."
+          bulkLabel="Status Semua"
+        />
       </section>
 
       {suspendedUsers.length > 0 && (
@@ -177,7 +249,12 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
             <h2>Pengguna Digantung</h2>
             <span>{suspendedUsers.length} rekod</span>
           </div>
-          <UserTable users={suspendedUsers} schoolNames={schoolNames} emptyText="Tiada pengguna digantung." />
+          <UserTable
+            users={suspendedUsers}
+            schoolNames={schoolNames}
+            emptyText="Tiada pengguna digantung."
+            bulkLabel="Status Semua"
+          />
         </section>
       )}
     </>
