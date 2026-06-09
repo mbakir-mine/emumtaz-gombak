@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { navItems } from '@/lib/access';
+import { sendActivationEmail } from '@/lib/activationEmail';
 import {
   ensureTemporaryAuthLogin,
   provisionAuthUser,
@@ -49,6 +50,13 @@ async function prepareActivationUpdate(user: UserForProvision, targetStatus: str
   };
 }
 
+async function activationEmailMessage(user: UserForProvision, shouldSend: boolean) {
+  if (!shouldSend) return '';
+
+  const email = await sendActivationEmail(user);
+  return ` ${email.message}`;
+}
+
 export async function updateUserStatusOnly(
   _previousState: UserStatusActionState,
   formData: FormData,
@@ -74,7 +82,9 @@ export async function updateUserStatusOnly(
     return { ok: false, message: 'Pengguna tidak boleh dikemaskini.' };
   }
 
-  const activation = await prepareActivationUpdate(user as UserForProvision, status);
+  const typedUser = user as UserForProvision;
+  const shouldSendEmail = status === 'AKTIF' && typedUser.status !== 'AKTIF';
+  const activation = await prepareActivationUpdate(typedUser, status);
   if (!activation.ok) {
     return { ok: false, message: activation.message };
   }
@@ -88,7 +98,8 @@ export async function updateUserStatusOnly(
   revalidatePath('/pengguna');
   revalidatePath('/guru');
   revalidatePath('/');
-  return { ok: true, message: `Status pengguna dikemaskini kepada ${status}.${activation.message}` };
+  const emailMessage = await activationEmailMessage(typedUser, shouldSendEmail);
+  return { ok: true, message: `Status pengguna dikemaskini kepada ${status}.${activation.message}${emailMessage}` };
 }
 
 export async function bulkUpdateUserStatusOnly(
@@ -127,8 +138,11 @@ export async function bulkUpdateUserStatusOnly(
   if (status === 'AKTIF') {
     let createdCount = 0;
     let linkedCount = 0;
+    let emailedCount = 0;
+    let emailWarning = '';
 
     for (const user of safeUsers) {
+      const shouldSendEmail = user.status !== 'AKTIF';
       const activation = await prepareActivationUpdate(user, status);
       if (!activation.ok) {
         return { ok: false, message: activation.message };
@@ -143,6 +157,12 @@ export async function bulkUpdateUserStatusOnly(
       if (error) {
         return { ok: false, message: `Gagal kemaskini ${user.email}: ${error.message}` };
       }
+
+      if (shouldSendEmail) {
+        const email = await sendActivationEmail(user);
+        if (email.ok) emailedCount += 1;
+        else emailWarning = email.message;
+      }
     }
 
     revalidatePath('/pengguna');
@@ -153,7 +173,9 @@ export async function bulkUpdateUserStatusOnly(
       message:
         `${safeUsers.length} status pengguna berjaya dikemaskini kepada AKTIF. ` +
         `${createdCount} akaun login dicipta, ${linkedCount} akaun login sedia ada dipautkan. ` +
-        `Password sementara akaun baru: ${temporaryUserPassword}.`,
+        `Password sementara akaun baru: ${temporaryUserPassword}. ` +
+        `${emailedCount} email aktivasi dihantar.` +
+        (emailWarning ? ` ${emailWarning}` : ''),
     };
   }
 
@@ -228,14 +250,17 @@ export async function updateUserStatus(
   updates.allowed_nav = allowedNav.length > 0 ? allowedNav : null;
 
   let activationMessage = '';
+  let activationUser: UserForProvision | null = null;
+  const shouldSendEmail = status === 'AKTIF' && user?.status !== 'AKTIF';
   if (status === 'AKTIF' && user) {
+    activationUser = {
+      ...(user as UserForProvision),
+      role,
+      zon: role === 'ADMIN_ZON' ? zon : null,
+      kod_sekolah: role === 'ADMIN_DAERAH' || role === 'ADMIN_ZON' ? null : user.kod_sekolah,
+    };
     const activation = await prepareActivationUpdate(
-      {
-        ...(user as UserForProvision),
-        role,
-        zon: role === 'ADMIN_ZON' ? zon : null,
-        kod_sekolah: role === 'ADMIN_DAERAH' || role === 'ADMIN_ZON' ? null : user.kod_sekolah,
-      },
+      activationUser,
       status,
     );
     if (!activation.ok) {
@@ -256,7 +281,8 @@ export async function updateUserStatus(
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
-  return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}` };
+  const emailMessage = activationUser ? await activationEmailMessage(activationUser, shouldSendEmail) : '';
+  return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}${emailMessage}` };
 }
 
 export async function ensureUserLogin(
@@ -311,7 +337,8 @@ export async function ensureUserLogin(
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
-  return { ok: true, message: login.message };
+  const email = await sendActivationEmail(user as UserForProvision);
+  return { ok: true, message: `${login.message} ${email.message}` };
 }
 
 export async function deleteUserProfile(formData: FormData) {
