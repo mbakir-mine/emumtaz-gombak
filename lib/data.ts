@@ -102,6 +102,7 @@ export type StudentEnrollmentDetail = {
 
 export type UserRecord = {
   id: string;
+  auth_user_id?: string | null;
   email: string;
   nama: string;
   role: string;
@@ -774,7 +775,7 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
     .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
     .neq('role', 'OWNER')
     .order('role')
@@ -789,7 +790,7 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
     .order('status')
     .order('kod_sekolah')
     .order('role')
@@ -803,7 +804,7 @@ export async function getAppUserById(id: string): Promise<UserRecord | null> {
   if (!supabase || !id) return null;
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
     .eq('id', id)
     .maybeSingle();
 

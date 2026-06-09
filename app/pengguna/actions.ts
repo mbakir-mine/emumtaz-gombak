@@ -4,6 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { navItems } from '@/lib/access';
+import {
+  ensureTemporaryAuthLogin,
+  provisionAuthUser,
+  temporaryUserPassword,
+  type AuthProvisionProfile,
+} from '@/lib/authProvisioning';
 
 const allowedStatuses = ['AKTIF', 'MENUNGGU', 'DIGANTUNG'];
 const allowedRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
@@ -19,28 +25,70 @@ function cleanStatus(value: FormDataEntryValue | null) {
   return String(value ?? '').trim().toUpperCase();
 }
 
-export async function updateUserStatusOnly(formData: FormData) {
-  if (!supabase) return;
+type UserForProvision = AuthProvisionProfile & {
+  status: string;
+};
+
+async function prepareActivationUpdate(user: UserForProvision, targetStatus: string) {
+  const updates: { status: string; auth_user_id?: string; must_change_password?: boolean } = { status: targetStatus };
+
+  if (targetStatus !== 'AKTIF') return { ok: true as const, updates, message: '' };
+
+  const provision = await provisionAuthUser(user);
+  if (!provision.ok) return provision;
+
+  updates.auth_user_id = provision.authUserId;
+  updates.must_change_password = true;
+
+  return {
+    ok: true as const,
+    updates,
+    message: provision.created
+      ? ` Akaun login dicipta. Password sementara: ${temporaryUserPassword}.`
+      : ` ${provision.message}`,
+  };
+}
+
+export async function updateUserStatusOnly(
+  _previousState: UserStatusActionState,
+  formData: FormData,
+): Promise<UserStatusActionState> {
+  if (!supabase) {
+    return { ok: false, message: 'Supabase belum disambungkan.' };
+  }
 
   const id = String(formData.get('id') ?? '').trim();
   const status = cleanStatus(formData.get('status'));
 
-  if (!id || !allowedStatuses.includes(status)) return;
-
-  const { data: user } = await supabase.from('app_users').select('role,status').eq('id', id).maybeSingle();
-
-  if (!user || user.role === 'OWNER') return;
-
-  const updates: { status: string; must_change_password?: boolean } = { status };
-  if (status === 'AKTIF' && user.status !== 'AKTIF') {
-    updates.must_change_password = true;
+  if (!id || !allowedStatuses.includes(status)) {
+    return { ok: false, message: 'Status tidak sah.' };
   }
 
-  await supabase.from('app_users').update(updates).eq('id', id);
+  const { data: user } = await supabase
+    .from('app_users')
+    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (!user || user.role === 'OWNER') {
+    return { ok: false, message: 'Pengguna tidak boleh dikemaskini.' };
+  }
+
+  const activation = await prepareActivationUpdate(user as UserForProvision, status);
+  if (!activation.ok) {
+    return { ok: false, message: activation.message };
+  }
+
+  const { error } = await supabase.from('app_users').update(activation.updates).eq('id', id);
+
+  if (error) {
+    return { ok: false, message: `Gagal kemaskini status: ${error.message}` };
+  }
 
   revalidatePath('/pengguna');
   revalidatePath('/guru');
   revalidatePath('/');
+  return { ok: true, message: `Status pengguna dikemaskini kepada ${status}.${activation.message}` };
 }
 
 export async function bulkUpdateUserStatusOnly(
@@ -67,29 +115,53 @@ export async function bulkUpdateUserStatusOnly(
 
   const { data: users } = await supabase
     .from('app_users')
-    .select('id,role,status')
+    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
     .in('id', ids)
     .neq('role', 'OWNER');
 
-  const safeIds = (users ?? []).map((user) => user.id);
-  if (safeIds.length === 0) {
+  const safeUsers = (users ?? []) as UserForProvision[];
+  if (safeUsers.length === 0) {
     return { ok: false, message: 'Tiada pengguna yang boleh dikemaskini.' };
   }
 
+  if (status === 'AKTIF') {
+    let createdCount = 0;
+    let linkedCount = 0;
+
+    for (const user of safeUsers) {
+      const activation = await prepareActivationUpdate(user, status);
+      if (!activation.ok) {
+        return { ok: false, message: activation.message };
+      }
+
+      if (activation.updates.auth_user_id && user.auth_user_id !== activation.updates.auth_user_id) {
+        if (activation.message.includes('dicipta')) createdCount += 1;
+        else linkedCount += 1;
+      }
+
+      const { error } = await supabase.from('app_users').update(activation.updates).eq('id', user.id);
+      if (error) {
+        return { ok: false, message: `Gagal kemaskini ${user.email}: ${error.message}` };
+      }
+    }
+
+    revalidatePath('/pengguna');
+    revalidatePath('/guru');
+    revalidatePath('/');
+    return {
+      ok: true,
+      message:
+        `${safeUsers.length} status pengguna berjaya dikemaskini kepada AKTIF. ` +
+        `${createdCount} akaun login dicipta, ${linkedCount} akaun login sedia ada dipautkan. ` +
+        `Password sementara akaun baru: ${temporaryUserPassword}.`,
+    };
+  }
+
+  const safeIds = safeUsers.map((user) => user.id);
   const { error } = await supabase.from('app_users').update({ status }).in('id', safeIds);
 
   if (error) {
     return { ok: false, message: `Gagal kemaskini status: ${error.message}` };
-  }
-
-  if (status === 'AKTIF') {
-    const newlyActiveIds = (users ?? [])
-      .filter((user) => user.status !== 'AKTIF')
-      .map((user) => user.id);
-
-    if (newlyActiveIds.length > 0) {
-      await supabase.from('app_users').update({ must_change_password: true }).in('id', newlyActiveIds);
-    }
   }
 
   revalidatePath('/pengguna');
@@ -123,7 +195,11 @@ export async function updateUserStatus(
     return { ok: false, message: 'Sila pilih zon untuk Admin Zon.' };
   }
 
-  const { data: user } = await supabase.from('app_users').select('role,status').eq('id', id).maybeSingle();
+  const { data: user } = await supabase
+    .from('app_users')
+    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
+    .eq('id', id)
+    .maybeSingle();
 
   if (user?.role === 'OWNER') {
     return { ok: false, message: 'Akaun Pentadbir Utama tidak boleh diubah.' };
@@ -135,6 +211,7 @@ export async function updateUserStatus(
     zon?: string | null;
     kod_sekolah?: string | null;
     allowed_nav?: string[] | null;
+    auth_user_id?: string;
     must_change_password?: boolean;
   } = { role, status };
 
@@ -150,8 +227,23 @@ export async function updateUserStatus(
 
   updates.allowed_nav = allowedNav.length > 0 ? allowedNav : null;
 
-  if (status === 'AKTIF' && user?.status !== 'AKTIF') {
-    updates.must_change_password = true;
+  let activationMessage = '';
+  if (status === 'AKTIF' && user) {
+    const activation = await prepareActivationUpdate(
+      {
+        ...(user as UserForProvision),
+        role,
+        zon: role === 'ADMIN_ZON' ? zon : null,
+        kod_sekolah: role === 'ADMIN_DAERAH' || role === 'ADMIN_ZON' ? null : user.kod_sekolah,
+      },
+      status,
+    );
+    if (!activation.ok) {
+      return { ok: false, message: activation.message };
+    }
+    updates.auth_user_id = activation.updates.auth_user_id;
+    updates.must_change_password = activation.updates.must_change_password;
+    activationMessage = activation.message;
   }
 
   const { error } = await supabase.from('app_users').update(updates).eq('id', id);
@@ -164,7 +256,62 @@ export async function updateUserStatus(
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
-  return { ok: true, message: 'Profil pengguna berjaya dikemaskini.' };
+  return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}` };
+}
+
+export async function ensureUserLogin(
+  _previousState: UserStatusActionState,
+  formData: FormData,
+): Promise<UserStatusActionState> {
+  if (!supabase) {
+    return { ok: false, message: 'Supabase belum disambungkan.' };
+  }
+
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) {
+    return { ok: false, message: 'Pengguna tidak sah.' };
+  }
+
+  const { data: user, error: userError } = await supabase
+    .from('app_users')
+    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (userError) {
+    return { ok: false, message: `Gagal semak pengguna: ${userError.message}` };
+  }
+
+  if (!user || user.role === 'OWNER') {
+    return { ok: false, message: 'Pengguna tidak boleh dikemaskini.' };
+  }
+
+  if (user.status !== 'AKTIF') {
+    return { ok: false, message: 'Aktifkan pengguna dahulu sebelum sediakan login.' };
+  }
+
+  const login = await ensureTemporaryAuthLogin(user as UserForProvision);
+  if (!login.ok) {
+    return { ok: false, message: login.message };
+  }
+
+  const { error } = await supabase
+    .from('app_users')
+    .update({
+      auth_user_id: login.authUserId,
+      must_change_password: true,
+    })
+    .eq('id', id);
+
+  if (error) {
+    return { ok: false, message: `Login berjaya disediakan, tetapi profil gagal dipautkan: ${error.message}` };
+  }
+
+  revalidatePath('/pengguna');
+  revalidatePath(`/pengguna/${id}`);
+  revalidatePath('/guru');
+  revalidatePath('/');
+  return { ok: true, message: login.message };
 }
 
 export async function deleteUserProfile(formData: FormData) {

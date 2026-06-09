@@ -1442,6 +1442,29 @@ th {
   margin-bottom: 14px;
 }
 
+.table-actions-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.inline-action-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+}
+
+.inline-action-form small,
+.status-select-form small {
+  display: block;
+  flex-basis: 100%;
+  max-width: 260px;
+  line-height: 1.25;
+}
+
 .student-add-panel {
   display: grid;
   grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);

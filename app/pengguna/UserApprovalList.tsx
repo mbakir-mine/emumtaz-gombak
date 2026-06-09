@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState } from 'react';
 import type { School, UserRecord } from '@/lib/data';
-import { bulkUpdateUserStatusOnly, updateUserStatusOnly } from './actions';
+import { bulkUpdateUserStatusOnly, ensureUserLogin, updateUserStatusOnly } from './actions';
 
 const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
 const bulkStatusInitialState = {
@@ -44,6 +44,45 @@ function accessLabel(user: UserRecord, schoolNames: Map<string, string>) {
   }
 
   return 'Semua sekolah';
+}
+
+function UserStatusSelect({ user }: { user: UserRecord }) {
+  const [state, action] = useActionState(updateUserStatusOnly, bulkStatusInitialState);
+
+  return (
+    <form action={action} className="status-select-form">
+      <input type="hidden" name="id" value={user.id} />
+      <select
+        name="status"
+        defaultValue={user.status}
+        aria-label={`Status ${user.nama}`}
+        onChange={(event) => event.currentTarget.form?.requestSubmit()}
+      >
+        {statusOptions.map((status) => (
+          <option key={status} value={status}>
+            {statusLabel(status)}
+          </option>
+        ))}
+      </select>
+      {state.message && <small className={state.ok ? 'form-success' : 'form-message'}>{state.message}</small>}
+    </form>
+  );
+}
+
+function EnsureLoginButton({ user }: { user: UserRecord }) {
+  const [state, action] = useActionState(ensureUserLogin, bulkStatusInitialState);
+
+  if (user.role === 'OWNER' || user.status !== 'AKTIF') return null;
+
+  return (
+    <form action={action} className="inline-action-form">
+      <input type="hidden" name="id" value={user.id} />
+      <button className="button secondary table-action" type="submit">
+        Sedia Login
+      </button>
+      {state.message && <small className={state.ok ? 'form-success' : 'form-message'}>{state.message}</small>}
+    </form>
+  );
 }
 
 function UserTable({
@@ -125,27 +164,16 @@ function UserTable({
                       {statusLabel(user.status)}
                     </span>
                   ) : (
-                    <form action={updateUserStatusOnly} className="status-select-form">
-                      <input type="hidden" name="id" value={user.id} />
-                      <select
-                        name="status"
-                        defaultValue={user.status}
-                        aria-label={`Status ${user.nama}`}
-                        onChange={(event) => event.currentTarget.form?.requestSubmit()}
-                      >
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>
-                            {statusLabel(status)}
-                          </option>
-                        ))}
-                      </select>
-                    </form>
+                    <UserStatusSelect user={user} />
                   )}
                 </td>
                 <td>
-                  <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
-                    Profil
-                  </Link>
+                  <div className="table-actions-stack">
+                    <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
+                      Profil
+                    </Link>
+                    <EnsureLoginButton user={user} />
+                  </div>
                 </td>
               </tr>
             ))}

@@ -19,6 +19,8 @@ type ClassLookupRecord = {
 };
 
 type ParsedStudentImportRow = {
+  source_line: number;
+  raw_mykid: string;
   mykid: string;
   nama_murid: string;
   jantina: string;
@@ -220,7 +222,7 @@ export async function importStudents(
   let classLookup = buildClassLookup(classes);
 
   const rows: ParsedStudentImportRow[] = parsed.rows
-    .map((row) => {
+    .map((row, index) => {
       const kodSekolah = normalizeText(pickValue(row, ['kod_sekolah', 'kod sekolah', 'sekolah']) || defaultSchool);
       const classId = pickValue(row, ['class_id', 'id_kelas']);
       const tahun = parseYearLevel(pickValue(row, ['tahun', 'tahun_murid', 'tahun murid', 'darjah']));
@@ -229,6 +231,7 @@ export async function importStudents(
         currentAcademicYear,
       );
       const namaKelas = normalizeText(pickValue(row, ['nama_kelas', 'nama kelas', 'kelas']));
+      const rawMykid = pickValue(row, ['mykid', 'my_kid', 'no_kp', 'nokp']);
       const matchedClassId =
         classId ||
         classLookup.get(classAcademicKey(kodSekolah, tahunAkademik, tahun, namaKelas)) ||
@@ -236,7 +239,9 @@ export async function importStudents(
         '';
 
       return {
-        mykid: normalizeMykid(pickValue(row, ['mykid', 'my_kid', 'no_kp', 'nokp'])),
+        source_line: index + 2,
+        raw_mykid: rawMykid,
+        mykid: normalizeMykid(rawMykid),
         nama_murid: pickValue(row, ['nama_murid', 'nama', 'nama pelajar']).toUpperCase(),
         jantina: normalizeGender(pickValue(row, ['jantina', 'gender'])),
         kod_sekolah: kodSekolah,
@@ -247,7 +252,7 @@ export async function importStudents(
         status: normalizeText(pickValue(row, ['status'])) || defaultStatus,
       };
     })
-    .filter((row) => row.mykid && row.nama_murid);
+    .filter((row) => row.mykid || row.nama_murid);
 
   if (rows.length === 0) {
     return {
@@ -256,12 +261,17 @@ export async function importStudents(
     };
   }
 
-  const invalidMykid = rows.find((row) => !/^\d{12}$/.test(row.mykid));
-  if (invalidMykid) {
+  const invalidMykids = rows.filter((row) => row.nama_murid && !/^\d{12}$/.test(row.mykid));
+  if (invalidMykids.length > 0) {
+    const examples = invalidMykids
+      .slice(0, 5)
+      .map((row) => `baris ${row.source_line}: ${row.nama_murid} (${row.raw_mykid || 'kosong'})`)
+      .join(', ');
+
     return {
       ok: false,
       message:
-        `MyKid ${invalidMykid.mykid} untuk ${invalidMykid.nama_murid} tidak sah. ` +
+        `${invalidMykids.length} rekod mempunyai MyKid tidak sah. Contoh: ${examples}. ` +
         'Pastikan kolum mykid dalam CSV ialah 12 digit dan tidak disimpan dalam format saintifik seperti 1.90531E+11.',
     };
   }
