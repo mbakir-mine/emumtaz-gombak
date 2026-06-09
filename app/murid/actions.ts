@@ -10,6 +10,73 @@ export type StudentActionState = {
   needsConfirmation?: boolean;
 };
 
+type ClassLookupRecord = {
+  id: string;
+  kod_sekolah: string;
+  tahun_akademik: number;
+  tahun: number;
+  nama_kelas: string;
+};
+
+type ParsedStudentImportRow = {
+  mykid: string;
+  nama_murid: string;
+  jantina: string;
+  kod_sekolah: string;
+  class_id: string;
+  tahun: number;
+  tahun_akademik: number;
+  nama_kelas: string;
+  status: string;
+};
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function normalizeGender(value: string) {
+  const gender = normalizeText(value);
+
+  if (['L', 'LELAKI', 'MALE', 'M'].includes(gender)) return 'L';
+  if (['P', 'PEREMPUAN', 'FEMALE', 'F'].includes(gender)) return 'P';
+
+  return gender;
+}
+
+function parseYearLevel(value: string) {
+  const match = value.match(/\d+/);
+  const year = Number(match?.[0] ?? 0);
+  return year >= 1 && year <= 6 ? year : 0;
+}
+
+function parseAcademicYear(value: string, fallback: number) {
+  const match = value.match(/\d{4}/);
+  const year = Number(match?.[0] ?? value);
+  return Number.isFinite(year) && year > 0 ? year : fallback;
+}
+
+function classKey(kodSekolah: string, tahun: number, namaKelas: string) {
+  return `${normalizeText(kodSekolah)}|${tahun}|${normalizeText(namaKelas)}`;
+}
+
+function classAcademicKey(kodSekolah: string, tahunAkademik: number, tahun: number, namaKelas: string) {
+  return `${normalizeText(kodSekolah)}|${tahunAkademik}|${tahun}|${normalizeText(namaKelas)}`;
+}
+
+function buildClassLookup(classes: ClassLookupRecord[]) {
+  const lookup = new Map<string, string>();
+
+  classes.forEach((item) => {
+    lookup.set(classKey(item.kod_sekolah, Number(item.tahun), item.nama_kelas), item.id);
+    lookup.set(
+      classAcademicKey(item.kod_sekolah, Number(item.tahun_akademik), Number(item.tahun), item.nama_kelas),
+      item.id,
+    );
+  });
+
+  return lookup;
+}
+
 export async function createStudent(
   _previousState: StudentActionState,
   formData: FormData,
@@ -20,7 +87,7 @@ export async function createStudent(
 
   const mykid = String(formData.get('mykid') ?? '').trim();
   const namaMurid = String(formData.get('nama_murid') ?? '').trim().toUpperCase();
-  const jantina = String(formData.get('jantina') ?? '').trim();
+  const jantina = normalizeGender(String(formData.get('jantina') ?? ''));
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
   const classId = String(formData.get('class_id') ?? '').trim();
   const confirmTransfer = String(formData.get('confirm_transfer') ?? '') === 'YA';
@@ -118,44 +185,58 @@ export async function importStudents(
   }
 
   const file = formData.get('csv_file');
-  const defaultSchool = String(formData.get('default_kod_sekolah') ?? '').trim().toUpperCase();
-  const defaultStatus = String(formData.get('default_status') ?? 'AKTIF').trim().toUpperCase();
+  const defaultSchool = normalizeText(String(formData.get('default_kod_sekolah') ?? ''));
+  const defaultStatus = normalizeText(String(formData.get('default_status') ?? 'AKTIF')) || 'AKTIF';
+  const currentAcademicYear = new Date().getFullYear();
 
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, message: 'Sila pilih fail CSV murid.' };
   }
 
-  const [{ data: classes }, parsed] = await Promise.all([
+  const [{ data: classRows, error: classError }, parsed] = await Promise.all([
     supabase.from('classes').select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas'),
     file.text().then(parseCsv),
   ]);
 
-  const classLookup = new Map<string, string>();
-  (classes ?? []).forEach((item: any) => {
-    classLookup.set(`${item.kod_sekolah}|${item.tahun}|${item.nama_kelas}`.toUpperCase(), item.id);
-    classLookup.set(`${item.kod_sekolah}|${item.tahun_akademik}|${item.tahun}|${item.nama_kelas}`.toUpperCase(), item.id);
-  });
+  if (classError) {
+    return { ok: false, message: `Gagal semak senarai kelas: ${classError.message}` };
+  }
 
-  const rows = parsed.rows
+  let classes = ((classRows ?? []) as ClassLookupRecord[]).map((item) => ({
+    ...item,
+    kod_sekolah: normalizeText(item.kod_sekolah),
+    nama_kelas: normalizeText(item.nama_kelas),
+    tahun: Number(item.tahun),
+    tahun_akademik: Number(item.tahun_akademik),
+  }));
+  let classLookup = buildClassLookup(classes);
+
+  const rows: ParsedStudentImportRow[] = parsed.rows
     .map((row) => {
-      const kodSekolah = (pickValue(row, ['kod_sekolah', 'kod sekolah', 'sekolah']) || defaultSchool).toUpperCase();
+      const kodSekolah = normalizeText(pickValue(row, ['kod_sekolah', 'kod sekolah', 'sekolah']) || defaultSchool);
       const classId = pickValue(row, ['class_id', 'id_kelas']);
-      const tahun = pickValue(row, ['tahun']);
-      const tahunAkademik = pickValue(row, ['tahun_akademik', 'tahun akademik']);
-      const namaKelas = pickValue(row, ['nama_kelas', 'kelas']).toUpperCase();
+      const tahun = parseYearLevel(pickValue(row, ['tahun', 'tahun_murid', 'tahun murid', 'darjah']));
+      const tahunAkademik = parseAcademicYear(
+        pickValue(row, ['tahun_akademik', 'tahun akademik', 'sesi']),
+        currentAcademicYear,
+      );
+      const namaKelas = normalizeText(pickValue(row, ['nama_kelas', 'nama kelas', 'kelas']));
       const matchedClassId =
         classId ||
-        classLookup.get(`${kodSekolah}|${tahun}|${namaKelas}`.toUpperCase()) ||
-        classLookup.get(`${kodSekolah}|${tahunAkademik}|${tahun}|${namaKelas}`.toUpperCase()) ||
+        classLookup.get(classAcademicKey(kodSekolah, tahunAkademik, tahun, namaKelas)) ||
+        classLookup.get(classKey(kodSekolah, tahun, namaKelas)) ||
         '';
 
       return {
         mykid: pickValue(row, ['mykid', 'my_kid', 'no_kp', 'nokp']),
         nama_murid: pickValue(row, ['nama_murid', 'nama', 'nama pelajar']).toUpperCase(),
-        jantina: pickValue(row, ['jantina']).toUpperCase(),
+        jantina: normalizeGender(pickValue(row, ['jantina', 'gender'])),
         kod_sekolah: kodSekolah,
         class_id: matchedClassId,
-        status: pickValue(row, ['status']).toUpperCase() || defaultStatus,
+        tahun,
+        tahun_akademik: tahunAkademik,
+        nama_kelas: namaKelas,
+        status: normalizeText(pickValue(row, ['status'])) || defaultStatus,
       };
     })
     .filter((row) => row.mykid && row.nama_murid);
@@ -167,11 +248,77 @@ export async function importStudents(
     };
   }
 
+  const missingClassMap = new Map<
+    string,
+    { kod_sekolah: string; tahun_akademik: number; tahun: number; nama_kelas: string; status: string }
+  >();
+
+  rows.forEach((row) => {
+    if (row.class_id || !row.kod_sekolah || !row.tahun || !row.nama_kelas) return;
+    missingClassMap.set(classAcademicKey(row.kod_sekolah, row.tahun_akademik, row.tahun, row.nama_kelas), {
+      kod_sekolah: row.kod_sekolah,
+      tahun_akademik: row.tahun_akademik,
+      tahun: row.tahun,
+      nama_kelas: row.nama_kelas,
+      status: 'AKTIF',
+    });
+  });
+
+  let createdClassCount = 0;
+  const missingClasses = [...missingClassMap.values()];
+  if (missingClasses.length > 0) {
+    const { data: upsertedClasses, error: upsertClassError } = await supabase
+      .from('classes')
+      .upsert(missingClasses, {
+        onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas',
+      })
+      .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas');
+
+    if (upsertClassError) {
+      return {
+        ok: false,
+        message:
+          `Gagal cipta kelas daripada CSV: ${upsertClassError.message}. ` +
+          'Pastikan kod_sekolah dalam CSV sudah wujud di Tetapan Sekolah.',
+      };
+    }
+
+    createdClassCount = upsertedClasses?.length ?? 0;
+    classes = [
+      ...classes,
+      ...((upsertedClasses ?? []) as ClassLookupRecord[]).map((item) => ({
+        ...item,
+        kod_sekolah: normalizeText(item.kod_sekolah),
+        nama_kelas: normalizeText(item.nama_kelas),
+        tahun: Number(item.tahun),
+        tahun_akademik: Number(item.tahun_akademik),
+      })),
+    ];
+    classLookup = buildClassLookup(classes);
+    rows.forEach((row) => {
+      if (row.class_id) return;
+      row.class_id =
+        classLookup.get(classAcademicKey(row.kod_sekolah, row.tahun_akademik, row.tahun, row.nama_kelas)) ||
+        classLookup.get(classKey(row.kod_sekolah, row.tahun, row.nama_kelas)) ||
+        '';
+    });
+  }
+
   const invalid = rows.find((row) => !row.jantina || !row.kod_sekolah || !row.class_id);
   if (invalid) {
+    const issues = [
+      !invalid.jantina ? 'jantina' : '',
+      !invalid.kod_sekolah ? 'kod_sekolah' : '',
+      !invalid.class_id
+        ? `kelas ${invalid.kod_sekolah || '-'} Tahun ${invalid.tahun || '-'} - ${invalid.nama_kelas || '-'}`
+        : '',
+    ].filter(Boolean);
+
     return {
       ok: false,
-      message: `Rekod ${invalid.nama_murid || invalid.mykid} tidak lengkap. Semak jantina, kod_sekolah atau nama_kelas/tahun.`,
+      message:
+        `Rekod ${invalid.nama_murid || invalid.mykid} tidak lengkap: ${issues.join(', ')}. ` +
+        'Semak jantina, kod_sekolah, tahun dan nama_kelas.',
     };
   }
 
@@ -203,7 +350,16 @@ export async function importStudents(
     };
   }
 
-  const { error } = await supabase.from('students').upsert(rows, {
+  const studentRows = rows.map(({ mykid, nama_murid, jantina, kod_sekolah, class_id, status }) => ({
+    mykid,
+    nama_murid,
+    jantina,
+    kod_sekolah,
+    class_id,
+    status,
+  }));
+
+  const { error } = await supabase.from('students').upsert(studentRows, {
     onConflict: 'mykid',
   });
 
@@ -211,7 +367,51 @@ export async function importStudents(
     return { ok: false, message: `Import murid gagal: ${error.message}` };
   }
 
+  let enrollmentMessage = '';
+  const classById = new Map(classes.map((item) => [item.id, item]));
+  const { data: importedStudents, error: importedLookupError } = await supabase
+    .from('students')
+    .select('id,mykid,kod_sekolah,class_id,status')
+    .in('mykid', uniqueMykids);
+
+  if (importedLookupError) {
+    enrollmentMessage = ` Rekod murid berjaya, tetapi enrolmen tahunan tidak dapat disemak: ${importedLookupError.message}`;
+  } else {
+    const enrollmentRows = (importedStudents ?? [])
+      .map((student) => {
+        const incoming = incomingByMykid.get(student.mykid);
+        if (!incoming) return null;
+        const classInfo = classById.get(incoming.class_id);
+
+        return {
+          student_id: student.id,
+          tahun_akademik: Number(classInfo?.tahun_akademik ?? incoming.tahun_akademik),
+          kod_sekolah: incoming.kod_sekolah,
+          class_id: incoming.class_id,
+          status: incoming.status,
+          catatan: 'Import murid pukal',
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+
+    if (enrollmentRows.length > 0) {
+      const { error: enrollmentError } = await supabase.from('student_enrollments').upsert(enrollmentRows, {
+        onConflict: 'student_id,tahun_akademik',
+      });
+
+      if (enrollmentError) {
+        enrollmentMessage = ` Rekod murid berjaya, tetapi enrolmen tahunan tidak dikemaskini: ${enrollmentError.message}`;
+      }
+    }
+  }
+
   revalidatePath('/murid');
   revalidatePath('/');
-  return { ok: true, message: `${rows.length} murid berjaya diimport.` };
+  return {
+    ok: true,
+    message:
+      `${rows.length} murid berjaya diimport.` +
+      (createdClassCount > 0 ? ` ${createdClassCount} kelas disediakan daripada CSV.` : '') +
+      enrollmentMessage,
+  };
 }
