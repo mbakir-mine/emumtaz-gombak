@@ -43,6 +43,14 @@ function normalizeGender(value: string) {
   return gender;
 }
 
+function normalizeMykid(value: string) {
+  const mykid = value.trim();
+  if (!mykid) return '';
+
+  if (/[eE][+-]?\d+|\./.test(mykid)) return mykid;
+  return mykid.replace(/\D/g, '');
+}
+
 function parseYearLevel(value: string) {
   const match = value.match(/\d+/);
   const year = Number(match?.[0] ?? 0);
@@ -228,7 +236,7 @@ export async function importStudents(
         '';
 
       return {
-        mykid: pickValue(row, ['mykid', 'my_kid', 'no_kp', 'nokp']),
+        mykid: normalizeMykid(pickValue(row, ['mykid', 'my_kid', 'no_kp', 'nokp'])),
         nama_murid: pickValue(row, ['nama_murid', 'nama', 'nama pelajar']).toUpperCase(),
         jantina: normalizeGender(pickValue(row, ['jantina', 'gender'])),
         kod_sekolah: kodSekolah,
@@ -245,6 +253,39 @@ export async function importStudents(
     return {
       ok: false,
       message: 'Tiada rekod sah ditemui. Pastikan header CSV ada mykid, nama_murid, jantina, kod_sekolah dan kelas.',
+    };
+  }
+
+  const invalidMykid = rows.find((row) => !/^\d{12}$/.test(row.mykid));
+  if (invalidMykid) {
+    return {
+      ok: false,
+      message:
+        `MyKid ${invalidMykid.mykid} untuk ${invalidMykid.nama_murid} tidak sah. ` +
+        'Pastikan kolum mykid dalam CSV ialah 12 digit dan tidak disimpan dalam format saintifik seperti 1.90531E+11.',
+    };
+  }
+
+  const duplicateMykids = rows.reduce<Map<string, ParsedStudentImportRow[]>>((accumulator, row) => {
+    const existing = accumulator.get(row.mykid) ?? [];
+    existing.push(row);
+    accumulator.set(row.mykid, existing);
+    return accumulator;
+  }, new Map());
+  const duplicateGroups = [...duplicateMykids.entries()].filter(([, duplicateRows]) => duplicateRows.length > 1);
+
+  if (duplicateGroups.length > 0) {
+    const examples = duplicateGroups
+      .slice(0, 5)
+      .map(([mykid, duplicateRows]) => `${mykid} (${duplicateRows.length} kali - ${duplicateRows[0].nama_murid})`)
+      .join(', ');
+
+    return {
+      ok: false,
+      message:
+        `CSV mengandungi ${duplicateGroups.length} MyKid berulang. ` +
+        `Contoh: ${examples}. ` +
+        'Semak dan buang rekod pendua dahulu supaya murid tidak dimasukkan ke kelas yang salah.',
     };
   }
 
