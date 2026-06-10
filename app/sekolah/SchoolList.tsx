@@ -212,6 +212,7 @@ function SchoolSummaryCards({
 
 export default function SchoolList({ schools }: { schools: School[] }) {
   const profile = useAccessProfile();
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<SchoolFilter | null>(null);
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -234,7 +235,15 @@ export default function SchoolList({ schools }: { schools: School[] }) {
 
   return (
     <>
-      <SchoolSummaryCards profile={profile} schools={scopedSchools} onSelect={setSelectedFilter} />
+      <SchoolSummaryCards
+        profile={profile}
+        schools={scopedSchools}
+        onSelect={(filter) => {
+          setSelectedFilter(filter);
+          setSearchDraft('');
+          setQuery('');
+        }}
+      />
       <div className="panel-head">
         <div>
           <h2>Carian Sekolah</h2>
@@ -244,19 +253,26 @@ export default function SchoolList({ schools }: { schools: School[] }) {
           {filteredSchools.length} / {scopedSchools.length} rekod - {assignedZones} berzon
         </span>
       </div>
-      <div className="search-row">
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const term = searchDraft.trim();
+          setQuery(term);
+          if (term) setSelectedFilter(null);
+        }}
+      >
         <input
           type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            if (!event.target.value.trim()) return;
-            setSelectedFilter(null);
-          }}
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Cari kod, nama sekolah, kategori, zon atau status"
           aria-label="Cari sekolah"
         />
-      </div>
+        <button className="button search-button" type="submit">
+          CARI
+        </button>
+      </form>
       {!shouldShowList ? (
         <p className="empty">Klik angka pada kad di atas atau gunakan carian untuk memaparkan senarai sekolah.</p>
       ) : filteredSchools.length === 0 ? (

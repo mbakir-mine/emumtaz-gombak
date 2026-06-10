@@ -217,6 +217,7 @@ export default function TeacherList({
   subjectAssignments: TeacherSubjectAssignment[];
 }) {
   const profile = useAccessProfile();
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<UserFilter | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -264,6 +265,7 @@ export default function TeacherList({
         onSelectYear={(year) => {
           setSelectedYear(year);
           setSelectedFilter(null);
+          setSearchDraft('');
           setQuery('');
         }}
       />
@@ -323,27 +325,37 @@ export default function TeacherList({
             onClick={() => {
               setSelectedFilter(option);
               setSelectedYear(null);
+              setSearchDraft('');
+              setQuery('');
             }}
           >
             {option.label}
           </button>
         ))}
       </div>
-      <div className="search-row">
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const term = searchDraft.trim();
+          setQuery(term);
+          if (term) {
+            setSelectedFilter(null);
+            setSelectedYear(null);
+          }
+        }}
+      >
         <input
           type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            if (event.target.value.trim()) {
-              setSelectedFilter(null);
-              setSelectedYear(null);
-            }
-          }}
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Cari nama guru, email, role atau status"
           aria-label="Cari guru"
         />
-      </div>
+        <button className="button search-button" type="submit">
+          CARI
+        </button>
+      </form>
       {!shouldShowList ? (
         <p className="empty">Pilih senarai pengguna atau gunakan carian nama guru untuk memaparkan rekod.</p>
       ) : filteredUsers.length === 0 ? (

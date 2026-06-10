@@ -2357,12 +2357,22 @@ select {
 }
 
 .search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
   margin: 14px 0 18px;
 }
 
 .search-row input {
+  flex: 1 1 320px;
   max-width: 560px;
   background: white;
+}
+
+.search-button {
+  min-width: 96px;
+  min-height: 46px;
 }
 
 .report-filter-grid {

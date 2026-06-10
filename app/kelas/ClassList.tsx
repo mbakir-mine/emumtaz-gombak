@@ -7,6 +7,7 @@ import { scopeClasses } from '../ui/scopedData';
 
 export default function ClassList({ classes, schools }: { classes: ClassRecord[]; schools: School[] }) {
   const profile = useAccessProfile();
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const filteredClasses = useMemo(() => {
@@ -29,15 +30,24 @@ export default function ClassList({ classes, schools }: { classes: ClassRecord[]
           {filteredClasses.length} / {scopedClasses.length} rekod
         </span>
       </div>
-      <div className="search-row">
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setQuery(searchDraft.trim());
+        }}
+      >
         <input
           type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Cari sekolah, tahun, nama kelas atau status"
           aria-label="Cari kelas"
         />
-      </div>
+        <button className="button search-button" type="submit">
+          CARI
+        </button>
+      </form>
       {filteredClasses.length === 0 ? (
         <p className="empty">Tiada kelas sepadan dengan carian.</p>
       ) : (

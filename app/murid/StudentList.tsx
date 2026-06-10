@@ -279,6 +279,7 @@ export default function StudentList({
   schoolSummaries: StudentSchoolSummary[];
 }) {
   const profile = useAccessProfile();
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<StudentFilter | null>(null);
   const [showForms, setShowForms] = useState(false);
@@ -369,7 +370,11 @@ export default function StudentList({
         summaries={scopedSchoolSummaries}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
-        onSelect={setSelectedFilter}
+        onSelect={(filter) => {
+          setSelectedFilter(filter);
+          setSearchDraft('');
+          setQuery('');
+        }}
       />
       {showForms && (
         <div className="inline-add-panel student-add-panel">
@@ -401,18 +406,26 @@ export default function StudentList({
             : `${filteredStudents.length} / ${scopedStudents.length} rekod`}
         </span>
       </div>
-      <div className="search-row">
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const term = searchDraft.trim();
+          setQuery(term);
+          if (term) setSelectedFilter(null);
+        }}
+      >
         <input
           type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            if (event.target.value.trim()) setSelectedFilter(null);
-          }}
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Cari nama murid, MyKid, sekolah, kelas, zon atau status"
           aria-label="Cari murid"
         />
-      </div>
+        <button className="button search-button" type="submit">
+          CARI
+        </button>
+      </form>
       {!shouldShowList ? (
         <p className="empty">Klik angka pada kad di atas atau gunakan carian untuk memaparkan senarai murid.</p>
       ) : showSchoolSummary && selectedSchoolSummaries.length === 0 ? (

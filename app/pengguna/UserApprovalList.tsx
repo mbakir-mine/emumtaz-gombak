@@ -201,6 +201,7 @@ function UserTable({
 }
 
 export default function UserApprovalList({ users, schools }: { users: UserRecord[]; schools: School[] }) {
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const schoolNames = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school.nama_sekolah])), [schools]);
   const filteredUsers = useMemo(() => {
@@ -250,15 +251,24 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
           <h2>Carian Pengguna</h2>
           <span>{filteredUsers.length} rekod ditemui</span>
         </div>
-        <div className="search-row">
+        <form
+          className="search-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setQuery(searchDraft.trim());
+          }}
+        >
           <input
             type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
             placeholder="Cari nama, email, role, sekolah, zon atau status"
             aria-label="Cari pengguna"
           />
-        </div>
+          <button className="button search-button" type="submit">
+            CARI
+          </button>
+        </form>
       </section>
 
       <section className="panel">

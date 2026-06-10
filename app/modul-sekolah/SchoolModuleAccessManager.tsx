@@ -80,6 +80,7 @@ export default function SchoolModuleAccessManager({
   schools: School[];
   accesses: SchoolModuleAccess[];
 }) {
+  const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const accessMap = useMemo(() => moduleMap(accesses), [accesses]);
   const filteredSchools = useMemo(() => {
@@ -119,18 +120,27 @@ export default function SchoolModuleAccessManager({
         ))}
       </div>
 
-      <div className="module-access-search">
+      <form
+        className="module-access-search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setQuery(searchDraft.trim());
+        }}
+      >
         <label>
           <span>Carian Sekolah</span>
           <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
             placeholder="Cari kod sekolah, nama sekolah, kategori atau zon"
             aria-label="Cari sekolah"
           />
         </label>
+        <button className="button search-button" type="submit">
+          CARI
+        </button>
         <span>{filteredSchools.length} / {schools.length} rekod</span>
-      </div>
+      </form>
 
       <div className="table-scroll module-access-table">
         <table>
