@@ -97,14 +97,6 @@ export default function SchoolModuleAccessManager({
 
   return (
     <section className="panel module-access-panel">
-      <div className="panel-head">
-        <div>
-          <h2>Akses Modul Pilihan Sekolah</h2>
-          <p className="table-note">Pentadbir Utama sahaja boleh membenarkan sekolah menggunakan modul tambahan.</p>
-        </div>
-        <span>{schools.length} sekolah</span>
-      </div>
-
       <div className="panel-head module-table-head">
         <div>
           <h2>Senarai Akses Modul Sekolah</h2>
