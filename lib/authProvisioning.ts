@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const temporaryUserPassword = process.env.EMUMTAZ_TEMP_USER_PASSWORD || '12345678';
+export const temporaryUserPassword = process.env.EMUMTAZ_TEMP_USER_PASSWORD || 'Emumtaz@12345678';
 
 export type AuthProvisionProfile = {
   id: string;
