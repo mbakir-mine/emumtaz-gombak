@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import type { School, SchoolModuleAccess } from '@/lib/data';
-import { optionalSchoolModules, type OptionalSchoolModuleKey } from '@/lib/schoolModules';
+import { optionalSchoolModules } from '@/lib/schoolModules';
 import { updateSchoolModuleAccess, type SchoolModuleActionState } from './actions';
 
 const initialState: SchoolModuleActionState = {
@@ -82,31 +82,18 @@ export default function SchoolModuleAccessManager({
 }) {
   const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
-  const [selectedModule, setSelectedModule] = useState<OptionalSchoolModuleKey | null>(null);
   const accessMap = useMemo(() => moduleMap(accesses), [accesses]);
   const filteredSchools = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const moduleSchools = selectedModule
-      ? schools.filter((school) => accessMap.get(`${school.kod_sekolah}|${selectedModule}`))
-      : schools;
+    if (!term) return schools;
 
-    if (!term) return moduleSchools;
-
-    return moduleSchools.filter((school) =>
+    return schools.filter((school) =>
       [school.kod_sekolah, school.nama_sekolah, school.kategori, zoneLabel(school.zon), school.status]
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [accessMap, query, schools, selectedModule]);
-
-  const moduleCounts = optionalSchoolModules.map((module) => ({
-    ...module,
-    count: schools.filter((school) => accessMap.get(`${school.kod_sekolah}|${module.key}`)).length,
-  }));
-  const selectedModuleDetail = selectedModule
-    ? optionalSchoolModules.find((module) => module.key === selectedModule) ?? null
-    : null;
+  }, [query, schools]);
 
   return (
     <section className="panel module-access-panel">
@@ -118,53 +105,10 @@ export default function SchoolModuleAccessManager({
         <span>{schools.length} sekolah</span>
       </div>
 
-      <div className="module-summary-head">
-        <div>
-          <h3>Ringkasan Penggunaan Modul Pilihan</h3>
-          <p className="table-note">Klik kad modul untuk memaparkan sekolah yang telah diberi akses.</p>
-        </div>
-        {selectedModule && (
-          <button
-            className="button soft"
-            type="button"
-            onClick={() => {
-              setSelectedModule(null);
-              setSearchDraft('');
-              setQuery('');
-            }}
-          >
-            PAPAR SEMUA
-          </button>
-        )}
-      </div>
-
-      <div className="module-access-summary">
-        {moduleCounts.map((module) => (
-          <button
-            className={`module-summary-card ${selectedModule === module.key ? 'active' : ''}`}
-            key={module.key}
-            type="button"
-            onClick={() => {
-              setSelectedModule((current) => (current === module.key ? null : module.key));
-              setSearchDraft('');
-              setQuery('');
-            }}
-          >
-            <span>{module.label}</span>
-            <strong>{module.count} sekolah</strong>
-            <small>{module.description}</small>
-          </button>
-        ))}
-      </div>
-
       <div className="panel-head module-table-head">
         <div>
-          <h2>{selectedModuleDetail ? `Sekolah Menggunakan ${selectedModuleDetail.label}` : 'Senarai Akses Modul Sekolah'}</h2>
-          <p className="table-note">
-            {selectedModuleDetail
-              ? `${filteredSchools.length} sekolah diberi akses ${selectedModuleDetail.label}.`
-              : 'Pilih checkbox modul yang diluluskan untuk setiap sekolah.'}
-          </p>
+          <h2>Senarai Akses Modul Sekolah</h2>
+          <p className="table-note">Pilih checkbox modul yang diluluskan untuk setiap sekolah.</p>
         </div>
         <span>{filteredSchools.length} / {schools.length} rekod</span>
       </div>
@@ -191,11 +135,7 @@ export default function SchoolModuleAccessManager({
       </form>
 
       {filteredSchools.length === 0 ? (
-        <p className="empty">
-          {selectedModuleDetail
-            ? `Belum ada sekolah diberi akses ${selectedModuleDetail.label}.`
-            : 'Tiada sekolah sepadan dengan carian.'}
-        </p>
+        <p className="empty">Tiada sekolah sepadan dengan carian.</p>
       ) : (
         <div className="table-scroll module-access-table">
           <table>

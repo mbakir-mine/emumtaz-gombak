@@ -2693,64 +2693,11 @@ select {
   gap: 20px;
 }
 
-.module-access-summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.module-summary-head,
 .module-table-head {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-}
-
-.module-summary-head h3 {
-  margin-bottom: 5px;
-  font-size: 18px;
-}
-
-.module-summary-card {
-  position: relative;
-  display: grid;
-  gap: 8px;
-  overflow: hidden;
-  width: 100%;
-  min-height: 132px;
-  padding: 16px;
-  border: 1px solid #cfe0cf;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 100% 100%, rgba(244, 201, 79, 0.16), transparent 86px),
-    linear-gradient(135deg, #ffffff, #f2fbf2);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.module-summary-card:hover,
-.module-summary-card.active {
-  border-color: #93caa8;
-  box-shadow: inset 0 0 0 2px rgba(11, 107, 58, 0.08), 0 10px 24px rgba(2, 46, 25, 0.08);
-}
-
-.module-summary-card span {
-  color: #0a5131;
-  font-weight: 800;
-}
-
-.module-summary-card strong {
-  color: var(--green);
-  font-size: 30px;
-  line-height: 1;
-}
-
-.module-summary-card small {
-  color: var(--muted);
-  line-height: 1.4;
 }
 
 .module-access-search {
