@@ -46,6 +46,18 @@ function accessLabel(user: UserRecord, schoolNames: Map<string, string>) {
   return 'Semua sekolah';
 }
 
+function compactActionMessage(message: string) {
+  if (message.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+    return 'Gagal: tambah SUPABASE_SERVICE_ROLE_KEY di Vercel dan redeploy.';
+  }
+
+  if (message.includes('RESEND_API_KEY') || message.includes('EMUMTAZ_EMAIL_FROM')) {
+    return 'Akaun siap. Email belum diset.';
+  }
+
+  return message.length > 120 ? `${message.slice(0, 117)}...` : message;
+}
+
 function UserStatusSelect({ user }: { user: UserRecord }) {
   const [state, action] = useActionState(updateUserStatusOnly, bulkStatusInitialState);
 
@@ -64,7 +76,9 @@ function UserStatusSelect({ user }: { user: UserRecord }) {
           </option>
         ))}
       </select>
-      {state.message && <small className={state.ok ? 'form-success' : 'form-message'}>{state.message}</small>}
+      {state.message && (
+        <small className={state.ok ? 'form-success' : 'form-message'}>{compactActionMessage(state.message)}</small>
+      )}
     </form>
   );
 }
@@ -80,7 +94,9 @@ function EnsureLoginButton({ user }: { user: UserRecord }) {
       <button className="button secondary table-action" type="submit">
         Sedia Login
       </button>
-      {state.message && <small className={state.ok ? 'form-success' : 'form-message'}>{state.message}</small>}
+      {state.message && (
+        <small className={state.ok ? 'form-success' : 'form-message'}>{compactActionMessage(state.message)}</small>
+      )}
     </form>
   );
 }

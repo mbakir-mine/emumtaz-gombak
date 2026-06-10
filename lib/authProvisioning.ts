@@ -33,6 +33,13 @@ export function hasAuthProvisioningEnv() {
   return Boolean(supabaseUrl && supabaseServiceRoleKey);
 }
 
+function missingServiceRoleMessage() {
+  return (
+    'SUPABASE_SERVICE_ROLE_KEY belum ditetapkan pada server. ' +
+    'Tambah key ini di Vercel Environment Variables untuk Production/Preview/Development, kemudian redeploy.'
+  );
+}
+
 function createSupabaseAdmin() {
   if (!supabaseUrl || !supabaseServiceRoleKey) return null;
 
@@ -89,8 +96,7 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
   if (!admin) {
     return {
       ok: false,
-      message:
-        'SUPABASE_SERVICE_ROLE_KEY belum ditetapkan. Tambah key ini dalam .env.local sebelum aktifkan pengguna baru supaya akaun login boleh dicipta.',
+      message: missingServiceRoleMessage(),
     };
   }
 
@@ -164,8 +170,7 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
   if (!admin) {
     return {
       ok: false,
-      message:
-        'SUPABASE_SERVICE_ROLE_KEY belum ditetapkan. Tambah key ini dalam .env.local dan Vercel Environment Variables dahulu.',
+      message: missingServiceRoleMessage(),
     };
   }
 
