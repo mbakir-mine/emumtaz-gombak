@@ -42,7 +42,7 @@ const groupedMenu = [
     key: 'settings',
     label: 'Tetapan',
     href: '/setup',
-    items: ['setup', 'users', 'changePassword'],
+    items: ['setup', 'users', 'schoolModules', 'changePassword'],
   },
 ];
 
@@ -64,6 +64,7 @@ const childLabels: Record<string, string> = {
   comparison: 'UPSA vs UASA',
   reportAnnual: 'Perbandingan Tahunan',
   users: 'Admin',
+  schoolModules: 'Akses Modul Sekolah',
   changePassword: 'Tukar Password',
 };
 

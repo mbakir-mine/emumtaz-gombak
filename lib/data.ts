@@ -1,4 +1,5 @@
 import { hasSupabaseEnv, supabase } from './supabase';
+import type { OptionalSchoolModuleKey } from './schoolModules';
 
 export type SetupCounts = {
   schools: number;
@@ -29,6 +30,16 @@ export type School = {
   daerah: string;
   zon: string | null;
   status: string;
+};
+
+export type SchoolModuleAccess = {
+  id: string;
+  kod_sekolah: string;
+  module_key: OptionalSchoolModuleKey;
+  enabled: boolean;
+  enabled_at: string | null;
+  enabled_by: string | null;
+  catatan: string | null;
 };
 
 export type ClassRecord = {
@@ -688,6 +699,19 @@ export async function getSchools(): Promise<School[]> {
 
   if (error) return [];
   return data ?? [];
+}
+
+export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('school_module_access')
+    .select('id,kod_sekolah,module_key,enabled,enabled_at,enabled_by,catatan')
+    .order('kod_sekolah')
+    .order('module_key');
+
+  if (error) return [];
+  return (data ?? []) as SchoolModuleAccess[];
 }
 
 export async function getClasses(): Promise<ClassRecord[]> {
