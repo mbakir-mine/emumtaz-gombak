@@ -2809,6 +2809,83 @@ textarea {
   grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr) auto;
 }
 
+.timetable-auto-toolbar {
+  grid-template-columns: minmax(240px, 1.1fr) minmax(160px, 0.45fr) minmax(300px, 1.2fr);
+}
+
+.timetable-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.timetable-action-row form {
+  display: flex;
+}
+
+.timetable-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.75fr) minmax(420px, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin: 16px 0 18px;
+}
+
+.timetable-requirement-form,
+.timetable-requirement-list {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.timetable-requirement-form {
+  display: grid;
+  gap: 12px;
+}
+
+.timetable-requirement-form h3,
+.timetable-requirement-list h3 {
+  margin-bottom: 4px;
+  color: #123c2a;
+  font-size: 18px;
+}
+
+.timetable-requirement-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.timetable-requirement-list .compact-head {
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.timetable-requirement-list .compact-head strong {
+  color: var(--green);
+  font-size: 24px;
+}
+
+.numeric-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.timetable-break-row {
+  background: #fffaf0;
+}
+
+.timetable-break-row td {
+  color: #6b4b08;
+  font-weight: 700;
+}
+
 .module-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 16px;
@@ -3297,10 +3374,15 @@ button:disabled {
 
   .module-toolbar,
   .timetable-toolbar,
+  .timetable-auto-toolbar,
   .module-form-grid,
   .compact-module-form,
   .rph-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timetable-setup-grid {
+    grid-template-columns: 1fr;
   }
 
   .module-inline-form,
@@ -3803,10 +3885,17 @@ button:disabled {
 
   .module-toolbar,
   .timetable-toolbar,
+  .timetable-auto-toolbar,
   .module-form-grid,
   .compact-module-form,
   .rph-form {
     grid-template-columns: 1fr;
+  }
+
+  .timetable-action-row,
+  .timetable-action-row form {
+    display: grid;
+    width: 100%;
   }
 
   .mark-input {

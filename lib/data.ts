@@ -163,6 +163,16 @@ export type TimetableEntry = {
   status: string;
 };
 
+export type TimetableRequirement = {
+  id: string;
+  kod_sekolah: string;
+  class_id: string;
+  kod_subjek: string;
+  teacher_id: string | null;
+  bil_slot_seminggu: number;
+  status: string;
+};
+
 export type RphRecord = {
   id: string;
   kod_sekolah: string;
@@ -1063,6 +1073,19 @@ export async function getTimetableEntries(): Promise<TimetableEntry[]> {
     .select('id,slot_id,class_id,kod_sekolah,kod_subjek,teacher_id,bilik,status')
     .eq('status', 'AKTIF')
     .order('kod_sekolah');
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getTimetableRequirements(): Promise<TimetableRequirement[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('timetable_requirements')
+    .select('id,kod_sekolah,class_id,kod_subjek,teacher_id,bil_slot_seminggu,status')
+    .eq('status', 'AKTIF')
+    .order('kod_sekolah')
+    .order('class_id');
 
   if (error) return [];
   return data ?? [];
