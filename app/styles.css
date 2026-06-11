@@ -3031,6 +3031,311 @@ textarea {
   line-height: 1.45;
 }
 
+.attendance-panel {
+  overflow: visible;
+}
+
+.attendance-toolbar {
+  grid-template-columns: minmax(180px, 0.45fr) minmax(260px, 1fr) minmax(220px, 0.7fr);
+}
+
+.attendance-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 12px 0 14px;
+  padding: 14px;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  text-align: center;
+}
+
+.attendance-month-head h3 {
+  margin: 0 0 4px;
+  color: var(--green);
+  font-size: 24px;
+}
+
+.attendance-month-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.attendance-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attendance-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.attendance-legend i {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.attendance-matrix-wrap {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.attendance-matrix {
+  min-width: 1500px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.attendance-matrix th,
+.attendance-matrix td {
+  padding: 6px 7px;
+  border-right: 1px solid #e5ede4;
+  border-bottom: 1px solid #e5ede4;
+  text-align: center;
+  font-size: 12px;
+}
+
+.attendance-matrix th {
+  background: #eaf5ec;
+  color: #123c2a;
+}
+
+.attendance-matrix th:nth-child(3),
+.attendance-matrix td:nth-child(3) {
+  min-width: 260px;
+  text-align: left;
+}
+
+.attendance-day-head button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.attendance-day-head strong,
+.attendance-day-head small {
+  display: block;
+}
+
+.attendance-day-head.day-0,
+.attendance-day-sub.day-0 {
+  background: #bfe2ff;
+}
+
+.attendance-day-head.day-6,
+.attendance-day-sub.day-6 {
+  background: #fff6a6;
+}
+
+.attendance-day-head.day-1,
+.attendance-day-sub.day-1,
+.attendance-day-head.day-2,
+.attendance-day-sub.day-2,
+.attendance-day-head.day-3,
+.attendance-day-sub.day-3,
+.attendance-day-head.day-4,
+.attendance-day-sub.day-4,
+.attendance-day-head.day-5,
+.attendance-day-sub.day-5 {
+  background: #fffba8;
+}
+
+.attendance-day-sub {
+  height: 22px;
+  color: var(--green);
+  font-size: 10px;
+}
+
+.attendance-student-name button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #006b3a;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attendance-student-name button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.selected-attendance-row td {
+  background: #f4fbf5;
+}
+
+.attendance-status {
+  min-width: 42px;
+  height: 28px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.attendance-empty {
+  background: white;
+}
+
+.attendance-hadir {
+  background: #09e891 !important;
+}
+
+.attendance-tidak-hadir {
+  background: #ff3b36 !important;
+  color: #111;
+}
+
+.attendance-lewat {
+  background: #fff36b !important;
+  color: #111;
+}
+
+.attendance-sakit {
+  background: #ffc38c !important;
+  color: #111;
+}
+
+.attendance-cuti {
+  background: #ffd6f4 !important;
+  color: #111;
+}
+
+.attendance-aktiviti {
+  background: #8dc7ff !important;
+  color: #111;
+}
+
+.attendance-matrix tfoot td {
+  background: #f4fbf5;
+  font-weight: 800;
+}
+
+.attendance-daily-form {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed #b8d5bc;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.attendance-edit-table th:first-child,
+.attendance-edit-table td:first-child {
+  width: 64px;
+  text-align: center;
+}
+
+.attendance-edit-table th:nth-child(2),
+.attendance-edit-table td:nth-child(2) {
+  width: 40%;
+}
+
+.attendance-student-report {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fff, #f5fbf5);
+}
+
+.attendance-student-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.attendance-student-summary span {
+  padding: 12px;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+}
+
+.attendance-student-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--green);
+  font-size: 24px;
+}
+
+.student-year-calendar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.student-month-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: white;
+}
+
+.student-month-card h3 {
+  margin: 0;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #6e63ad, #aaa0d9);
+  color: white;
+  text-align: center;
+  font-size: 15px;
+}
+
+.student-month-weekdays,
+.student-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.student-month-weekdays span {
+  padding: 5px 3px;
+  background: #eef4ef;
+  color: #123c2a;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.student-month-grid span {
+  min-height: 30px;
+  padding: 3px;
+  border-top: 1px solid #e5ede4;
+  border-right: 1px solid #e5ede4;
+  font-size: 10px;
+}
+
+.student-month-grid b,
+.student-month-grid em {
+  display: block;
+  font-style: normal;
+}
+
+.student-month-grid em {
+  text-align: center;
+  font-weight: 800;
+}
+
+.calendar-empty {
+  background: #f8faf8;
+}
+
 @media print {
   .sidebar,
   .topbar,
@@ -3375,9 +3680,15 @@ button:disabled {
   .module-toolbar,
   .timetable-toolbar,
   .timetable-auto-toolbar,
+  .attendance-toolbar,
   .module-form-grid,
   .compact-module-form,
   .rph-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .attendance-student-summary,
+  .student-year-calendar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -3886,9 +4197,23 @@ button:disabled {
   .module-toolbar,
   .timetable-toolbar,
   .timetable-auto-toolbar,
+  .attendance-toolbar,
   .module-form-grid,
   .compact-module-form,
   .rph-form {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-month-head {
+    display: grid;
+    text-align: left;
+  }
+
+  .attendance-student-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-year-calendar {
     grid-template-columns: 1fr;
   }
 
