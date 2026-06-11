@@ -153,7 +153,6 @@ export default function AttendanceManager({
                       <td>{index + 1}</td>
                       <td>
                         <strong>{student.nama_murid}</strong>
-                        <small>{student.mykid}</small>
                         <input type="hidden" name="student_id" value={student.id} />
                       </td>
                       <td>{student.jantina === 'P' ? 'Perempuan' : 'Lelaki'}</td>
