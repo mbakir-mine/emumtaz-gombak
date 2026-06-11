@@ -1825,7 +1825,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--line);
@@ -1833,6 +1834,12 @@ select {
   color: var(--ink);
   background: white;
   font-size: 15px;
+}
+
+textarea {
+  min-height: 112px;
+  resize: vertical;
+  font-family: inherit;
 }
 
 .button {
@@ -2779,6 +2786,174 @@ select {
   margin-bottom: 0;
 }
 
+.optional-module-panel {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(244, 201, 79, 0.1), transparent 18rem),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 244, 0.92));
+}
+
+.module-toolbar,
+.module-form-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.module-toolbar {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr) auto;
+  align-items: end;
+}
+
+.timetable-toolbar {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr) auto;
+}
+
+.module-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 16px;
+  border: 1px dashed #b8d5bc;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.compact-module-form {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  align-items: end;
+}
+
+.rph-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.module-form-grid label,
+.module-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.module-wide-field {
+  grid-column: span 2;
+}
+
+.rph-form .module-wide-field {
+  grid-column: span 4;
+}
+
+.module-inline-form {
+  display: flex;
+  align-items: end;
+}
+
+.module-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.module-subhead {
+  margin-top: 18px;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 8px 12px;
+}
+
+.timetable-table th:first-child,
+.timetable-table td:first-child {
+  width: 60px;
+  text-align: center;
+}
+
+.timetable-table th:nth-child(2),
+.timetable-table td:nth-child(2) {
+  width: 160px;
+}
+
+.timetable-table td strong,
+.timetable-table td small {
+  display: block;
+}
+
+.timetable-table td small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rph-list {
+  display: grid;
+  gap: 14px;
+}
+
+.rph-card {
+  padding: 16px;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.rph-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.rph-card-head h3 {
+  margin-bottom: 4px;
+  color: var(--green);
+  font-size: 20px;
+}
+
+.rph-card-head p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.rph-card-head span {
+  height: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff4cc;
+  color: #6b4b08;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rph-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rph-card-grid section {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2ecdf;
+  border-radius: 8px;
+  background: #fbfefb;
+}
+
+.rph-card-grid strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #123c2a;
+}
+
+.rph-card-grid p {
+  margin-bottom: 6px;
+  color: #263b2e;
+  line-height: 1.45;
+}
+
 @media print {
   .sidebar,
   .topbar,
@@ -3117,6 +3292,25 @@ button:disabled {
   }
 
   .import-form {
+    grid-template-columns: 1fr;
+  }
+
+  .module-toolbar,
+  .timetable-toolbar,
+  .module-form-grid,
+  .compact-module-form,
+  .rph-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .module-inline-form,
+  .module-form-grid .form-actions,
+  .module-wide-field,
+  .rph-form .module-wide-field {
+    grid-column: 1 / -1;
+  }
+
+  .rph-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3601,9 +3795,18 @@ button:disabled {
   }
 
   input,
-  select {
+  select,
+  textarea {
     min-height: 44px;
     font-size: 16px;
+  }
+
+  .module-toolbar,
+  .timetable-toolbar,
+  .module-form-grid,
+  .compact-module-form,
+  .rph-form {
+    grid-template-columns: 1fr;
   }
 
   .mark-input {

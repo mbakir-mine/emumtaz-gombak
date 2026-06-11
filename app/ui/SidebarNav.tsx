@@ -21,6 +21,12 @@ const groupedMenu = [
     items: ['schools', 'teachers', 'teacherSubjects', 'classes', 'students', 'studentPromotion'],
   },
   {
+    key: 'optionalModules',
+    label: 'Modul Sekolah',
+    href: '/kehadiran',
+    items: ['attendance', 'amalKhair', 'timetable', 'rph'],
+  },
+  {
     key: 'scoring',
     label: 'Pemarkahan',
     href: '/markah',
@@ -53,6 +59,10 @@ const childLabels: Record<string, string> = {
   classes: 'Kelas',
   students: 'Murid',
   studentPromotion: 'Naik Tahun',
+  attendance: 'Kehadiran',
+  amalKhair: 'Amal Khair',
+  timetable: 'Jadual Waktu',
+  rph: 'RPH AI',
   setup: 'Akses Markah',
   marks: 'Kelas',
   reports: 'Pusat Laporan',
@@ -72,7 +82,7 @@ export default function SidebarNav({ active }: { active: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const profile = useAccessProfile();
-  const visibleItems = profile ? visibleNavItems(profile.role, profile.allowed_nav) : [];
+  const visibleItems = profile ? visibleNavItems(profile.role, profile.allowed_nav, profile.enabled_modules) : [];
   const visibleKeys = new Set(visibleItems.map((item) => item.key));
   const allItemMap = new Map(navItems.map((item) => [item.key, item]));
 

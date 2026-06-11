@@ -1,24 +1,28 @@
 export const optionalSchoolModules = [
   {
     key: 'KEHADIRAN_HARIAN',
+    navKey: 'attendance',
     label: 'Kehadiran Harian',
     shortLabel: 'Kehadiran',
     description: 'Rekod kehadiran harian murid mengikut kelas.',
   },
   {
     key: 'AMAL_KHAIR',
+    navKey: 'amalKhair',
     label: 'Amal Khair',
     shortLabel: 'Amal Khair',
     description: 'Mata amalan baik dan sahsiah murid.',
   },
   {
     key: 'JADUAL_WAKTU',
+    navKey: 'timetable',
     label: 'Jadual Waktu',
     shortLabel: 'Jadual',
     description: 'Pembinaan jadual waktu belajar sekolah.',
   },
   {
     key: 'RPH_AI',
+    navKey: 'rph',
     label: 'RPH AI',
     shortLabel: 'RPH AI',
     description: 'Bantuan AI untuk draf Rancangan Pengajaran Harian.',
@@ -26,7 +30,12 @@ export const optionalSchoolModules = [
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];
+export type OptionalSchoolModuleNavKey = (typeof optionalSchoolModules)[number]['navKey'];
 
 export function isOptionalSchoolModuleKey(value: string): value is OptionalSchoolModuleKey {
   return optionalSchoolModules.some((module) => module.key === value);
+}
+
+export function moduleKeyForNav(navKey: string) {
+  return optionalSchoolModules.find((module) => module.navKey === navKey)?.key ?? null;
 }

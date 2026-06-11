@@ -111,6 +111,75 @@ export type StudentEnrollmentDetail = {
   zon: string | null;
 };
 
+export type AttendanceRecord = {
+  id: string;
+  attendance_date: string;
+  student_id: string;
+  kod_sekolah: string;
+  class_id: string | null;
+  status: string;
+  catatan: string | null;
+};
+
+export type AmalKhairCategory = {
+  id: string;
+  nama_kategori: string;
+  mata_default: number;
+  status: string;
+};
+
+export type AmalKhairRecord = {
+  id: string;
+  student_id: string;
+  kod_sekolah: string;
+  class_id: string | null;
+  category_id: string | null;
+  kategori: string | null;
+  mata: number;
+  catatan: string | null;
+  recorded_at: string;
+  nama_murid?: string | null;
+};
+
+export type TimetableSlot = {
+  id: string;
+  kod_sekolah: string;
+  hari: string;
+  waktu_mula: string;
+  waktu_tamat: string;
+  label: string | null;
+  susunan: number;
+  status: string;
+};
+
+export type TimetableEntry = {
+  id: string;
+  slot_id: string;
+  class_id: string;
+  kod_sekolah: string;
+  kod_subjek: string | null;
+  teacher_id: string | null;
+  bilik: string | null;
+  status: string;
+};
+
+export type RphRecord = {
+  id: string;
+  kod_sekolah: string;
+  class_id: string | null;
+  teacher_id: string | null;
+  kod_subjek: string | null;
+  tarikh: string;
+  tajuk: string;
+  standard_pembelajaran: string | null;
+  objektif: string | null;
+  aktiviti: string | null;
+  bbm: string | null;
+  pentaksiran: string | null;
+  refleksi: string | null;
+  status: string;
+};
+
 export type UserRecord = {
   id: string;
   auth_user_id?: string | null;
@@ -910,6 +979,104 @@ export async function getMarksForSelection(
     .eq('exam_id', examId)
     .eq('class_id', classId)
     .eq('kod_subjek', kodSubjek);
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getAttendanceRecords(attendanceDate?: string): Promise<AttendanceRecord[]> {
+  if (!supabase) return [];
+  let query = supabase
+    .from('daily_attendance')
+    .select('id,attendance_date,student_id,kod_sekolah,class_id,status,catatan')
+    .order('attendance_date', { ascending: false });
+
+  if (attendanceDate) query = query.eq('attendance_date', attendanceDate);
+
+  const { data, error } = await query.limit(5000);
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('amal_khair_categories')
+    .select('id,nama_kategori,mata_default,status')
+    .eq('status', 'AKTIF')
+    .order('nama_kategori');
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('amal_khair_records')
+    .select(
+      `
+      id,student_id,kod_sekolah,class_id,category_id,mata,catatan,recorded_at,status,
+      students(nama_murid),
+      amal_khair_categories(nama_kategori)
+    `,
+    )
+    .eq('status', 'AKTIF')
+    .order('recorded_at', { ascending: false })
+    .limit(500);
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    id: item.id,
+    student_id: item.student_id,
+    kod_sekolah: item.kod_sekolah,
+    class_id: item.class_id,
+    category_id: item.category_id,
+    mata: item.mata,
+    catatan: item.catatan,
+    recorded_at: item.recorded_at,
+    kategori: Array.isArray(item.amal_khair_categories)
+      ? item.amal_khair_categories[0]?.nama_kategori
+      : item.amal_khair_categories?.nama_kategori,
+    nama_murid: Array.isArray(item.students) ? item.students[0]?.nama_murid : item.students?.nama_murid,
+  }));
+}
+
+export async function getTimetableSlots(): Promise<TimetableSlot[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('timetable_slots')
+    .select('id,kod_sekolah,hari,waktu_mula,waktu_tamat,label,susunan,status')
+    .eq('status', 'AKTIF')
+    .order('kod_sekolah')
+    .order('susunan')
+    .order('waktu_mula');
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getTimetableEntries(): Promise<TimetableEntry[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('timetable_entries')
+    .select('id,slot_id,class_id,kod_sekolah,kod_subjek,teacher_id,bilik,status')
+    .eq('status', 'AKTIF')
+    .order('kod_sekolah');
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getRphRecords(): Promise<RphRecord[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('rph_records')
+    .select(
+      'id,kod_sekolah,class_id,teacher_id,kod_subjek,tarikh,tajuk,standard_pembelajaran,objektif,aktiviti,bbm,pentaksiran,refleksi,status',
+    )
+    .order('tarikh', { ascending: false })
+    .limit(500);
 
   if (error) return [];
   return data ?? [];

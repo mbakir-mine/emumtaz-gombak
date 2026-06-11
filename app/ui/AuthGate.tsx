@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import { canAccessPath, choosePrimaryProfile, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
+import type { OptionalSchoolModuleKey } from '@/lib/schoolModules';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 const publicPaths = ['/login', '/daftar', '/akses'];
@@ -116,17 +117,43 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        let enabledModules: OptionalSchoolModuleKey[] = [];
+        if (activeProfile.role === 'OWNER') {
+          enabledModules = ['KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI'];
+        } else if (activeProfile.kod_sekolah) {
+          const moduleResult = await withTimeout(
+            Promise.resolve(
+              supabase
+                .from('school_module_access')
+                .select('module_key')
+                .eq('kod_sekolah', activeProfile.kod_sekolah)
+                .eq('enabled', true),
+            ),
+          );
+          const modules = moduleResult as {
+            data: { module_key: OptionalSchoolModuleKey }[] | null;
+            error: { message: string } | null;
+          };
+
+          enabledModules = modules.error ? [] : (modules.data ?? []).map((item) => item.module_key);
+        }
+
+        const enrichedProfile: AccessProfile = {
+          ...activeProfile,
+          enabled_modules: enabledModules,
+        };
+
         if (activeProfile.must_change_password && pathname !== '/tukar-password') {
           router.replace('/tukar-password');
           return;
         }
 
-        if (!canAccessPath(activeProfile.role, pathname, activeProfile.allowed_nav)) {
+        if (!canAccessPath(enrichedProfile.role, pathname, enrichedProfile.allowed_nav, enrichedProfile.enabled_modules)) {
           router.replace('/');
           return;
         }
 
-        setProfile(activeProfile);
+        setProfile(enrichedProfile);
         setReady(true);
       } catch {
         if (cancelled) return;

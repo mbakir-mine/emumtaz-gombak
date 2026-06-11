@@ -1,3 +1,5 @@
+import type { OptionalSchoolModuleKey } from './schoolModules';
+
 export type UserRole = 'OWNER' | 'ADMIN_DAERAH' | 'ADMIN_ZON' | 'ADMIN_SEKOLAH' | 'GURU_KELAS' | 'GURU_SUBJEK';
 
 export type AccessProfile = {
@@ -9,6 +11,7 @@ export type AccessProfile = {
   zon: string | null;
   status: string;
   allowed_nav?: string[] | null;
+  enabled_modules?: OptionalSchoolModuleKey[] | null;
   must_change_password?: boolean | null;
 };
 
@@ -18,6 +21,7 @@ export type NavItem = {
   href: string;
   roles: UserRole[];
   hidden?: boolean;
+  moduleKey?: OptionalSchoolModuleKey;
 };
 
 export const allRoles: UserRole[] = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
@@ -29,6 +33,34 @@ export const navItems: NavItem[] = [
   { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
   { key: 'studentPromotion', label: 'Naik Tahun Murid', href: '/murid/naik-tahun', roles: ['OWNER', 'ADMIN_SEKOLAH'] },
+  {
+    key: 'attendance',
+    label: 'Kehadiran Harian',
+    href: '/kehadiran',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS'],
+    moduleKey: 'KEHADIRAN_HARIAN',
+  },
+  {
+    key: 'amalKhair',
+    label: 'Amal Khair',
+    href: '/amal-khair',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'AMAL_KHAIR',
+  },
+  {
+    key: 'timetable',
+    label: 'Jadual Waktu',
+    href: '/jadual-waktu',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'JADUAL_WAKTU',
+  },
+  {
+    key: 'rph',
+    label: 'RPH AI',
+    href: '/rph',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'RPH_AI',
+  },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
@@ -94,17 +126,28 @@ export function roleLabel(role: string) {
   return labels[role] ?? role;
 }
 
-export function visibleNavItems(role: UserRole, allowedNav?: string[] | null) {
+export function visibleNavItems(
+  role: UserRole,
+  allowedNav?: string[] | null,
+  enabledModules?: OptionalSchoolModuleKey[] | null,
+) {
   const allowedSet = allowedNav && allowedNav.length > 0 ? new Set(allowedNav) : null;
+  const moduleSet = enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return navItems.filter((item) => {
     if (item.hidden) return false;
     if (!item.roles.includes(role)) return false;
+    if (item.moduleKey && role !== 'OWNER' && !moduleSet?.has(item.moduleKey)) return false;
     if (!allowedSet) return true;
     return item.key === 'dashboard' || allowedSet.has(item.key);
   });
 }
 
-export function canAccessPath(role: UserRole, pathname: string, allowedNav?: string[] | null) {
+export function canAccessPath(
+  role: UserRole,
+  pathname: string,
+  allowedNav?: string[] | null,
+  enabledModules?: OptionalSchoolModuleKey[] | null,
+) {
   const cleanPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   const matchedItem = navItems
     .filter((item) => item.href !== '/')
@@ -117,6 +160,10 @@ export function canAccessPath(role: UserRole, pathname: string, allowedNav?: str
 
   if (!matchedItem.roles.includes(role)) {
     return false;
+  }
+
+  if (matchedItem.moduleKey && role !== 'OWNER') {
+    return Boolean(enabledModules?.includes(matchedItem.moduleKey));
   }
 
   if (role === 'OWNER') {
