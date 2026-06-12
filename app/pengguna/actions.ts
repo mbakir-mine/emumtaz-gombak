@@ -39,7 +39,9 @@ async function prepareActivationUpdate(user: UserForProvision, targetStatus: str
   if (!provision.ok) return provision;
 
   updates.auth_user_id = provision.authUserId;
-  updates.must_change_password = true;
+  if (user.status !== 'AKTIF' || provision.created || !user.auth_user_id) {
+    updates.must_change_password = true;
+  }
 
   return {
     ok: true as const,
@@ -266,8 +268,12 @@ export async function updateUserStatus(
     if (!activation.ok) {
       return { ok: false, message: activation.message };
     }
-    updates.auth_user_id = activation.updates.auth_user_id;
-    updates.must_change_password = activation.updates.must_change_password;
+    if (activation.updates.auth_user_id) {
+      updates.auth_user_id = activation.updates.auth_user_id;
+    }
+    if (typeof activation.updates.must_change_password === 'boolean') {
+      updates.must_change_password = activation.updates.must_change_password;
+    }
     activationMessage = activation.message;
   }
 

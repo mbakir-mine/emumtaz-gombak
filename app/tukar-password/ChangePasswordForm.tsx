@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import PasswordField from '../ui/PasswordField';
 
 export default function ChangePasswordForm() {
   const router = useRouter();
@@ -35,7 +36,8 @@ export default function ChangePasswordForm() {
 
     setLoading(true);
     const { data: sessionData } = await supabase.auth.getSession();
-    const email = sessionData.session?.user.email;
+    const user = sessionData.session?.user;
+    const email = user?.email;
 
     if (!email) {
       setLoading(false);
@@ -62,55 +64,63 @@ export default function ChangePasswordForm() {
       return;
     }
 
-    await supabase
+    let flagUpdateFailed = false;
+    if (user?.id) {
+      const { error: idUpdateError } = await supabase
+        .from('app_users')
+        .update({ must_change_password: false })
+        .eq('auth_user_id', user.id);
+      flagUpdateFailed = Boolean(idUpdateError);
+    }
+    const { error: emailUpdateError } = await supabase
       .from('app_users')
       .update({ must_change_password: false })
-      .eq('email', email.toLowerCase());
+      .ilike('email', email);
+    flagUpdateFailed = flagUpdateFailed || Boolean(emailUpdateError);
 
     setLoading(false);
 
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+    if (flagUpdateFailed) {
+      setMessage('Password berjaya ditukar, tetapi status wajib tukar password gagal dikemaskini. Sila maklumkan Pentadbir Utama.');
+      return;
+    }
+
     setSuccess(true);
     setMessage('Password berjaya ditukar.');
-    router.refresh();
+    router.replace('/');
   }
 
   return (
     <form className="form-grid password-form" onSubmit={handleSubmit}>
-      <label>
-        Password Semasa
-        <input
-          type="password"
-          value={currentPassword}
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          placeholder="Masukkan password semasa"
-          required
-        />
-      </label>
+      <PasswordField
+        label="Password Semasa"
+        value={currentPassword}
+        onChange={setCurrentPassword}
+        placeholder="Masukkan password semasa"
+        required
+        autoComplete="current-password"
+      />
 
-      <label>
-        Password Baru
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(event) => setNewPassword(event.target.value)}
-          placeholder="Minimum 6 aksara"
-          required
-        />
-      </label>
+      <PasswordField
+        label="Password Baru"
+        value={newPassword}
+        onChange={setNewPassword}
+        placeholder="Minimum 6 aksara"
+        required
+        autoComplete="new-password"
+      />
 
-      <label>
-        Sahkan Password Baru
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          placeholder="Ulang password baru"
-          required
-        />
-      </label>
+      <PasswordField
+        label="Sahkan Password Baru"
+        value={confirmPassword}
+        onChange={setConfirmPassword}
+        placeholder="Ulang password baru"
+        required
+        autoComplete="new-password"
+      />
 
       <div className="form-actions">
         <button className="button" type="submit" disabled={loading}>

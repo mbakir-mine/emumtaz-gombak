@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import PasswordField from '../ui/PasswordField';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -72,16 +73,14 @@ export default function LoginPage() {
             />
           </label>
 
-          <label>
-            Password
-            <input
-              type="password"
-              placeholder="Masukkan password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
+          <PasswordField
+            label="Password"
+            placeholder="Masukkan password"
+            value={password}
+            onChange={setPassword}
+            required
+            autoComplete="current-password"
+          />
 
           <Link className="forgot-link" href="/lupa-password">
             Lupa kata laluan?

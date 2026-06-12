@@ -50,19 +50,23 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         }
 
         const { data: sessionData } = await withTimeout(supabase.auth.getSession());
-        const email = sessionData.session?.user.email;
+        const user = sessionData.session?.user;
+        const email = user?.email;
 
         if (!email) {
           router.replace('/login');
           return;
         }
+        const profileFilter = user?.id
+          ? `auth_user_id.eq.${user.id},email.ilike.${email.toLowerCase()}`
+          : `email.ilike.${email.toLowerCase()}`;
 
         let profileResult = await withTimeout(
           Promise.resolve(
             supabase
               .from('app_users')
               .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
-              .eq('email', email.toLowerCase())
+              .or(profileFilter)
               .eq('status', 'AKTIF')
               .limit(10),
           ),
@@ -78,7 +82,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
               supabase
                 .from('app_users')
                 .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
-                .eq('email', email.toLowerCase())
+                .or(profileFilter)
                 .eq('status', 'AKTIF')
                 .limit(10),
             ),

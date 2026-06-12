@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import PasswordField from '../ui/PasswordField';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -47,12 +48,21 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
+    const { data: sessionData } = await supabase.auth.getSession();
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
     if (error) {
       setMessage(`Gagal kemaskini kata laluan: ${error.message}`);
       return;
+    }
+
+    const user = sessionData.session?.user;
+    if (user?.id) {
+      await supabase.from('app_users').update({ must_change_password: false }).eq('auth_user_id', user.id);
+    }
+    if (user?.email) {
+      await supabase.from('app_users').update({ must_change_password: false }).ilike('email', user.email);
     }
 
     setSuccess(true);
@@ -83,27 +93,23 @@ export default function ResetPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleUpdate} className="login-form">
-            <label>
-              Kata Laluan Baru
-              <input
-                type="password"
-                placeholder="Minimum 6 aksara"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </label>
+            <PasswordField
+              label="Kata Laluan Baru"
+              placeholder="Minimum 6 aksara"
+              value={password}
+              onChange={setPassword}
+              required
+              autoComplete="new-password"
+            />
 
-            <label>
-              Sahkan Kata Laluan
-              <input
-                type="password"
-                placeholder="Ulang kata laluan baru"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-              />
-            </label>
+            <PasswordField
+              label="Sahkan Kata Laluan"
+              placeholder="Ulang kata laluan baru"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              required
+              autoComplete="new-password"
+            />
 
             {message && <p className={success ? 'form-success' : 'form-message'}>{message}</p>}
 
