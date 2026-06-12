@@ -9,25 +9,29 @@ export default function ClassList({ classes, schools }: { classes: ClassRecord[]
   const profile = useAccessProfile();
   const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
+  const currentAcademicYear = new Date().getFullYear();
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
+  const currentYearClasses = useMemo(() => {
+    return scopedClasses.filter((item) => item.tahun_akademik === currentAcademicYear);
+  }, [currentAcademicYear, scopedClasses]);
   const filteredClasses = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return scopedClasses;
+    if (!term) return currentYearClasses;
 
-    return scopedClasses.filter((item) =>
+    return currentYearClasses.filter((item) =>
       [item.kod_sekolah, item.tahun_akademik, `Tahun ${item.tahun}`, item.nama_kelas, item.status]
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [query, scopedClasses]);
+  }, [currentYearClasses, query]);
 
   return (
     <>
       <div className="panel-head">
         <h2>Senarai Kelas</h2>
         <span>
-          {filteredClasses.length} / {scopedClasses.length} rekod
+          {filteredClasses.length} / {currentYearClasses.length} rekod
         </span>
       </div>
       <form

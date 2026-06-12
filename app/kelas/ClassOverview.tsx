@@ -182,6 +182,7 @@ export default function ClassOverview({
   const profile = useAccessProfile();
   const [filter, setFilter] = useState<ClassFilter | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const currentAcademicYear = new Date().getFullYear();
   const selectFilter = (nextFilter: ClassFilter) => {
     setFilter(nextFilter);
     window.setTimeout(() => {
@@ -194,13 +195,16 @@ export default function ClassOverview({
   }, [schools]);
 
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
+  const currentYearClasses = useMemo(() => {
+    return scopedClasses.filter((item) => item.tahun_akademik === currentAcademicYear);
+  }, [currentAcademicYear, scopedClasses]);
 
   const visibleItems = useMemo<ClassWithSchool[]>(() => {
-    return scopedClasses.map((item) => ({
+    return currentYearClasses.map((item) => ({
       ...item,
       school: schoolByCode.get(item.kod_sekolah),
     }));
-  }, [schoolByCode, scopedClasses]);
+  }, [currentYearClasses, schoolByCode]);
 
   const filteredItems = visibleItems.filter((item) => {
     if (!filter) return false;

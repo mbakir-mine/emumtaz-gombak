@@ -16,6 +16,7 @@ export default function ClassForm({ schools }: { schools: School[] }) {
   const [state, action, pending] = useActionState(createClass, initialState);
   const scopedSchools = scopeSchools(profile, schools);
   const hideSchoolSelect = profile?.role === 'ADMIN_SEKOLAH' && Boolean(profile.kod_sekolah);
+  const currentAcademicYear = new Date().getFullYear();
 
   return (
     <form action={action} className="form-grid class-form-grid">
@@ -37,7 +38,7 @@ export default function ClassForm({ schools }: { schools: School[] }) {
 
       <label>
         <span>Tahun Akademik</span>
-        <input name="tahun_akademik" type="number" min="2020" max="2100" defaultValue="2026" required />
+        <input name="tahun_akademik" type="number" min="2020" max="2100" defaultValue={currentAcademicYear} required />
       </label>
 
       <label>
