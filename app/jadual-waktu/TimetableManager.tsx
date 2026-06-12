@@ -77,7 +77,12 @@ export default function TimetableManager({
   const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject.nama_subjek]));
   const userMap = new Map(scopedUsers.map((user) => [user.id, user.nama]));
   const teachers = scopedUsers
-    .filter((user) => ['GURU_KELAS', 'GURU_SUBJEK', 'ADMIN_SEKOLAH'].includes(user.role) && user.status === 'AKTIF')
+    .filter(
+      (user) =>
+        ['GURU_KELAS', 'GURU_SUBJEK', 'ADMIN_SEKOLAH'].includes(user.role) &&
+        user.status === 'AKTIF' &&
+        user.kod_sekolah === selectedSchool,
+    )
     .sort((a, b) => a.nama.localeCompare(b.nama));
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.kod_subjek ?? '');
   const classRequirements = requirements

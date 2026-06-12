@@ -32,6 +32,8 @@ const monthNames = [
 const dayNames = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
 const dayShort = ['Aha', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'];
 
+type AttendanceDetailMode = 'daily' | 'student' | null;
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -110,18 +112,16 @@ function recordSummary(records: AttendanceRecord[]) {
   );
 }
 
-function buildYearCalendar(year: number, studentRecords: AttendanceRecord[]) {
+function buildMonthCalendar(year: number, monthIndex: number, studentRecords: AttendanceRecord[]) {
   const recordByDate = new Map(studentRecords.map((record) => [record.attendance_date, record]));
+  const firstDay = new Date(year, monthIndex, 1).getDay();
+  const blanks = Array.from({ length: firstDay }, (_, index) => ({ key: `blank-${index}` }));
+  const dates = monthDates(year, monthIndex).map((date) => ({
+    ...date,
+    record: recordByDate.get(date.iso) ?? null,
+  }));
 
-  return monthNames.map((monthName, monthIndex) => {
-    const firstDay = new Date(year, monthIndex, 1).getDay();
-    const blanks = Array.from({ length: firstDay }, (_, index) => ({ key: `blank-${index}` }));
-    const dates = monthDates(year, monthIndex).map((date) => ({
-      ...date,
-      record: recordByDate.get(date.iso) ?? null,
-    }));
-    return { monthName, blanks, dates };
-  });
+  return { monthName: monthNames[monthIndex], blanks, dates };
 }
 
 export default function AttendanceManager({
@@ -148,6 +148,7 @@ export default function AttendanceManager({
   );
   const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [detailMode, setDetailMode] = useState<AttendanceDetailMode>(null);
   const activeClass = schoolClasses.find((item) => item.id === selectedClass) ?? null;
   const activeSchool = scopedSchools.find((school) => school.kod_sekolah === selectedSchool) ?? null;
   const classStudents = useMemo(
@@ -176,17 +177,18 @@ export default function AttendanceManager({
     currentMonthRecords.forEach((record) => map.set(`${record.student_id}|${record.attendance_date}`, record));
     return map;
   }, [currentMonthRecords]);
-  const selectedStudentRecords = selectedStudent
-    ? records.filter((record) => record.student_id === selectedStudent.id && dateParts(record.attendance_date).year === year)
+  const selectedStudentMonthRecords = selectedStudent
+    ? currentMonthRecords.filter((record) => record.student_id === selectedStudent.id)
     : [];
-  const selectedStudentSummary = recordSummary(selectedStudentRecords);
-  const selectedStudentCalendar = selectedStudent ? buildYearCalendar(year, selectedStudentRecords) : [];
+  const selectedStudentSummary = recordSummary(selectedStudentMonthRecords);
+  const selectedStudentCalendar = selectedStudent ? buildMonthCalendar(year, monthIndex, selectedStudentMonthRecords) : null;
   const monthSummary = recordSummary(currentMonthRecords);
   const [state, action] = useActionState(saveDailyAttendance, initialState);
 
   function changeMonth(offset: number) {
     const next = new Date(year, monthIndex + offset, 1);
     setSelectedDate(isoDate(next.getFullYear(), next.getMonth(), 1));
+    setDetailMode(null);
   }
 
   return (
@@ -214,6 +216,7 @@ export default function AttendanceManager({
               setSelectedSchool(kodSekolah);
               setSelectedClass(nextClass);
               setSelectedStudentId('');
+              setDetailMode(null);
             }}
             disabled={profile?.role === 'ADMIN_SEKOLAH' || profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK'}
           >
@@ -231,6 +234,7 @@ export default function AttendanceManager({
             onChange={(event) => {
               setSelectedClass(event.target.value);
               setSelectedStudentId('');
+              setDetailMode(null);
             }}
           >
             <option value="">Pilih kelas</option>
@@ -258,7 +262,7 @@ export default function AttendanceManager({
                 {monthNames[monthIndex]} {year}
               </h3>
               <p>
-                {activeSchool?.nama_sekolah ?? selectedSchool} · {classLabel(activeClass)}
+                {activeSchool?.nama_sekolah ?? selectedSchool} - {classLabel(activeClass)}
               </p>
             </div>
             <button className="button soft" type="button" onClick={() => changeMonth(1)}>
@@ -284,7 +288,14 @@ export default function AttendanceManager({
                   <th rowSpan={2}>Nama Murid</th>
                   {monthDays.map((date) => (
                     <th className={`attendance-day-head day-${date.dayIndex}`} key={date.iso}>
-                      <button type="button" onClick={() => setSelectedDate(date.iso)}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDate(date.iso);
+                          setSelectedStudentId('');
+                          setDetailMode('daily');
+                        }}
+                      >
                         <strong>{date.day}</strong>
                         <small>{dayShort[date.dayIndex]}</small>
                       </button>
@@ -309,11 +320,17 @@ export default function AttendanceManager({
                   const studentMonthRecords = currentMonthRecords.filter((record) => record.student_id === student.id);
                   const summary = recordSummary(studentMonthRecords);
                   return (
-                    <tr className={selectedStudentId === student.id ? 'selected-attendance-row' : undefined} key={student.id}>
+                    <tr className={detailMode === 'student' && selectedStudentId === student.id ? 'selected-attendance-row' : undefined} key={student.id}>
                       <td>{index + 1}</td>
                       <td>{student.jantina ?? '-'}</td>
                       <td className="attendance-student-name">
-                        <button type="button" onClick={() => setSelectedStudentId(student.id)}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStudentId(student.id);
+                            setDetailMode('student');
+                          }}
+                        >
                           {student.nama_murid}
                         </button>
                       </td>
@@ -337,7 +354,7 @@ export default function AttendanceManager({
                 <tr>
                   <td colSpan={3}>Rumusan Bulan</td>
                   <td colSpan={monthDays.length}>
-                    Hadir: <strong>{monthSummary.hadir}</strong> · Lewat: <strong>{monthSummary.lewat}</strong> · Tidak Hadir:{' '}
+                    Hadir: <strong>{monthSummary.hadir}</strong> - Lewat: <strong>{monthSummary.lewat}</strong> - Tidak Hadir:{' '}
                     <strong>{monthSummary.tidakHadir}</strong>
                   </td>
                   <td className="numeric-cell">{monthSummary.lewat}</td>
@@ -349,6 +366,11 @@ export default function AttendanceManager({
             </table>
           </div>
 
+          {!detailMode && (
+            <p className="attendance-help">Klik tarikh untuk mengemaskini rekod harian atau klik nama murid untuk melihat laporan bulanan.</p>
+          )}
+
+          {detailMode === 'daily' && (
           <form action={action} className="attendance-daily-form">
             <input type="hidden" name="attendance_date" value={selectedDate} />
             <div className="panel-head compact-head">
@@ -357,6 +379,9 @@ export default function AttendanceManager({
                 <p className="table-note">Gunakan bahagian ini untuk menyimpan kehadiran harian kelas.</p>
               </div>
               <div className="module-table-actions">
+                <button className="button soft" type="button" onClick={() => setDetailMode(null)}>
+                  TUTUP REKOD
+                </button>
                 <button
                   className="button soft"
                   type="button"
@@ -416,50 +441,56 @@ export default function AttendanceManager({
               </table>
             </div>
           </form>
+          )}
 
-          {selectedStudent && (
+          {detailMode === 'student' && selectedStudent && selectedStudentCalendar && (
             <section className="attendance-student-report">
               <div className="panel-head">
                 <div>
-                  <h2>Laporan Kehadiran Pelajar</h2>
+                  <h2>Laporan Bulanan Kehadiran Murid</h2>
                   <p className="table-note">
-                    {selectedStudent.nama_murid} · {classLabel(activeClass)} · {year}
+                    {selectedStudent.nama_murid} - {classLabel(activeClass)} - {monthNames[monthIndex]} {year}
                   </p>
                 </div>
-                <button className="button soft" type="button" onClick={() => setSelectedStudentId('')}>
+                <button
+                  className="button soft"
+                  type="button"
+                  onClick={() => {
+                    setSelectedStudentId('');
+                    setDetailMode(null);
+                  }}
+                >
                   TUTUP LAPORAN
                 </button>
               </div>
               <div className="attendance-student-summary">
-                <span>Jumlah Rekod <strong>{selectedStudentRecords.length}</strong></span>
+                <span>Jumlah Rekod <strong>{selectedStudentMonthRecords.length}</strong></span>
                 <span>Hadir <strong>{selectedStudentSummary.hadir}</strong></span>
                 <span>Tidak Hadir <strong>{selectedStudentSummary.tidakHadir}</strong></span>
                 <span>Lewat <strong>{selectedStudentSummary.lewat}</strong></span>
               </div>
-              <div className="student-year-calendar">
-                {selectedStudentCalendar.map((month) => (
-                  <article className="student-month-card" key={month.monthName}>
-                    <h3>
-                      {month.monthName} {year}
-                    </h3>
-                    <div className="student-month-weekdays">
-                      {dayNames.map((day) => (
-                        <span key={day}>{day.slice(0, 3)}</span>
-                      ))}
-                    </div>
-                    <div className="student-month-grid">
-                      {month.blanks.map((blank) => (
-                        <span className="calendar-empty" key={blank.key} />
-                      ))}
-                      {month.dates.map((date) => (
-                        <span className={statusClass(date.record?.status)} title={statusTitle(date.record?.status)} key={date.iso}>
-                          <b>{date.day}</b>
-                          <em>{statusShort(date.record?.status)}</em>
-                        </span>
-                      ))}
-                    </div>
-                  </article>
-                ))}
+              <div className="student-year-calendar student-month-report-calendar">
+                <article className="student-month-card">
+                  <h3>
+                    {selectedStudentCalendar.monthName} {year}
+                  </h3>
+                  <div className="student-month-weekdays">
+                    {dayNames.map((day) => (
+                      <span key={day}>{day.slice(0, 3)}</span>
+                    ))}
+                  </div>
+                  <div className="student-month-grid">
+                    {selectedStudentCalendar.blanks.map((blank) => (
+                      <span className="calendar-empty" key={blank.key} />
+                    ))}
+                    {selectedStudentCalendar.dates.map((date) => (
+                      <span className={statusClass(date.record?.status)} title={statusTitle(date.record?.status)} key={date.iso}>
+                        <b>{date.day}</b>
+                        <em>{statusShort(date.record?.status)}</em>
+                      </span>
+                    ))}
+                  </div>
+                </article>
               </div>
             </section>
           )}

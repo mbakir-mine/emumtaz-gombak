@@ -3234,6 +3234,16 @@ textarea {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.attendance-help {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #d9e6d8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .attendance-edit-table th:first-child,
 .attendance-edit-table td:first-child {
   width: 64px;
@@ -3279,6 +3289,10 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.student-month-report-calendar {
+  grid-template-columns: minmax(320px, 720px);
 }
 
 .student-month-card {
@@ -3690,6 +3704,10 @@ button:disabled {
   .attendance-student-summary,
   .student-year-calendar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-month-report-calendar {
+    grid-template-columns: minmax(320px, 720px);
   }
 
   .timetable-setup-grid {
@@ -4214,6 +4232,10 @@ button:disabled {
   }
 
   .student-year-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .student-month-report-calendar {
     grid-template-columns: 1fr;
   }
 
