@@ -131,6 +131,7 @@ export async function bulkAssignTeacherSubjects(
   }
 
   revalidatePath('/guru-subjek');
+  revalidatePath(`/guru-subjek/${classId}`);
   revalidatePath('/jadual-waktu');
   revalidatePath('/');
   return { ok: true, message: `${updated} guru mata pelajaran berjaya dikemaskini.` };

@@ -1399,6 +1399,9 @@ th {
 }
 
 .soft-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid #dce7dd;
@@ -1406,6 +1409,7 @@ th {
   background: #eef4ff;
   color: #1f5cff;
   font-weight: 800;
+  text-decoration: none;
   cursor: pointer;
 }
 

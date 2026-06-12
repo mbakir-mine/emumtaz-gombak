@@ -4,19 +4,15 @@ import {
   getClasses,
   getSchoolUsers,
   getSchools,
-  getSubjects,
   getTeacherClassAssignments,
-  getTeacherSubjectAssignments,
 } from '@/lib/data';
 
 export default async function GuruSubjekPage() {
-  const [schools, classes, users, subjects, classAssignments, subjectAssignments] = await Promise.all([
+  const [schools, classes, users, classAssignments] = await Promise.all([
     getSchools(),
     getClasses(),
     getSchoolUsers(),
-    getSubjects(),
     getTeacherClassAssignments(),
-    getTeacherSubjectAssignments(),
   ]);
 
   return (
@@ -25,9 +21,7 @@ export default async function GuruSubjekPage() {
         schools={schools}
         classes={classes}
         users={users}
-        subjects={subjects}
         classAssignments={classAssignments}
-        subjectAssignments={subjectAssignments}
       />
     </AppFrame>
   );
