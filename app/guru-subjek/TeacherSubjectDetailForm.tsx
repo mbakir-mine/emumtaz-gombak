@@ -159,7 +159,6 @@ export default function TeacherSubjectDetailForm({
                   <th>Bil</th>
                   <th>Kod</th>
                   <th>Mata Pelajaran</th>
-                  <th>Kumpulan</th>
                   <th>Guru Subjek</th>
                 </tr>
               </thead>
@@ -169,7 +168,6 @@ export default function TeacherSubjectDetailForm({
                     <td>{index + 1}</td>
                     <td>{subject.kod_subjek}</td>
                     <td>{subject.nama_subjek}</td>
-                    <td>Subjek JAIS</td>
                     <td>
                       <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
                       <select
@@ -182,7 +180,8 @@ export default function TeacherSubjectDetailForm({
                           }))
                         }
                       >
-                        <option value="">Belum ditetapkan</option>
+                        <option value="">Kekalkan / belum ditetapkan</option>
+                        {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
                         {selectedClassTeachers.map((user) => (
                           <option key={user.id} value={user.id}>
                             {user.nama}

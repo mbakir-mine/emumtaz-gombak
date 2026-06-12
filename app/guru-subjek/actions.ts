@@ -12,6 +12,8 @@ function stringList(formData: FormData, key: string) {
   return formData.getAll(key).map((value) => String(value ?? '').trim());
 }
 
+const clearTeacherValue = '__CLEAR__';
+
 export async function assignTeacherSubject(
   _previousState: TeacherSubjectActionState,
   formData: FormData,
@@ -65,12 +67,17 @@ export async function bulkAssignTeacherClasses(
   let updated = 0;
   for (const [index, classId] of classIds.entries()) {
     const userId = userIds[index] ?? '';
+
+    if (!userId) {
+      continue;
+    }
+
     const { error: deleteError } = await supabase.from('teacher_class_assignments').delete().eq('class_id', classId);
     if (deleteError) {
       return { ok: false, message: `Gagal kemaskini guru kelas: ${deleteError.message}` };
     }
 
-    if (userId) {
+    if (userId !== clearTeacherValue) {
       const { error: insertError } = await supabase.from('teacher_class_assignments').insert({
         class_id: classId,
         user_id: userId,
@@ -78,8 +85,9 @@ export async function bulkAssignTeacherClasses(
       if (insertError) {
         return { ok: false, message: `Gagal simpan guru kelas: ${insertError.message}` };
       }
-      updated += 1;
     }
+
+    updated += 1;
   }
 
   revalidatePath('/guru-subjek');
@@ -107,6 +115,11 @@ export async function bulkAssignTeacherSubjects(
   let updated = 0;
   for (const [index, kodSubjek] of subjectCodes.entries()) {
     const userId = userIds[index] ?? '';
+
+    if (!userId) {
+      continue;
+    }
+
     const { error: deleteError } = await supabase
       .from('teacher_subject_assignments')
       .delete()
@@ -117,7 +130,7 @@ export async function bulkAssignTeacherSubjects(
       return { ok: false, message: `Gagal kemaskini guru subjek: ${deleteError.message}` };
     }
 
-    if (userId) {
+    if (userId !== clearTeacherValue) {
       const { error: insertError } = await supabase.from('teacher_subject_assignments').insert({
         class_id: classId,
         kod_subjek: kodSubjek,
@@ -126,8 +139,9 @@ export async function bulkAssignTeacherSubjects(
       if (insertError) {
         return { ok: false, message: `Gagal simpan guru subjek: ${insertError.message}` };
       }
-      updated += 1;
     }
+
+    updated += 1;
   }
 
   revalidatePath('/guru-subjek');

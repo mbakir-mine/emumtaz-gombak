@@ -175,7 +175,8 @@ export default function TeacherSubjectForm({
                       <td>
                         <input name="class_id" type="hidden" value={item.id} />
                         <select name="teacher_id" defaultValue={assignedTeacher}>
-                          <option value="">Belum ditetapkan</option>
+                          <option value="">Kekalkan / belum ditetapkan</option>
+                          {assignedTeacher && <option value="__CLEAR__">Kosongkan guru kelas</option>}
                           {teacherOptions.map((user) => (
                             <option key={user.id} value={user.id}>
                               {user.nama}
