@@ -1315,6 +1315,129 @@ th {
   padding-left: 120px;
 }
 
+.teacher-assignment-manager {
+  display: grid;
+  gap: 18px;
+}
+
+.teacher-assignment-panel,
+.teacher-subject-panel {
+  overflow: hidden;
+}
+
+.panel-copy {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.teacher-assignment-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fcf8 0%, #fff9e5 100%);
+}
+
+.teacher-assignment-toolbar label,
+.subject-bulk-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.teacher-assignment-toolbar select,
+.teacher-assignment-toolbar input,
+.subject-bulk-toolbar select,
+.teacher-assignment-table select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.teacher-assignment-table th,
+.teacher-assignment-table td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+
+.teacher-assignment-table th:first-child,
+.teacher-assignment-table td:first-child {
+  width: 56px;
+  text-align: center;
+}
+
+.teacher-assignment-table td:nth-child(2),
+.teacher-assignment-table th:nth-child(2) {
+  width: 90px;
+  text-align: center;
+}
+
+.teacher-assignment-table td strong,
+.teacher-assignment-table td small {
+  display: block;
+}
+
+.teacher-assignment-table td small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.teacher-assignment-table .selected-row {
+  background: #f2fbf3;
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+.soft-action-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #dce7dd;
+  border-radius: 8px;
+  background: #eef4ff;
+  color: #1f5cff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.soft-action-button:hover:not(:disabled),
+.soft-action-button:focus-visible:not(:disabled) {
+  background: #e4edff;
+}
+
+.soft-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.teacher-assignment-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.subject-bulk-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #dce9de;
+  border-radius: 8px;
+  background: #fbfdf9;
+}
+
 .import-form {
   display: grid;
   grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 0.7fr) minmax(220px, 1fr);
@@ -2545,6 +2668,37 @@ textarea {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+.access-checks-toolbar {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #d7e7d8;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f6fbf5 0%, #fff8de 100%);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.access-checks-toolbar button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #cfe0d1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.access-checks-toolbar button:hover {
+  background: #f0f7ef;
 }
 
 .access-checks label {
@@ -4123,6 +4277,16 @@ button:disabled {
   .completion-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .teacher-assignment-toolbar,
+  .subject-bulk-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-assignment-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .completion-button {

@@ -76,7 +76,7 @@ export const navItems: NavItem[] = [
   { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },
   { key: 'comparison', label: 'Perbandingan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'teacherClasses', label: 'Guru Kelas', href: '/guru-kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'], hidden: true },
-  { key: 'teacherSubjects', label: 'Guru Subjek', href: '/guru-subjek', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'teacherSubjects', label: 'Guru Kelas & Subjek', href: '/guru-subjek', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
 ];
 
 const roleRank: Record<UserRole, number> = {
@@ -124,6 +124,13 @@ export function roleLabel(role: string) {
   };
 
   return labels[role] ?? role;
+}
+
+export function defaultAllowedNavForRole(role: UserRole) {
+  return navItems
+    .filter((item) => !item.hidden && item.key !== 'dashboard')
+    .filter((item) => item.roles.includes(role))
+    .map((item) => item.key);
 }
 
 export function visibleNavItems(

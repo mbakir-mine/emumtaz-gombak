@@ -55,7 +55,7 @@ const groupedMenu = [
 const childLabels: Record<string, string> = {
   schools: 'Sekolah',
   teachers: 'Guru',
-  teacherSubjects: 'Guru Subjek',
+  teacherSubjects: 'Guru Kelas & Subjek',
   classes: 'Kelas',
   students: 'Murid',
   studentPromotion: 'Naik Tahun',

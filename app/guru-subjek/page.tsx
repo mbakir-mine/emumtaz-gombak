@@ -5,64 +5,30 @@ import {
   getSchoolUsers,
   getSchools,
   getSubjects,
+  getTeacherClassAssignments,
   getTeacherSubjectAssignments,
 } from '@/lib/data';
 
 export default async function GuruSubjekPage() {
-  const [schools, classes, users, subjects, assignments] = await Promise.all([
+  const [schools, classes, users, subjects, classAssignments, subjectAssignments] = await Promise.all([
     getSchools(),
     getClasses(),
     getSchoolUsers(),
     getSubjects(),
+    getTeacherClassAssignments(),
     getTeacherSubjectAssignments(),
   ]);
 
   return (
-    <AppFrame title="Tetapan Guru Subjek" active="teacherSubjects">
-      <section className="panel">
-        <div className="panel-head">
-          <h2>Tetapkan Guru Subjek</h2>
-          <span>Guru kepada kelas dan subjek</span>
-        </div>
-        <TeacherSubjectForm schools={schools} classes={classes} users={users} subjects={subjects} />
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>Senarai Guru Subjek</h2>
-          <span>{assignments.length} rekod</span>
-        </div>
-        {assignments.length === 0 ? (
-          <p className="empty">Belum ada tetapan guru subjek.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Bil</th>
-                <th>Sekolah</th>
-                <th>Kelas</th>
-                <th>Subjek</th>
-                <th>Guru</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignments.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td>{item.classes?.kod_sekolah}</td>
-                  <td>
-                    Tahun {item.classes?.tahun} - {item.classes?.nama_kelas}
-                  </td>
-                  <td>
-                    {item.kod_subjek} - {item.subjects?.nama_subjek}
-                  </td>
-                  <td>{item.users?.nama}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+    <AppFrame title="Guru Kelas & Guru Subjek" subtitle="Tetapan guru mengikut kelas dan mata pelajaran." active="teacherSubjects">
+      <TeacherSubjectForm
+        schools={schools}
+        classes={classes}
+        users={users}
+        subjects={subjects}
+        classAssignments={classAssignments}
+        subjectAssignments={subjectAssignments}
+      />
     </AppFrame>
   );
 }

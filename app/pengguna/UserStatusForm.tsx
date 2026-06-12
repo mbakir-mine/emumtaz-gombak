@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { navItems } from '@/lib/access';
+import { defaultAllowedNavForRole, navItems, type UserRole } from '@/lib/access';
 import { updateUserStatus } from './actions';
 
 const initialState = {
@@ -33,6 +33,10 @@ const zoneOptions = [
 
 const accessOptions = navItems.filter((item) => !item.hidden && item.key !== 'dashboard');
 
+function getRoleAccess(role: string) {
+  return defaultAllowedNavForRole(role as UserRole);
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
@@ -60,7 +64,28 @@ export default function UserStatusForm({
 }) {
   const [role, setRole] = useState(currentRole);
   const [zone, setZone] = useState(currentZon ?? '');
+  const [selectedAccess, setSelectedAccess] = useState<string[]>(
+    currentAllowedNav && currentAllowedNav.length > 0 ? currentAllowedNav : getRoleAccess(currentRole),
+  );
   const [state, action] = useActionState(updateUserStatus, initialState);
+
+  function handleRoleChange(nextRole: string) {
+    setRole(nextRole);
+    setSelectedAccess(getRoleAccess(nextRole));
+    if (nextRole !== 'ADMIN_ZON') {
+      setZone('');
+    }
+  }
+
+  function toggleAccess(key: string, checked: boolean) {
+    setSelectedAccess((current) => {
+      if (checked) {
+        return current.includes(key) ? current : [...current, key];
+      }
+
+      return current.filter((item) => item !== key);
+    });
+  }
 
   if (locked) {
     return <span className="table-note">Dikunci</span>;
@@ -69,7 +94,7 @@ export default function UserStatusForm({
   return (
     <form action={action} className="status-form">
       <input name="id" type="hidden" value={userId} />
-      <select name="role" value={role} onChange={(event) => setRole(event.target.value)} aria-label="Role pengguna">
+      <select name="role" value={role} onChange={(event) => handleRoleChange(event.target.value)} aria-label="Role pengguna">
         {roleOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -103,18 +128,25 @@ export default function UserStatusForm({
       </select>
       <fieldset className="access-checks">
         <legend>Akses Modul</legend>
+        <div className="access-checks-toolbar">
+          <span>{selectedAccess.length} akses dipilih</span>
+          <button type="button" onClick={() => setSelectedAccess(getRoleAccess(role))}>
+            Auto pilih ikut role
+          </button>
+        </div>
         {accessOptions.map((item) => (
           <label key={item.key}>
             <input
               name="allowed_nav"
               type="checkbox"
               value={item.key}
-              defaultChecked={currentAllowedNav?.includes(item.key) ?? false}
+              checked={selectedAccess.includes(item.key)}
+              onChange={(event) => toggleAccess(item.key, event.target.checked)}
             />
             {item.label}
           </label>
         ))}
-        <small>Kosongkan semua untuk guna akses default role.</small>
+        <small>Sistem auto pilih akses berdasarkan role. Pilihan ini masih boleh diubah secara manual jika perlu.</small>
       </fieldset>
       <SubmitButton />
       {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
