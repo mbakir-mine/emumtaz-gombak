@@ -22,12 +22,19 @@ export default function StudentForm({
   const profile = useAccessProfile();
   const [selectedSchool, setSelectedSchool] = useState('');
   const [state, action, pending] = useActionState(createStudent, initialState);
+  const currentAcademicYear = new Date().getFullYear();
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
 
   const filteredClasses = useMemo(
-    () => scopedClasses.filter((item) => !selectedSchool || item.kod_sekolah === selectedSchool),
-    [scopedClasses, selectedSchool],
+    () =>
+      scopedClasses.filter(
+        (item) =>
+          item.tahun_akademik === currentAcademicYear &&
+          item.status === 'AKTIF' &&
+          (!selectedSchool || item.kod_sekolah === selectedSchool),
+      ),
+    [currentAcademicYear, scopedClasses, selectedSchool],
   );
 
   return (

@@ -20,10 +20,17 @@ export default function TeacherClassForm({
 }) {
   const [selectedSchool, setSelectedSchool] = useState('');
   const [state, action, pending] = useActionState(assignTeacherClass, initialState);
+  const currentAcademicYear = new Date().getFullYear();
 
   const filteredClasses = useMemo(
-    () => classes.filter((item) => !selectedSchool || item.kod_sekolah === selectedSchool),
-    [classes, selectedSchool],
+    () =>
+      classes.filter(
+        (item) =>
+          item.tahun_akademik === currentAcademicYear &&
+          item.status === 'AKTIF' &&
+          (!selectedSchool || item.kod_sekolah === selectedSchool),
+      ),
+    [classes, currentAcademicYear, selectedSchool],
   );
   const filteredUsers = useMemo(
     () =>

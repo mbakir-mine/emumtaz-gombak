@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { AmalKhairCategory, AmalKhairRecord, ClassRecord, School, StudentRecord } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
@@ -29,9 +29,20 @@ export default function AmalKhairManager({
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedStudents = useMemo(() => scopeStudents(profile, students, classes, schools), [classes, profile, schools, students]);
+  const currentAcademicYear = new Date().getFullYear();
   const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? scopedSchools[0]?.kod_sekolah ?? '');
-  const schoolClasses = scopedClasses.filter((item) => item.kod_sekolah === selectedSchool);
+  const schoolClasses = scopedClasses.filter(
+    (item) =>
+      item.kod_sekolah === selectedSchool &&
+      item.tahun_akademik === currentAcademicYear &&
+      item.status === 'AKTIF',
+  );
   const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
+  useEffect(() => {
+    if (!selectedClass || !schoolClasses.some((item) => item.id === selectedClass)) {
+      setSelectedClass(schoolClasses[0]?.id ?? '');
+    }
+  }, [schoolClasses, selectedClass]);
   const classStudents = scopedStudents
     .filter((student) => student.class_id === selectedClass && student.status === 'AKTIF')
     .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid));
@@ -58,7 +69,14 @@ export default function AmalKhairManager({
             onChange={(event) => {
               const kodSekolah = event.target.value;
               setSelectedSchool(kodSekolah);
-              setSelectedClass(scopedClasses.find((item) => item.kod_sekolah === kodSekolah)?.id ?? '');
+              setSelectedClass(
+                scopedClasses.find(
+                  (item) =>
+                    item.kod_sekolah === kodSekolah &&
+                    item.tahun_akademik === currentAcademicYear &&
+                    item.status === 'AKTIF',
+                )?.id ?? '',
+              );
             }}
             disabled={profile?.role !== 'OWNER'}
           >

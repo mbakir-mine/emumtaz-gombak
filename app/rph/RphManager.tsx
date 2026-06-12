@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { ClassRecord, RphRecord, School, SubjectRecord, UserRecord } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
@@ -37,11 +37,22 @@ export default function RphManager({
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedUsers = useMemo(() => scopeUsers(profile, users, schools), [profile, schools, users]);
+  const currentAcademicYear = new Date().getFullYear();
   const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? scopedSchools[0]?.kod_sekolah ?? '');
   const schoolClasses = scopedClasses
-    .filter((item) => item.kod_sekolah === selectedSchool && item.status === 'AKTIF')
+    .filter(
+      (item) =>
+        item.kod_sekolah === selectedSchool &&
+        item.tahun_akademik === currentAcademicYear &&
+        item.status === 'AKTIF',
+    )
     .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
   const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
+  useEffect(() => {
+    if (!selectedClass || !schoolClasses.some((item) => item.id === selectedClass)) {
+      setSelectedClass(schoolClasses[0]?.id ?? '');
+    }
+  }, [schoolClasses, selectedClass]);
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.kod_subjek ?? '');
   const [selectedTeacher, setSelectedTeacher] = useState(profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK' ? profile.id : '');
   const selectedClassRecord = schoolClasses.find((item) => item.id === selectedClass) ?? null;
@@ -79,7 +90,13 @@ export default function RphManager({
             value={selectedSchool}
             onChange={(event) => {
               const kodSekolah = event.target.value;
-              const firstClass = scopedClasses.find((item) => item.kod_sekolah === kodSekolah)?.id ?? '';
+              const firstClass =
+                scopedClasses.find(
+                  (item) =>
+                    item.kod_sekolah === kodSekolah &&
+                    item.tahun_akademik === currentAcademicYear &&
+                    item.status === 'AKTIF',
+                )?.id ?? '';
               setSelectedSchool(kodSekolah);
               setSelectedClass(firstClass);
             }}

@@ -59,6 +59,7 @@ export default function IndividualReportTable({
   const effectiveSchool = profile?.role === 'ADMIN_SEKOLAH' ? profile.kod_sekolah ?? '' : selectedSchool;
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
   const classOptions = scopedClasses.filter((item) => {
+    if (item.tahun_akademik !== selectedYear) return false;
     if (effectiveSchool && item.kod_sekolah !== effectiveSchool) return false;
     if (selectedTahun && item.tahun !== Number(selectedTahun)) return false;
     return true;

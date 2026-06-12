@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { AttendanceRecord, ClassRecord, School, StudentRecord } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
@@ -143,12 +143,25 @@ export default function AttendanceManager({
   const { year, monthIndex } = dateParts(selectedDate);
   const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? scopedSchools[0]?.kod_sekolah ?? '');
   const schoolClasses = useMemo(
-    () => scopedClasses.filter((item) => item.kod_sekolah === selectedSchool),
-    [scopedClasses, selectedSchool],
+    () =>
+      scopedClasses.filter(
+        (item) =>
+          item.kod_sekolah === selectedSchool &&
+          item.tahun_akademik === year &&
+          item.status === 'AKTIF',
+      ),
+    [scopedClasses, selectedSchool, year],
   );
   const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [detailMode, setDetailMode] = useState<AttendanceDetailMode>(null);
+  useEffect(() => {
+    if (!selectedClass || !schoolClasses.some((item) => item.id === selectedClass)) {
+      setSelectedClass(schoolClasses[0]?.id ?? '');
+      setSelectedStudentId('');
+      setDetailMode(null);
+    }
+  }, [schoolClasses, selectedClass]);
   const activeClass = schoolClasses.find((item) => item.id === selectedClass) ?? null;
   const activeSchool = scopedSchools.find((school) => school.kod_sekolah === selectedSchool) ?? null;
   const classStudents = useMemo(
@@ -212,7 +225,13 @@ export default function AttendanceManager({
             value={selectedSchool}
             onChange={(event) => {
               const kodSekolah = event.target.value;
-              const nextClass = scopedClasses.find((item) => item.kod_sekolah === kodSekolah)?.id ?? '';
+              const nextClass =
+                scopedClasses.find(
+                  (item) =>
+                    item.kod_sekolah === kodSekolah &&
+                    item.tahun_akademik === year &&
+                    item.status === 'AKTIF',
+                )?.id ?? '';
               setSelectedSchool(kodSekolah);
               setSelectedClass(nextClass);
               setSelectedStudentId('');

@@ -38,8 +38,15 @@ export default function MarkSelectionForm({
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
 
   const filteredClasses = useMemo(
-    () => scopedClasses.filter((item) => selectedSchool && item.kod_sekolah === selectedSchool),
-    [scopedClasses, selectedSchool],
+    () =>
+      scopedClasses.filter(
+        (item) =>
+          selectedSchool &&
+          item.kod_sekolah === selectedSchool &&
+          item.tahun_akademik === selectedYear &&
+          item.status === 'AKTIF',
+      ),
+    [scopedClasses, selectedSchool, selectedYear],
   );
   const filteredExams = useMemo(
     () => exams.filter((exam) => exam.tahun_akademik === selectedYear),
@@ -66,6 +73,8 @@ export default function MarkSelectionForm({
           onChange={(event) => {
             setSelectedYear(Number(event.target.value));
             setSelectedExamId('');
+            setSelectedClassId('');
+            setSelectedSubject('');
           }}
           required
         >
