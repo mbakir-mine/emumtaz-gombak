@@ -139,7 +139,9 @@ export default function TeacherSubjectDetailForm({
     setSubjectSelections((current) => {
       const next = { ...current };
       filteredSubjects.forEach((subject) => {
-        next[subject.kod_subjek] = applyAllTeacher;
+        if ((componentsBySubject.get(subject.kod_subjek) ?? []).length === 0) {
+          next[subject.kod_subjek] = applyAllTeacher;
+        }
       });
       return next;
     });
@@ -219,31 +221,34 @@ export default function TeacherSubjectDetailForm({
                       <td>{subject.nama_subjek}</td>
                       <td>
                         <div className="subject-teacher-stack">
-                          <label>
-                            <span>{components.length > 0 ? 'Guru induk' : 'Guru subjek'}</span>
-                            <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
-                            <select
-                              name="subject_teacher_id"
-                              value={subjectSelections[subject.kod_subjek] ?? ''}
-                              onChange={(event) =>
-                                setSubjectSelections((current) => ({
-                                  ...current,
-                                  [subject.kod_subjek]: event.target.value,
-                                }))
-                              }
-                            >
-                              <option value="">Kekalkan / belum ditetapkan</option>
-                              {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
-                              {selectedClassTeachers.map((user) => (
-                                <option key={user.id} value={user.id}>
-                                  {user.nama}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                          {components.length === 0 && (
+                            <label>
+                              <span>Guru subjek</span>
+                              <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
+                              <select
+                                name="subject_teacher_id"
+                                value={subjectSelections[subject.kod_subjek] ?? ''}
+                                onChange={(event) =>
+                                  setSubjectSelections((current) => ({
+                                    ...current,
+                                    [subject.kod_subjek]: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">Kekalkan / belum ditetapkan</option>
+                                {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
+                                {selectedClassTeachers.map((user) => (
+                                  <option key={user.id} value={user.id}>
+                                    {user.nama}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
 
                           {components.length > 0 && (
                             <div className="subject-component-teachers">
+                              <input name="component_parent_kod_subjek" type="hidden" value={subject.kod_subjek} />
                               {components.map((component) => {
                                 const componentKey = `${subject.kod_subjek}|${component.kod_komponen}`;
                                 return (
@@ -263,7 +268,7 @@ export default function TeacherSubjectDetailForm({
                                         }))
                                       }
                                     >
-                                      <option value="">Ikut guru induk / belum ditetapkan</option>
+                                      <option value="">Pilih guru / belum ditetapkan</option>
                                       {componentSelections[componentKey] && (
                                         <option value="__CLEAR__">Kosongkan guru komponen</option>
                                       )}

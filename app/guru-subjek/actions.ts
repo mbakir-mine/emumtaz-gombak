@@ -107,11 +107,14 @@ export async function bulkAssignTeacherSubjects(
   const classId = String(formData.get('subject_class_id') ?? '').trim();
   const subjectCodes = stringList(formData, 'kod_subjek').filter(Boolean);
   const userIds = stringList(formData, 'subject_teacher_id');
+  const componentParentSubjectCodes = [
+    ...new Set(stringList(formData, 'component_parent_kod_subjek').filter(Boolean)),
+  ];
   const componentSubjectCodes = stringList(formData, 'component_kod_subjek');
   const componentCodes = stringList(formData, 'component_kod_komponen');
   const componentUserIds = stringList(formData, 'component_teacher_id');
 
-  if (!classId || subjectCodes.length === 0) {
+  if (!classId || subjectCodes.length + componentSubjectCodes.length === 0) {
     return { ok: false, message: 'Pilih kelas dan subjek untuk dikemaskini.' };
   }
 
@@ -148,6 +151,18 @@ export async function bulkAssignTeacherSubjects(
     updated += 1;
   }
 
+  for (const kodSubjek of componentParentSubjectCodes) {
+    const { error: deleteError } = await supabase
+      .from('teacher_subject_assignments')
+      .delete()
+      .eq('class_id', classId)
+      .eq('kod_subjek', kodSubjek);
+
+    if (deleteError) {
+      return { ok: false, message: `Gagal bersihkan tetapan guru subjek gabungan: ${deleteError.message}` };
+    }
+  }
+
   for (const [index, kodSubjek] of componentSubjectCodes.entries()) {
     const kodKomponen = componentCodes[index] ?? '';
     const userId = componentUserIds[index] ?? '';
@@ -166,7 +181,7 @@ export async function bulkAssignTeacherSubjects(
     if (deleteError) {
       return {
         ok: false,
-        message: `Guru induk berjaya diproses, tetapi guru komponen gagal. Jalankan SQL 026_subject_mark_components.sql dahulu. Ralat: ${deleteError.message}`,
+        message: `Gagal kemaskini guru komponen. Jalankan SQL 026_subject_mark_components.sql dahulu. Ralat: ${deleteError.message}`,
       };
     }
 
@@ -189,6 +204,6 @@ export async function bulkAssignTeacherSubjects(
   revalidatePath(`/guru-subjek/${classId}`);
   revalidatePath('/jadual-waktu');
   revalidatePath('/');
-  const componentMessage = componentUpdated > 0 ? ` ${componentUpdated} guru komponen turut dikemaskini.` : '';
-  return { ok: true, message: `${updated} guru mata pelajaran berjaya dikemaskini.${componentMessage}` };
+  const totalUpdated = updated + componentUpdated;
+  return { ok: true, message: `${totalUpdated} tetapan guru subjek berjaya dikemaskini.` };
 }
