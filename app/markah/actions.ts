@@ -22,6 +22,7 @@ export async function saveMarks(
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
   const kodSubjek = String(formData.get('kod_subjek') ?? '').trim();
   const studentIds = formData.getAll('student_id').map((value) => String(value));
+  const componentCodes = [...new Set(formData.getAll('component_code').map((value) => String(value ?? '').trim()).filter(Boolean))];
 
   if (!examId || !classId || !kodSekolah || !kodSubjek || studentIds.length === 0) {
     return { ok: false, message: 'Pilihan peperiksaan, kelas, subjek atau murid tidak lengkap.' };
@@ -37,6 +38,83 @@ export async function saveMarks(
 
   if (!access.open) {
     return { ok: false, message: access.label };
+  }
+
+  if (componentCodes.length > 0) {
+    const componentMaxByCode = new Map(
+      componentCodes.map((componentCode) => [
+        componentCode,
+        Number(formData.get(`component_max_${componentCode}`) ?? 100),
+      ]),
+    );
+
+    const componentRows = studentIds.flatMap((studentId) =>
+      componentCodes.map((componentCode) => {
+        const raw = String(formData.get(`component_markah_${studentId}_${componentCode}`) ?? '').trim();
+        const markah = raw === '' ? null : Number(raw);
+        return {
+          exam_id: examId,
+          student_id: studentId,
+          kod_sekolah: kodSekolah,
+          class_id: classId,
+          kod_subjek: kodSubjek,
+          kod_komponen: componentCode,
+          markah,
+        };
+      }),
+    );
+
+    const invalidComponent = componentRows.find((row) => {
+      const maxMark = componentMaxByCode.get(row.kod_komponen) ?? 100;
+      return row.markah !== null && (!Number.isFinite(row.markah) || row.markah < 0 || row.markah > maxMark);
+    });
+
+    if (invalidComponent) {
+      const maxMark = componentMaxByCode.get(invalidComponent.kod_komponen) ?? 100;
+      return { ok: false, message: `Markah ${invalidComponent.kod_komponen} mesti antara 0 hingga ${maxMark}.` };
+    }
+
+    const { error: componentError } = await supabase.from('mark_components').upsert(componentRows, {
+      onConflict: 'exam_id,student_id,kod_subjek,kod_komponen',
+    });
+
+    if (componentError) {
+      return {
+        ok: false,
+        message: `Gagal simpan komponen markah. Jalankan SQL 026_subject_mark_components.sql dahulu. Ralat: ${componentError.message}`,
+      };
+    }
+
+    const rows = studentIds.map((studentId) => {
+      const values = componentCodes.map((componentCode) => {
+        const raw = String(formData.get(`component_markah_${studentId}_${componentCode}`) ?? '').trim();
+        return raw === '' ? null : Number(raw);
+      });
+      const numericValues = values.filter((value): value is number => value !== null && Number.isFinite(value));
+      const complete = numericValues.length === componentCodes.length;
+      const markah = complete ? Number(numericValues.reduce((sum, value) => sum + value, 0).toFixed(2)) : null;
+      return {
+        exam_id: examId,
+        student_id: studentId,
+        kod_sekolah: kodSekolah,
+        class_id: classId,
+        kod_subjek: kodSubjek,
+        markah,
+      };
+    });
+
+    const { error } = await supabase.from('marks').upsert(rows, {
+      onConflict: 'exam_id,student_id,kod_subjek',
+    });
+
+    if (error) {
+      return { ok: false, message: `Komponen berjaya disimpan, tetapi jumlah induk gagal dikemaskini: ${error.message}` };
+    }
+
+    revalidatePath('/markah');
+    revalidatePath('/analisis');
+    revalidatePath('/laporan');
+    return { ok: true, message: 'Markah komponen dan jumlah rasmi berjaya disimpan.' };
   }
 
   const rows = studentIds.map((studentId) => {

@@ -1,5 +1,6 @@
 import { hasSupabaseEnv, supabase } from './supabase';
 import type { OptionalSchoolModuleKey } from './schoolModules';
+import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 
 export type SetupCounts = {
   schools: number;
@@ -231,6 +232,21 @@ export type MarkRecord = {
   markah: number | null;
 };
 
+export type SubjectComponentRecord = SubjectComponentDefinition & {
+  id?: string;
+};
+
+export type MarkComponentRecord = {
+  id: string;
+  exam_id: string;
+  student_id: string;
+  kod_sekolah: string;
+  class_id: string;
+  kod_subjek: string;
+  kod_komponen: string;
+  markah: number | null;
+};
+
 export type StudentSummaryRecord = {
   tahun_akademik: number;
   kod_peperiksaan: string;
@@ -382,6 +398,15 @@ export type TeacherSubjectAssignment = {
   users?: UserRecord;
   classes?: ClassRecord;
   subjects?: SubjectRecord;
+};
+
+export type TeacherSubjectComponentAssignment = {
+  id: string;
+  user_id: string;
+  class_id: string;
+  kod_subjek: string;
+  kod_komponen: string;
+  users?: UserRecord;
 };
 
 type SubjectGradeRule = {
@@ -994,6 +1019,36 @@ export async function getMarksForSelection(
   return data ?? [];
 }
 
+export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> {
+  if (!supabase) return mergeSubjectComponents([]);
+  const { data, error } = await supabase
+    .from('subject_components')
+    .select('id,kod_subjek,kod_komponen,nama_komponen,markah_penuh,susunan,status')
+    .eq('status', 'AKTIF')
+    .order('kod_subjek')
+    .order('susunan');
+
+  if (error) return mergeSubjectComponents([]);
+  return mergeSubjectComponents((data ?? []) as SubjectComponentRecord[]);
+}
+
+export async function getMarkComponentsForSelection(
+  examId: string,
+  classId: string,
+  kodSubjek: string,
+): Promise<MarkComponentRecord[]> {
+  if (!supabase || !examId || !classId || !kodSubjek) return [];
+  const { data, error } = await supabase
+    .from('mark_components')
+    .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,kod_komponen,markah')
+    .eq('exam_id', examId)
+    .eq('class_id', classId)
+    .eq('kod_subjek', kodSubjek);
+
+  if (error) return [];
+  return data ?? [];
+}
+
 export async function getAttendanceRecords(attendanceDate?: string): Promise<AttendanceRecord[]> {
   if (!supabase) return [];
   let query = supabase
@@ -1421,4 +1476,31 @@ export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssi
     classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,
     subjects: Array.isArray(item.subjects) ? item.subjects[0] : item.subjects,
   })) as TeacherSubjectAssignment[];
+}
+
+export async function getTeacherSubjectComponentAssignments(): Promise<TeacherSubjectComponentAssignment[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('teacher_subject_component_assignments')
+    .select(
+      `
+      id,
+      user_id,
+      class_id,
+      kod_subjek,
+      kod_komponen,
+      users:app_users(id,email,nama,role,kod_sekolah,status)
+    `,
+    )
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    id: item.id,
+    user_id: item.user_id,
+    class_id: item.class_id,
+    kod_subjek: item.kod_subjek,
+    kod_komponen: item.kod_komponen,
+    users: Array.isArray(item.users) ? item.users[0] : item.users,
+  })) as TeacherSubjectComponentAssignment[];
 }

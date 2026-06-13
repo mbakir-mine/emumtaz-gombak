@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import { saveMarks } from './actions';
-import type { MarkRecord, StudentRecord } from '@/lib/data';
+import type { MarkComponentRecord, MarkRecord, StudentRecord, SubjectComponentRecord } from '@/lib/data';
 import { gradeForMark } from '@/lib/subjects';
 
 const initialState = {
@@ -17,6 +17,8 @@ export default function MarkEntryForm({
   kodSubjek,
   students,
   marks,
+  subjectComponents = [],
+  componentMarks = [],
 }: {
   examId: string;
   classId: string;
@@ -24,9 +26,66 @@ export default function MarkEntryForm({
   kodSubjek: string;
   students: StudentRecord[];
   marks: MarkRecord[];
+  subjectComponents?: SubjectComponentRecord[];
+  componentMarks?: MarkComponentRecord[];
 }) {
   const [state, action, pending] = useActionState(saveMarks, initialState);
-  const marksByStudent = new Map(marks.map((mark) => [mark.student_id, mark.markah]));
+  const marksByStudent = useMemo(() => new Map(marks.map((mark) => [mark.student_id, mark.markah])), [marks]);
+  const activeComponents = useMemo(
+    () => subjectComponents.filter((component) => component.status === 'AKTIF').sort((left, right) => left.susunan - right.susunan),
+    [subjectComponents],
+  );
+  const componentMarksByKey = useMemo(() => {
+    const map = new Map<string, number | null>();
+    componentMarks.forEach((mark) => {
+      map.set(`${mark.student_id}|${mark.kod_komponen}`, mark.markah);
+    });
+    return map;
+  }, [componentMarks]);
+  const [componentValues, setComponentValues] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    students.forEach((student) => {
+      activeComponents.forEach((component) => {
+        const markah = componentMarksByKey.get(`${student.id}|${component.kod_komponen}`);
+        initial[`${student.id}|${component.kod_komponen}`] = markah === null || markah === undefined ? '' : String(markah);
+      });
+    });
+    return initial;
+  });
+  const hasComponents = activeComponents.length > 0;
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    students.forEach((student) => {
+      activeComponents.forEach((component) => {
+        const markah = componentMarksByKey.get(`${student.id}|${component.kod_komponen}`);
+        next[`${student.id}|${component.kod_komponen}`] = markah === null || markah === undefined ? '' : String(markah);
+      });
+    });
+    setComponentValues(next);
+  }, [activeComponents, componentMarksByKey, students]);
+
+  function updateComponentValue(studentId: string, componentCode: string, value: string) {
+    setComponentValues((current) => ({
+      ...current,
+      [`${studentId}|${componentCode}`]: value,
+    }));
+  }
+
+  function totalForStudent(studentId: string) {
+    if (!hasComponents) return marksByStudent.get(studentId) ?? null;
+    let total = 0;
+
+    for (const component of activeComponents) {
+      const raw = componentValues[`${studentId}|${component.kod_komponen}`] ?? '';
+      if (raw.trim() === '') return null;
+      const markah = Number(raw);
+      if (!Number.isFinite(markah)) return null;
+      total += markah;
+    }
+
+    return Number(total.toFixed(2));
+  }
 
   return (
     <form action={action} className="mark-entry-form">
@@ -34,6 +93,26 @@ export default function MarkEntryForm({
       <input type="hidden" name="class_id" value={classId} />
       <input type="hidden" name="kod_sekolah" value={kodSekolah} />
       <input type="hidden" name="kod_subjek" value={kodSubjek} />
+      {activeComponents.map((component) => (
+        <input key={component.kod_komponen} type="hidden" name="component_code" value={component.kod_komponen} />
+      ))}
+      {activeComponents.map((component) => (
+        <input
+          key={`${component.kod_komponen}-max`}
+          type="hidden"
+          name={`component_max_${component.kod_komponen}`}
+          value={component.markah_penuh}
+        />
+      ))}
+
+      {hasComponents && (
+        <div className="component-mark-banner">
+          <strong>Subjek gabungan</strong>
+          <span>
+            Isi markah mengikut komponen. Jumlah akhir akan dikira automatik dan disimpan sebagai markah rasmi subjek ini.
+          </span>
+        </div>
+      )}
 
       <table className="mark-entry-table">
         <thead>
@@ -41,13 +120,24 @@ export default function MarkEntryForm({
             <th>Bil</th>
             <th>Nama Murid</th>
             <th>Jantina</th>
-            <th>Markah</th>
+            {hasComponents ? (
+              activeComponents.map((component) => (
+                <th key={component.kod_komponen}>
+                  {component.nama_komponen}
+                  <small>/{component.markah_penuh}</small>
+                </th>
+              ))
+            ) : (
+              <th>Markah</th>
+            )}
+            {hasComponents && <th>Jumlah</th>}
             <th>Gred</th>
           </tr>
         </thead>
         <tbody>
           {students.map((student, index) => {
             const markah = marksByStudent.get(student.id) ?? null;
+            const totalMark = totalForStudent(student.id);
             return (
               <tr key={student.id}>
                 <td>{index + 1}</td>
@@ -56,19 +146,43 @@ export default function MarkEntryForm({
                   {student.nama_murid}
                 </td>
                 <td>{student.jantina}</td>
-                <td>
-                  <input
-                    className="mark-input"
-                    name={`markah_${student.id}`}
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    defaultValue={markah ?? ''}
-                    placeholder="-"
-                  />
-                </td>
-                <td>{gradeForMark(markah)}</td>
+                {hasComponents ? (
+                  <>
+                    {activeComponents.map((component) => (
+                      <td key={component.kod_komponen}>
+                        <input
+                          className="mark-input component-mark-input"
+                          name={`component_markah_${student.id}_${component.kod_komponen}`}
+                          type="number"
+                          min="0"
+                          max={component.markah_penuh}
+                          step="0.01"
+                          value={componentValues[`${student.id}|${component.kod_komponen}`] ?? ''}
+                          onChange={(event) => updateComponentValue(student.id, component.kod_komponen, event.target.value)}
+                          placeholder="-"
+                        />
+                      </td>
+                    ))}
+                    <td className="mark-total-cell">{totalMark ?? '-'}</td>
+                    <td>{gradeForMark(totalMark)}</td>
+                  </>
+                ) : (
+                  <>
+                    <td>
+                      <input
+                        className="mark-input"
+                        name={`markah_${student.id}`}
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        defaultValue={markah ?? ''}
+                        placeholder="-"
+                      />
+                    </td>
+                    <td>{gradeForMark(markah)}</td>
+                  </>
+                )}
               </tr>
             );
           })}

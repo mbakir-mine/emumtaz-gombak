@@ -1393,6 +1393,34 @@ th {
   font-size: 12px;
 }
 
+.subject-teacher-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.subject-teacher-stack label,
+.subject-component-teachers label {
+  display: grid;
+  gap: 5px;
+}
+
+.subject-teacher-stack label span,
+.subject-component-teachers label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subject-component-teachers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d8eadb;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f7fcf8 0%, #fff9e8 100%);
+}
+
 .teacher-assignment-table .selected-row {
   background: #f2fbf3;
   box-shadow: inset 4px 0 0 var(--green);
@@ -2285,9 +2313,34 @@ textarea {
   max-width: 110px;
 }
 
+.component-mark-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #cfe7d4;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f4fbf6 0%, #fff8dd 100%);
+  color: var(--muted);
+}
+
+.component-mark-banner strong {
+  color: var(--green);
+  white-space: nowrap;
+}
+
 .mark-entry-table th,
 .mark-entry-table td {
   padding: 4px 13px;
+}
+
+.mark-entry-table th small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .mark-entry-table td {
@@ -2298,6 +2351,16 @@ textarea {
   min-height: 30px;
   max-width: 96px;
   padding: 4px 10px;
+}
+
+.mark-entry-table .component-mark-input {
+  max-width: 82px;
+}
+
+.mark-total-cell {
+  color: var(--green);
+  font-weight: 800;
+  text-align: center;
 }
 
 .mark-actions {

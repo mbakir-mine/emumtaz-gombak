@@ -10,7 +10,9 @@ import type {
   ClassRecord,
   School,
   SubjectRecord,
+  SubjectComponentRecord,
   TeacherClassAssignment,
+  TeacherSubjectComponentAssignment,
   TeacherSubjectAssignment,
   UserRecord,
 } from '@/lib/data';
@@ -28,6 +30,8 @@ export default function TeacherSubjectDetailForm({
   subjects,
   classAssignments,
   subjectAssignments,
+  subjectComponents,
+  componentAssignments,
 }: {
   classId: string;
   schools: School[];
@@ -36,9 +40,12 @@ export default function TeacherSubjectDetailForm({
   subjects: SubjectRecord[];
   classAssignments: TeacherClassAssignment[];
   subjectAssignments: TeacherSubjectAssignment[];
+  subjectComponents: SubjectComponentRecord[];
+  componentAssignments: TeacherSubjectComponentAssignment[];
 }) {
   const profile = useAccessProfile();
   const [subjectSelections, setSubjectSelections] = useState<Record<string, string>>({});
+  const [componentSelections, setComponentSelections] = useState<Record<string, string>>({});
   const [applyAllTeacher, setApplyAllTeacher] = useState('');
   const [state, action, pending] = useActionState(bulkAssignTeacherSubjects, initialState);
 
@@ -68,6 +75,29 @@ export default function TeacherSubjectDetailForm({
     return map;
   }, [subjectAssignments]);
 
+  const componentTeacherMap = useMemo(() => {
+    const map = new Map<string, string>();
+    componentAssignments.forEach((assignment) => {
+      const key = `${assignment.class_id}|${assignment.kod_subjek}|${assignment.kod_komponen}`;
+      if (!map.has(key)) {
+        map.set(key, assignment.user_id);
+      }
+    });
+    return map;
+  }, [componentAssignments]);
+
+  const componentsBySubject = useMemo(() => {
+    const map = new Map<string, SubjectComponentRecord[]>();
+    subjectComponents
+      .filter((component) => component.status === 'AKTIF')
+      .forEach((component) => {
+        const items = map.get(component.kod_subjek) ?? [];
+        items.push(component);
+        map.set(component.kod_subjek, items.sort((left, right) => left.susunan - right.susunan));
+      });
+    return map;
+  }, [subjectComponents]);
+
   const selectedClassTeacher = selectedClass
     ? visibleUsers.find((user) => user.id === classTeacherMap.get(selectedClass.id))
     : null;
@@ -84,17 +114,25 @@ export default function TeacherSubjectDetailForm({
   useEffect(() => {
     if (!selectedClass) {
       setSubjectSelections({});
+      setComponentSelections({});
       setApplyAllTeacher('');
       return;
     }
 
     const nextSelections: Record<string, string> = {};
+    const nextComponentSelections: Record<string, string> = {};
     filteredSubjects.forEach((subject) => {
       nextSelections[subject.kod_subjek] = subjectTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}`) ?? '';
+      (componentsBySubject.get(subject.kod_subjek) ?? []).forEach((component) => {
+        const key = `${subject.kod_subjek}|${component.kod_komponen}`;
+        nextComponentSelections[key] =
+          componentTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}|${component.kod_komponen}`) ?? '';
+      });
     });
     setSubjectSelections(nextSelections);
+    setComponentSelections(nextComponentSelections);
     setApplyAllTeacher('');
-  }, [filteredSubjects, selectedClass, subjectTeacherMap]);
+  }, [componentTeacherMap, componentsBySubject, filteredSubjects, selectedClass, subjectTeacherMap]);
 
   function applyTeacherToAllSubjects() {
     if (!applyAllTeacher) return;
@@ -102,6 +140,15 @@ export default function TeacherSubjectDetailForm({
       const next = { ...current };
       filteredSubjects.forEach((subject) => {
         next[subject.kod_subjek] = applyAllTeacher;
+      });
+      return next;
+    });
+    setComponentSelections((current) => {
+      const next = { ...current };
+      filteredSubjects.forEach((subject) => {
+        (componentsBySubject.get(subject.kod_subjek) ?? []).forEach((component) => {
+          next[`${subject.kod_subjek}|${component.kod_komponen}`] = applyAllTeacher;
+        });
       });
       return next;
     });
@@ -163,34 +210,79 @@ export default function TeacherSubjectDetailForm({
                 </tr>
               </thead>
               <tbody>
-                {filteredSubjects.map((subject, index) => (
-                  <tr key={subject.kod_subjek}>
-                    <td>{index + 1}</td>
-                    <td>{subject.kod_subjek}</td>
-                    <td>{subject.nama_subjek}</td>
-                    <td>
-                      <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
-                      <select
-                        name="subject_teacher_id"
-                        value={subjectSelections[subject.kod_subjek] ?? ''}
-                        onChange={(event) =>
-                          setSubjectSelections((current) => ({
-                            ...current,
-                            [subject.kod_subjek]: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Kekalkan / belum ditetapkan</option>
-                        {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
-                        {selectedClassTeachers.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.nama}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {filteredSubjects.map((subject, index) => {
+                  const components = componentsBySubject.get(subject.kod_subjek) ?? [];
+                  return (
+                    <tr key={subject.kod_subjek}>
+                      <td>{index + 1}</td>
+                      <td>{subject.kod_subjek}</td>
+                      <td>{subject.nama_subjek}</td>
+                      <td>
+                        <div className="subject-teacher-stack">
+                          <label>
+                            <span>{components.length > 0 ? 'Guru induk' : 'Guru subjek'}</span>
+                            <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
+                            <select
+                              name="subject_teacher_id"
+                              value={subjectSelections[subject.kod_subjek] ?? ''}
+                              onChange={(event) =>
+                                setSubjectSelections((current) => ({
+                                  ...current,
+                                  [subject.kod_subjek]: event.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">Kekalkan / belum ditetapkan</option>
+                              {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
+                              {selectedClassTeachers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.nama}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          {components.length > 0 && (
+                            <div className="subject-component-teachers">
+                              {components.map((component) => {
+                                const componentKey = `${subject.kod_subjek}|${component.kod_komponen}`;
+                                return (
+                                  <label key={componentKey}>
+                                    <span>
+                                      {component.nama_komponen} /{component.markah_penuh}
+                                    </span>
+                                    <input name="component_kod_subjek" type="hidden" value={subject.kod_subjek} />
+                                    <input name="component_kod_komponen" type="hidden" value={component.kod_komponen} />
+                                    <select
+                                      name="component_teacher_id"
+                                      value={componentSelections[componentKey] ?? ''}
+                                      onChange={(event) =>
+                                        setComponentSelections((current) => ({
+                                          ...current,
+                                          [componentKey]: event.target.value,
+                                        }))
+                                      }
+                                    >
+                                      <option value="">Ikut guru induk / belum ditetapkan</option>
+                                      {componentSelections[componentKey] && (
+                                        <option value="__CLEAR__">Kosongkan guru komponen</option>
+                                      )}
+                                      {selectedClassTeachers.map((user) => (
+                                        <option key={user.id} value={user.id}>
+                                          {user.nama}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

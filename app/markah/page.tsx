@@ -4,9 +4,11 @@ import MarkSelectionForm from './MarkSelectionForm';
 import {
   getClasses,
   getExams,
+  getMarkComponentsForSelection,
   getMarksForSelection,
   getSchools,
   getStudentsByClass,
+  getSubjectComponents,
   getSubjects,
 } from '@/lib/data';
 import { examAccessStatus } from '@/lib/examAccess';
@@ -17,11 +19,12 @@ export default async function MarkahPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [schools, classes, exams, subjects] = await Promise.all([
+  const [schools, classes, exams, subjects, subjectComponents] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
     getSubjects(),
+    getSubjectComponents(),
   ]);
 
   const selectedSchool = params.kod_sekolah ?? '';
@@ -34,13 +37,17 @@ export default async function MarkahPage({
   const selectedExam = exams.find((exam) => exam.id === selectedExamId);
   const markAccess = examAccessStatus(selectedExam);
 
-  const [students, marks] =
+  const selectedSubjectComponents = subjectComponents.filter((component) => component.kod_subjek === selectedSubject);
+  const [students, marks, componentMarks] =
     selectedExamId && selectedClassId && selectedSubject
       ? await Promise.all([
           getStudentsByClass(selectedClassId),
           getMarksForSelection(selectedExamId, selectedClassId, selectedSubject),
+          selectedSubjectComponents.length > 0
+            ? getMarkComponentsForSelection(selectedExamId, selectedClassId, selectedSubject)
+            : Promise.resolve([]),
         ])
-      : [[], []];
+      : [[], [], []];
 
   return (
     <AppFrame title="Markah" subtitle="Kemasukan UPSA dan UASA." active="marks">
@@ -92,6 +99,8 @@ export default async function MarkahPage({
             kodSubjek={selectedSubject}
             students={students}
             marks={marks}
+            subjectComponents={selectedSubjectComponents}
+            componentMarks={componentMarks}
           />
         )}
       </section>

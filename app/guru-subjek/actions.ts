@@ -107,12 +107,16 @@ export async function bulkAssignTeacherSubjects(
   const classId = String(formData.get('subject_class_id') ?? '').trim();
   const subjectCodes = stringList(formData, 'kod_subjek').filter(Boolean);
   const userIds = stringList(formData, 'subject_teacher_id');
+  const componentSubjectCodes = stringList(formData, 'component_kod_subjek');
+  const componentCodes = stringList(formData, 'component_kod_komponen');
+  const componentUserIds = stringList(formData, 'component_teacher_id');
 
   if (!classId || subjectCodes.length === 0) {
     return { ok: false, message: 'Pilih kelas dan subjek untuk dikemaskini.' };
   }
 
   let updated = 0;
+  let componentUpdated = 0;
   for (const [index, kodSubjek] of subjectCodes.entries()) {
     const userId = userIds[index] ?? '';
 
@@ -144,9 +148,47 @@ export async function bulkAssignTeacherSubjects(
     updated += 1;
   }
 
+  for (const [index, kodSubjek] of componentSubjectCodes.entries()) {
+    const kodKomponen = componentCodes[index] ?? '';
+    const userId = componentUserIds[index] ?? '';
+
+    if (!kodSubjek || !kodKomponen || !userId) {
+      continue;
+    }
+
+    const { error: deleteError } = await supabase
+      .from('teacher_subject_component_assignments')
+      .delete()
+      .eq('class_id', classId)
+      .eq('kod_subjek', kodSubjek)
+      .eq('kod_komponen', kodKomponen);
+
+    if (deleteError) {
+      return {
+        ok: false,
+        message: `Guru induk berjaya diproses, tetapi guru komponen gagal. Jalankan SQL 026_subject_mark_components.sql dahulu. Ralat: ${deleteError.message}`,
+      };
+    }
+
+    if (userId !== clearTeacherValue) {
+      const { error: insertError } = await supabase.from('teacher_subject_component_assignments').insert({
+        class_id: classId,
+        kod_subjek: kodSubjek,
+        kod_komponen: kodKomponen,
+        user_id: userId,
+      });
+      if (insertError) {
+        return { ok: false, message: `Gagal simpan guru komponen subjek: ${insertError.message}` };
+      }
+    }
+
+    componentUpdated += 1;
+  }
+
   revalidatePath('/guru-subjek');
   revalidatePath(`/guru-subjek/${classId}`);
   revalidatePath('/jadual-waktu');
   revalidatePath('/');
-  return { ok: true, message: `${updated} guru mata pelajaran berjaya dikemaskini.` };
+  const componentMessage = componentUpdated > 0 ? ` ${componentUpdated} guru komponen turut dikemaskini.` : '';
+  return { ok: true, message: `${updated} guru mata pelajaran berjaya dikemaskini.${componentMessage}` };
 }
