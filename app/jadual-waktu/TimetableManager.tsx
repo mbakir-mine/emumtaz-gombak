@@ -16,6 +16,8 @@ import type {
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import {
+  addTimetableSlotSetting,
+  deleteTimetableSlotSetting,
   generateAutoTimetable,
   generateDefaultTimetableSlots,
   saveTimetableSlotSettings,
@@ -142,6 +144,8 @@ export default function TimetableManager({
   const totalRequiredSlots = schoolYearRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0);
   const [slotState, slotAction] = useActionState(generateDefaultTimetableSlots, initialState);
   const [slotSettingState, slotSettingAction] = useActionState(saveTimetableSlotSettings, initialState);
+  const [slotAddState, slotAddAction] = useActionState(addTimetableSlotSetting, initialState);
+  const [slotDeleteState, slotDeleteAction] = useActionState(deleteTimetableSlotSetting, initialState);
   const [requirementState, requirementAction] = useActionState(saveTimetableRequirements, initialState);
   const [autoState, autoAction] = useActionState(generateAutoTimetable, initialState);
   const canChangeSchool = profile?.role === 'OWNER';
@@ -277,7 +281,12 @@ export default function TimetableManager({
               <h3>Tetapan Waktu Slot Masa</h3>
               <p className="table-note">Susun label, waktu mula dan waktu tamat bagi jadual sekolah.</p>
             </div>
-            <strong>{slotSettings.length} slot</strong>
+            <div className="timetable-slot-head-actions">
+              <strong>{slotSettings.length} slot</strong>
+              <button className="button soft" type="submit" formAction={slotAddAction}>
+                TAMBAH SLOT
+              </button>
+            </div>
           </div>
           <div className="table-scroll">
             <table className="compact-table timetable-slot-table">
@@ -287,6 +296,7 @@ export default function TimetableManager({
                   <th>Label</th>
                   <th>Waktu Mula</th>
                   <th>Waktu Tamat</th>
+                  <th>Tindakan</th>
                 </tr>
               </thead>
               <tbody>
@@ -303,6 +313,18 @@ export default function TimetableManager({
                     <td>
                       <input name="slot_waktu_tamat" type="time" defaultValue={slot.waktu_tamat.slice(0, 5)} />
                     </td>
+                    <td>
+                      <button
+                        className="button danger soft"
+                        type="submit"
+                        name="slot_susunan_target"
+                        value={slot.susunan}
+                        formAction={slotDeleteAction}
+                        disabled={slotSettings.length <= 1}
+                      >
+                        BUANG
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -313,6 +335,10 @@ export default function TimetableManager({
           </button>
           {slotSettingState.message && (
             <p className={slotSettingState.ok ? 'form-success' : 'form-message'}>{slotSettingState.message}</p>
+          )}
+          {slotAddState.message && <p className={slotAddState.ok ? 'form-success' : 'form-message'}>{slotAddState.message}</p>}
+          {slotDeleteState.message && (
+            <p className={slotDeleteState.ok ? 'form-success' : 'form-message'}>{slotDeleteState.message}</p>
           )}
         </form>
       )}

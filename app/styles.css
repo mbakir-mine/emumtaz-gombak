@@ -3134,9 +3134,28 @@ textarea {
   font-size: 24px;
 }
 
+.timetable-slot-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.timetable-slot-head-actions .button {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
 .timetable-slot-table th:first-child,
 .timetable-slot-table td:first-child {
   width: 60px;
+  text-align: center;
+}
+
+.timetable-slot-table th:last-child,
+.timetable-slot-table td:last-child {
+  width: 120px;
   text-align: center;
 }
 
@@ -3152,6 +3171,11 @@ textarea {
 .timetable-slot-table input[type='time'] {
   max-width: 150px;
   font-weight: 800;
+}
+
+.timetable-slot-table .button {
+  min-height: 34px;
+  padding: 0 12px;
 }
 
 .timetable-requirement-bulk .compact-head {
