@@ -554,6 +554,8 @@ export async function generateAutoTimetable(
   if (activeRequirements.length === 0) {
     return { ok: false, message: 'Belum ada tetapan subjek kelas. Masukkan subjek, guru dan bilangan masa dahulu.' };
   }
+  const classIdsWithRequirements = new Set(activeRequirements.map((requirement) => requirement.class_id));
+  const missingRequirementCount = yearClasses.filter((classRecord) => !classIdsWithRequirements.has(classRecord.id)).length;
 
   const classSlotCapacity = teachingSlots.length;
   const overloadedClass = yearClasses.find((classRecord) => {
@@ -683,12 +685,15 @@ export async function generateAutoTimetable(
   }
 
   revalidatePath('/jadual-waktu');
+  const missingMessage =
+    missingRequirementCount > 0 ? ` ${missingRequirementCount} kelas belum ada tetapan masa subjek.` : '';
+
   return {
-    ok: unassigned === 0,
+    ok: unassigned === 0 && missingRequirementCount === 0,
     message:
       unassigned === 0
-        ? `Jadual automatik berjaya dijana untuk ${yearClasses.length} kelas (${generatedRows.length} slot).`
-        : `Jadual dijana ${generatedRows.length} slot, tetapi ${unassigned} slot belum dapat disusun kerana kekangan guru/masa.`,
+        ? `Jadual automatik berjaya dijana untuk ${yearClasses.length - missingRequirementCount} kelas (${generatedRows.length} slot).${missingMessage}`
+        : `Jadual dijana ${generatedRows.length} slot, tetapi ${unassigned} slot belum dapat disusun kerana kekangan guru/masa.${missingMessage}`,
   };
 }
 

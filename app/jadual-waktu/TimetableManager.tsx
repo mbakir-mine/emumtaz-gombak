@@ -141,6 +141,9 @@ export default function TimetableManager({
   const schoolYearClassIds = new Set(yearClasses.map((item) => item.id));
   const schoolYearRequirements = requirements.filter((requirement) => schoolYearClassIds.has(requirement.class_id));
   const schoolYearEntries = entries.filter((entry) => schoolYearClassIds.has(entry.class_id));
+  const classesWithRequirements = new Set(schoolYearRequirements.map((requirement) => requirement.class_id));
+  const completeClassCount = yearClasses.filter((item) => classesWithRequirements.has(item.id)).length;
+  const incompleteClassCount = Math.max(0, yearClasses.length - completeClassCount);
   const totalRequiredSlots = schoolYearRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0);
   const [slotState, slotAction] = useActionState(generateDefaultTimetableSlots, initialState);
   const [slotSettingState, slotSettingAction] = useActionState(saveTimetableSlotSettings, initialState);
@@ -215,10 +218,29 @@ export default function TimetableManager({
         <div>
           <h2>Jadual Waktu Automatik</h2>
           <p className="table-note">
-            Tetapkan subjek, guru dan bilangan masa. Sistem akan jana jadual kelas dan elakkan pertembungan guru.
+            Sistem menjana jadual semua kelas aktif dalam tahun akademik dipilih dan mengelakkan pertembungan guru.
           </p>
         </div>
         <span>{schoolYearEntries.length} / {totalRequiredSlots} slot dijana</span>
+      </div>
+
+      <div className="timetable-scope-summary">
+        <div>
+          <span>Kelas aktif</span>
+          <strong>{yearClasses.length}</strong>
+        </div>
+        <div>
+          <span>Kelas ada tetapan</span>
+          <strong>{completeClassCount}</strong>
+        </div>
+        <div>
+          <span>Belum lengkap</span>
+          <strong>{incompleteClassCount}</strong>
+        </div>
+        <div>
+          <span>Slot mengajar sehari</span>
+          <strong>{teachingSlots.length / days.length || 0}</strong>
+        </div>
       </div>
 
       <div className="module-toolbar timetable-auto-toolbar">
@@ -243,7 +265,7 @@ export default function TimetableManager({
           </select>
         </label>
         <label>
-          Kelas Semakan
+          Kelas Paparan
           <select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)}>
             <option value="">Pilih kelas</option>
             {yearClasses.map((item) => (
@@ -266,10 +288,14 @@ export default function TimetableManager({
           <input type="hidden" name="kod_sekolah" value={selectedSchool} />
           <input type="hidden" name="tahun_akademik" value={selectedYear} />
           <button className="button" type="submit" disabled={schoolYearRequirements.length === 0 || teachingSlots.length === 0}>
-            JANA JADUAL AUTOMATIK
+            JANA JADUAL SEMUA KELAS
           </button>
         </form>
       </div>
+      <p className="table-note timetable-scope-note">
+        Kelas paparan hanya untuk semakan jadual dan tetapan masa subjek kelas tersebut. Butang jana akan menyusun semua kelas
+        yang mempunyai tetapan subjek dalam sesi {selectedYear}.
+      </p>
       {slotState.message && <p className={slotState.ok ? 'form-success' : 'form-message'}>{slotState.message}</p>}
       {autoState.message && <p className={autoState.ok ? 'form-success' : 'form-message'}>{autoState.message}</p>}
 
@@ -356,11 +382,11 @@ export default function TimetableManager({
       )}
 
       <form action={requirementAction} className="timetable-requirement-form timetable-requirement-bulk">
-        <input type="hidden" name="kod_sekolah" value={selectedSchool} />
-        <input type="hidden" name="class_id" value={selectedClass} />
-        <div className="panel-head compact-head">
-          <div>
-            <h3>{selectedClassRecord ? `Tetapan Subjek ${classLabel(selectedClassRecord)}` : 'Tetapan Subjek Kelas'}</h3>
+          <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+          <input type="hidden" name="class_id" value={selectedClass} />
+          <div className="panel-head compact-head">
+            <div>
+            <h3>{selectedClassRecord ? `Tetapan Masa Subjek ${classLabel(selectedClassRecord)}` : 'Tetapan Masa Subjek Kelas'}</h3>
             <p className="table-note">
               Senarai ini diambil daripada tetapan Guru Kelas & Guru Subjek. Isi bilangan masa dan pilihan gabung dua masa sahaja.
             </p>

@@ -3077,6 +3077,45 @@ textarea {
   grid-template-columns: minmax(240px, 1.1fr) minmax(160px, 0.45fr) minmax(300px, 1.2fr);
 }
 
+.timetable-scope-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 16px;
+}
+
+.timetable-scope-summary div {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #d8e6d8;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 100% 100%, rgba(244, 201, 79, 0.16), transparent 7rem),
+    rgba(255, 255, 255, 0.82);
+}
+
+.timetable-scope-summary span,
+.timetable-scope-summary strong {
+  display: block;
+}
+
+.timetable-scope-summary span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.timetable-scope-summary strong {
+  margin-top: 4px;
+  color: var(--green);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.timetable-scope-note {
+  margin: -6px 0 14px;
+}
+
 .timetable-action-row {
   display: flex;
   flex-wrap: wrap;
