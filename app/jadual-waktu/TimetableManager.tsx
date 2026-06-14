@@ -274,8 +274,10 @@ export default function TimetableManager({
       {autoState.message && <p className={autoState.ok ? 'form-success' : 'form-message'}>{autoState.message}</p>}
 
       {slotSettings.length > 0 && (
-        <form action={slotSettingAction} className="timetable-slot-settings">
-          <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+        <div className="timetable-slot-settings">
+          <form id="timetable-slot-save-form" action={slotSettingAction} className="hidden-form">
+            <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+          </form>
           <div className="panel-head compact-head">
             <div>
               <h3>Tetapan Waktu Slot Masa</h3>
@@ -283,9 +285,12 @@ export default function TimetableManager({
             </div>
             <div className="timetable-slot-head-actions">
               <strong>{slotSettings.length} slot</strong>
-              <button className="button soft" type="submit" formAction={slotAddAction}>
-                TAMBAH SLOT
-              </button>
+              <form action={slotAddAction}>
+                <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+                <button className="button soft" type="submit">
+                  TAMBAH SLOT
+                </button>
+              </form>
             </div>
           </div>
           <div className="table-scroll">
@@ -304,33 +309,40 @@ export default function TimetableManager({
                   <tr key={slot.susunan}>
                     <td>{index + 1}</td>
                     <td>
-                      <input type="hidden" name="slot_susunan" value={slot.susunan} />
-                      <input name="slot_label" defaultValue={slot.label ?? `Masa ${slot.susunan}`} />
+                      <input form="timetable-slot-save-form" type="hidden" name="slot_susunan" value={slot.susunan} />
+                      <input form="timetable-slot-save-form" name="slot_label" defaultValue={slot.label ?? `Masa ${slot.susunan}`} />
                     </td>
                     <td>
-                      <input name="slot_waktu_mula" type="time" defaultValue={slot.waktu_mula.slice(0, 5)} />
+                      <input
+                        form="timetable-slot-save-form"
+                        name="slot_waktu_mula"
+                        type="time"
+                        defaultValue={slot.waktu_mula.slice(0, 5)}
+                      />
                     </td>
                     <td>
-                      <input name="slot_waktu_tamat" type="time" defaultValue={slot.waktu_tamat.slice(0, 5)} />
+                      <input
+                        form="timetable-slot-save-form"
+                        name="slot_waktu_tamat"
+                        type="time"
+                        defaultValue={slot.waktu_tamat.slice(0, 5)}
+                      />
                     </td>
                     <td>
-                      <button
-                        className="button danger soft"
-                        type="submit"
-                        name="slot_susunan_target"
-                        value={slot.susunan}
-                        formAction={slotDeleteAction}
-                        disabled={slotSettings.length <= 1}
-                      >
-                        BUANG
-                      </button>
+                      <form action={slotDeleteAction} className="timetable-slot-delete-form">
+                        <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+                        <input type="hidden" name="slot_susunan_target" value={slot.susunan} />
+                        <button className="button danger soft" type="submit" disabled={slotSettings.length <= 1}>
+                          BUANG
+                        </button>
+                      </form>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <button className="button" type="submit">
+          <button className="button" type="submit" form="timetable-slot-save-form">
             SIMPAN WAKTU SLOT
           </button>
           {slotSettingState.message && (
@@ -340,7 +352,7 @@ export default function TimetableManager({
           {slotDeleteState.message && (
             <p className={slotDeleteState.ok ? 'form-success' : 'form-message'}>{slotDeleteState.message}</p>
           )}
-        </form>
+        </div>
       )}
 
       <form action={requirementAction} className="timetable-requirement-form timetable-requirement-bulk">

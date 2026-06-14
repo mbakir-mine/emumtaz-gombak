@@ -3147,6 +3147,12 @@ textarea {
   padding: 0 12px;
 }
 
+.timetable-slot-head-actions form,
+.timetable-slot-delete-form {
+  display: inline-flex;
+  margin: 0;
+}
+
 .timetable-slot-table th:first-child,
 .timetable-slot-table td:first-child {
   width: 60px;
