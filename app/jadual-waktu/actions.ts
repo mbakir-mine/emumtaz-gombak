@@ -111,6 +111,80 @@ export async function saveTimetableRequirement(
   return { ok: true, message: 'Tetapan subjek kelas berjaya disimpan.' };
 }
 
+function stringList(formData: FormData, key: string) {
+  return formData.getAll(key).map((value) => String(value ?? '').trim());
+}
+
+export async function saveTimetableRequirements(
+  _previousState: TimetableActionState,
+  formData: FormData,
+): Promise<TimetableActionState> {
+  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+
+  const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
+  const classId = String(formData.get('class_id') ?? '').trim();
+  const subjectCodes = stringList(formData, 'requirement_kod_subjek');
+  const componentCodes = stringList(formData, 'requirement_kod_komponen');
+  const displayNames = stringList(formData, 'requirement_nama_paparan');
+  const teacherIds = stringList(formData, 'requirement_teacher_id');
+  const slotCounts = stringList(formData, 'requirement_bil_slot');
+  const doubleOptions = stringList(formData, 'requirement_boleh_gabung');
+
+  if (!kodSekolah || !classId) {
+    return { ok: false, message: 'Pilih sekolah dan kelas dahulu.' };
+  }
+
+  const rows = subjectCodes
+    .map((kodSubjek, index) => {
+      const bilSlot = Number(slotCounts[index] ?? 0);
+      return {
+        kod_sekolah: kodSekolah,
+        class_id: classId,
+        kod_subjek: kodSubjek,
+        kod_komponen: componentCodes[index] || null,
+        nama_paparan: displayNames[index] || null,
+        teacher_id: teacherIds[index] || null,
+        bil_slot_seminggu: Number.isFinite(bilSlot) ? bilSlot : 0,
+        boleh_gabung: doubleOptions[index] === 'YA',
+        status: 'AKTIF',
+      };
+    })
+    .filter((row) => row.kod_subjek && row.teacher_id && row.bil_slot_seminggu > 0);
+
+  const invalid = rows.find((row) => row.bil_slot_seminggu < 0 || row.bil_slot_seminggu > 40);
+  if (invalid) {
+    return { ok: false, message: 'Bilangan masa mesti antara 0 hingga 40.' };
+  }
+
+  const { error: deleteError } = await supabase
+    .from('timetable_requirements')
+    .delete()
+    .eq('kod_sekolah', kodSekolah)
+    .eq('class_id', classId);
+
+  if (deleteError) {
+    if (deleteError.message.includes('timetable_requirements')) {
+      return { ok: false, message: requirementMissingMessage() };
+    }
+
+    return { ok: false, message: `Gagal kosongkan tetapan lama: ${deleteError.message}` };
+  }
+
+  if (rows.length > 0) {
+    const { error: insertError } = await supabase.from('timetable_requirements').insert(rows);
+    if (insertError) {
+      if (insertError.message.includes('timetable_requirements') || insertError.message.includes('kod_komponen')) {
+        return { ok: false, message: `${requirementMissingMessage()} Jika SQL sudah ada, jalankan semula fail 025 yang terkini.` };
+      }
+
+      return { ok: false, message: `Gagal simpan tetapan jadual: ${insertError.message}` };
+    }
+  }
+
+  revalidatePath('/jadual-waktu');
+  return { ok: true, message: `${rows.length} tetapan jadual kelas berjaya disimpan.` };
+}
+
 type AutoSlot = {
   id: string;
   hari: string;
@@ -129,20 +203,40 @@ type AutoClass = {
 type AutoRequirement = {
   class_id: string;
   kod_subjek: string;
+  kod_komponen: string | null;
+  nama_paparan: string | null;
   teacher_id: string | null;
   bil_slot_seminggu: number;
+  boleh_gabung: boolean;
 };
 
 type TimetableUnit = {
   class_id: string;
   kod_subjek: string;
+  kod_komponen: string | null;
+  nama_paparan: string | null;
   teacher_id: string | null;
+  duration: 1 | 2;
   unitIndex: number;
 };
 
 function isTeachingSlot(slot: AutoSlot) {
   const label = (slot.label ?? '').toUpperCase();
   return !label.includes('REHAT');
+}
+
+function isConsecutiveSlot(first: AutoSlot, second: AutoSlot) {
+  return first.hari === second.hari && first.waktu_tamat === second.waktu_mula;
+}
+
+function candidateSlotGroup(slots: AutoSlot[], startIndex: number, duration: 1 | 2) {
+  const first = slots[startIndex];
+  if (!first) return null;
+  if (duration === 1) return [first];
+
+  const second = slots[startIndex + 1];
+  if (!second || !isConsecutiveSlot(first, second)) return null;
+  return [first, second];
 }
 
 function pickBestSlot({
@@ -159,16 +253,23 @@ function pickBestSlot({
   teacherSlotUsage: Set<string>;
   classSubjectDayUsage: Map<string, number>;
   teacherDayUsage: Map<string, number>;
-}): AutoSlot | null {
-  let bestSlot: AutoSlot | null = null;
+}): AutoSlot[] | null {
+  let bestSlots: AutoSlot[] | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
 
-  for (const slot of slots) {
-    const classSlotKey = `${unit.class_id}|${slot.id}`;
-    const teacherSlotKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${slot.id}`;
-    if (classSlotUsage.has(classSlotKey)) continue;
-    if (unit.teacher_id && teacherSlotUsage.has(teacherSlotKey)) continue;
+  for (let index = 0; index < slots.length; index += 1) {
+    const slotGroup = candidateSlotGroup(slots, index, unit.duration);
+    if (!slotGroup) continue;
 
+    const hasConflict = slotGroup.some((slot) => {
+      const classSlotKey = `${unit.class_id}|${slot.id}`;
+      const teacherSlotKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${slot.id}`;
+      return classSlotUsage.has(classSlotKey) || Boolean(unit.teacher_id && teacherSlotUsage.has(teacherSlotKey));
+    });
+
+    if (hasConflict) continue;
+
+    const slot = slotGroup[0];
     const subjectDayKey = `${unit.class_id}|${unit.kod_subjek}|${slot.hari}`;
     const teacherDayKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${slot.hari}`;
     const subjectDayCount = classSubjectDayUsage.get(subjectDayKey) ?? 0;
@@ -178,11 +279,11 @@ function pickBestSlot({
 
     if (score < bestScore) {
       bestScore = score;
-      bestSlot = slot;
+      bestSlots = slotGroup;
     }
   }
 
-  return bestSlot;
+  return bestSlots;
 }
 
 export async function generateAutoTimetable(
@@ -235,7 +336,7 @@ export async function generateAutoTimetable(
   const classIds = yearClasses.map((item) => item.id);
   const { data: requirements, error: requirementError } = await supabase
     .from('timetable_requirements')
-    .select('class_id,kod_subjek,teacher_id,bil_slot_seminggu,status')
+    .select('class_id,kod_subjek,kod_komponen,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
     .eq('kod_sekolah', kodSekolah)
     .eq('status', 'AKTIF')
     .in('class_id', classIds)
@@ -275,12 +376,30 @@ export async function generateAutoTimetable(
       .filter((item) => item.class_id === classRecord.id)
       .sort((a, b) => b.bil_slot_seminggu - a.bil_slot_seminggu || a.kod_subjek.localeCompare(b.kod_subjek))
       .forEach((requirement) => {
-        for (let index = 0; index < requirement.bil_slot_seminggu; index += 1) {
+        const doubleUnits = requirement.boleh_gabung ? Math.floor(requirement.bil_slot_seminggu / 2) : 0;
+        const singleUnits = requirement.bil_slot_seminggu - doubleUnits * 2;
+
+        for (let index = 0; index < doubleUnits; index += 1) {
           units.push({
             class_id: requirement.class_id,
             kod_subjek: requirement.kod_subjek,
+            kod_komponen: requirement.kod_komponen,
+            nama_paparan: requirement.nama_paparan,
             teacher_id: requirement.teacher_id,
+            duration: 2,
             unitIndex: index,
+          });
+        }
+
+        for (let index = 0; index < singleUnits; index += 1) {
+          units.push({
+            class_id: requirement.class_id,
+            kod_subjek: requirement.kod_subjek,
+            kod_komponen: requirement.kod_komponen,
+            nama_paparan: requirement.nama_paparan,
+            teacher_id: requirement.teacher_id,
+            duration: 1,
+            unitIndex: doubleUnits + index,
           });
         }
       });
@@ -295,6 +414,8 @@ export async function generateAutoTimetable(
     class_id: string;
     kod_sekolah: string;
     kod_subjek: string;
+    kod_komponen: string | null;
+    nama_paparan: string | null;
     teacher_id: string | null;
     bilik: string | null;
     status: string;
@@ -308,7 +429,7 @@ export async function generateAutoTimetable(
   });
 
   balancedUnits.forEach((unit) => {
-    const slot = pickBestSlot({
+    const slotGroup = pickBestSlot({
       slots: teachingSlots,
       unit,
       classSlotUsage,
@@ -317,27 +438,34 @@ export async function generateAutoTimetable(
       teacherDayUsage,
     });
 
-    if (!slot) {
+    if (!slotGroup) {
       unassigned += 1;
       return;
     }
 
-    classSlotUsage.add(`${unit.class_id}|${slot.id}`);
-    if (unit.teacher_id) teacherSlotUsage.add(`${unit.teacher_id}|${slot.id}`);
+    slotGroup.forEach((slot) => {
+      classSlotUsage.add(`${unit.class_id}|${slot.id}`);
+      if (unit.teacher_id) teacherSlotUsage.add(`${unit.teacher_id}|${slot.id}`);
+    });
 
+    const slot = slotGroup[0];
     const subjectDayKey = `${unit.class_id}|${unit.kod_subjek}|${slot.hari}`;
     const teacherDayKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${slot.hari}`;
-    classSubjectDayUsage.set(subjectDayKey, (classSubjectDayUsage.get(subjectDayKey) ?? 0) + 1);
-    teacherDayUsage.set(teacherDayKey, (teacherDayUsage.get(teacherDayKey) ?? 0) + 1);
+    classSubjectDayUsage.set(subjectDayKey, (classSubjectDayUsage.get(subjectDayKey) ?? 0) + unit.duration);
+    teacherDayUsage.set(teacherDayKey, (teacherDayUsage.get(teacherDayKey) ?? 0) + unit.duration);
 
-    generatedRows.push({
-      slot_id: slot.id,
-      class_id: unit.class_id,
-      kod_sekolah: kodSekolah,
-      kod_subjek: unit.kod_subjek,
-      teacher_id: unit.teacher_id,
-      bilik: null,
-      status: 'AKTIF',
+    slotGroup.forEach((assignedSlot) => {
+      generatedRows.push({
+        slot_id: assignedSlot.id,
+        class_id: unit.class_id,
+        kod_sekolah: kodSekolah,
+        kod_subjek: unit.kod_subjek,
+        kod_komponen: unit.kod_komponen,
+        nama_paparan: unit.nama_paparan,
+        teacher_id: unit.teacher_id,
+        bilik: null,
+        status: 'AKTIF',
+      });
     });
   });
 

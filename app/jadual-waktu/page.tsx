@@ -4,6 +4,9 @@ import {
   getSchools,
   getSchoolUsers,
   getSubjects,
+  getSubjectComponents,
+  getTeacherSubjectAssignments,
+  getTeacherSubjectComponentAssignments,
   getTimetableEntries,
   getTimetableRequirements,
   getTimetableSlots,
@@ -14,7 +17,18 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function TimetablePage() {
-  const [schools, classes, subjects, users, slots, entries, requirements] = await Promise.all([
+  const [
+    schools,
+    classes,
+    subjects,
+    users,
+    slots,
+    entries,
+    requirements,
+    subjectAssignments,
+    componentAssignments,
+    subjectComponents,
+  ] = await Promise.all([
     getSchools(),
     getClasses(),
     getSubjects(),
@@ -22,6 +36,9 @@ export default async function TimetablePage() {
     getTimetableSlots(),
     getTimetableEntries(),
     getTimetableRequirements(),
+    getTeacherSubjectAssignments(),
+    getTeacherSubjectComponentAssignments(),
+    getSubjectComponents(),
   ]);
 
   return (
@@ -34,6 +51,9 @@ export default async function TimetablePage() {
         slots={slots}
         entries={entries}
         requirements={requirements}
+        subjectAssignments={subjectAssignments}
+        componentAssignments={componentAssignments}
+        subjectComponents={subjectComponents}
       />
     </AppFrame>
   );

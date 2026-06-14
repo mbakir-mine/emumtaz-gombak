@@ -3110,6 +3110,55 @@ textarea {
   gap: 12px;
 }
 
+.timetable-requirement-bulk {
+  margin: 16px 0 18px;
+}
+
+.timetable-requirement-bulk .compact-head {
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.timetable-requirement-bulk .compact-head strong {
+  color: var(--green);
+  font-size: 24px;
+}
+
+.timetable-requirement-table td {
+  vertical-align: middle;
+}
+
+.timetable-requirement-table td strong,
+.timetable-requirement-table td small {
+  display: block;
+}
+
+.timetable-requirement-table td small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.timetable-requirement-table select,
+.compact-number-input {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.compact-number-input {
+  width: 96px;
+  padding: 5px 8px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.timetable-requirement-table select {
+  width: 140px;
+  padding: 5px 8px;
+}
+
 .timetable-requirement-form h3,
 .timetable-requirement-list h3 {
   margin-bottom: 4px;

@@ -5,6 +5,9 @@ import type {
   ClassRecord,
   School,
   SubjectRecord,
+  SubjectComponentRecord,
+  TeacherSubjectAssignment,
+  TeacherSubjectComponentAssignment,
   TimetableEntry,
   TimetableRequirement,
   TimetableSlot,
@@ -15,7 +18,7 @@ import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import {
   generateAutoTimetable,
   generateDefaultTimetableSlots,
-  saveTimetableRequirement,
+  saveTimetableRequirements,
   type TimetableActionState,
 } from './actions';
 
@@ -46,6 +49,9 @@ export default function TimetableManager({
   slots,
   entries,
   requirements,
+  subjectAssignments,
+  componentAssignments,
+  subjectComponents,
 }: {
   schools: School[];
   classes: ClassRecord[];
@@ -54,6 +60,9 @@ export default function TimetableManager({
   slots: TimetableSlot[];
   entries: TimetableEntry[];
   requirements: TimetableRequirement[];
+  subjectAssignments: TeacherSubjectAssignment[];
+  componentAssignments: TeacherSubjectComponentAssignment[];
+  subjectComponents: SubjectComponentRecord[];
 }) {
   const profile = useAccessProfile();
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -84,18 +93,65 @@ export default function TimetableManager({
         user.kod_sekolah === selectedSchool,
     )
     .sort((a, b) => a.nama.localeCompare(b.nama));
-  const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.kod_subjek ?? '');
   const classRequirements = requirements
     .filter((requirement) => requirement.class_id === selectedClass)
-    .sort((a, b) => (subjectMap.get(a.kod_subjek) ?? a.kod_subjek).localeCompare(subjectMap.get(b.kod_subjek) ?? b.kod_subjek));
+    .sort((a, b) =>
+      (a.nama_paparan ?? subjectMap.get(a.kod_subjek) ?? a.kod_subjek).localeCompare(
+        b.nama_paparan ?? subjectMap.get(b.kod_subjek) ?? b.kod_subjek,
+      ),
+    );
   const schoolYearClassIds = new Set(yearClasses.map((item) => item.id));
   const schoolYearRequirements = requirements.filter((requirement) => schoolYearClassIds.has(requirement.class_id));
   const schoolYearEntries = entries.filter((entry) => schoolYearClassIds.has(entry.class_id));
   const totalRequiredSlots = schoolYearRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0);
   const [slotState, slotAction] = useActionState(generateDefaultTimetableSlots, initialState);
-  const [requirementState, requirementAction] = useActionState(saveTimetableRequirement, initialState);
+  const [requirementState, requirementAction] = useActionState(saveTimetableRequirements, initialState);
   const [autoState, autoAction] = useActionState(generateAutoTimetable, initialState);
   const canChangeSchool = profile?.role === 'OWNER';
+  const componentsBySubject = useMemo(() => {
+    const map = new Map<string, SubjectComponentRecord[]>();
+    subjectComponents
+      .filter((component) => component.status === 'AKTIF')
+      .forEach((component) => {
+        const list = map.get(component.kod_subjek) ?? [];
+        list.push(component);
+        map.set(component.kod_subjek, list.sort((left, right) => left.susunan - right.susunan));
+      });
+    return map;
+  }, [subjectComponents]);
+  const selectedClassSubjectAssignments = subjectAssignments.filter((assignment) => assignment.class_id === selectedClass);
+  const selectedClassComponentAssignments = componentAssignments.filter((assignment) => assignment.class_id === selectedClass);
+  const componentParentSubjects = new Set(selectedClassComponentAssignments.map((assignment) => assignment.kod_subjek));
+  const requirementSources = [
+    ...selectedClassSubjectAssignments
+      .filter((assignment) => !componentParentSubjects.has(assignment.kod_subjek))
+      .map((assignment) => ({
+        key: `${assignment.kod_subjek}|`,
+        kod_subjek: assignment.kod_subjek,
+        kod_komponen: '',
+        nama_paparan: subjectMap.get(assignment.kod_subjek) ?? assignment.kod_subjek,
+        teacher_id: assignment.user_id,
+        teacher_name: userMap.get(assignment.user_id) ?? assignment.users?.nama ?? '-',
+        sub_note: 'Subjek',
+      })),
+    ...selectedClassComponentAssignments.map((assignment) => {
+      const component = (componentsBySubject.get(assignment.kod_subjek) ?? []).find(
+        (item) => item.kod_komponen === assignment.kod_komponen,
+      );
+      return {
+        key: `${assignment.kod_subjek}|${assignment.kod_komponen}`,
+        kod_subjek: assignment.kod_subjek,
+        kod_komponen: assignment.kod_komponen,
+        nama_paparan: component?.nama_komponen ?? assignment.kod_komponen,
+        teacher_id: assignment.user_id,
+        teacher_name: userMap.get(assignment.user_id) ?? assignment.users?.nama ?? '-',
+        sub_note: subjectMap.get(assignment.kod_subjek) ?? assignment.kod_subjek,
+      };
+    }),
+  ].sort((a, b) => a.nama_paparan.localeCompare(b.nama_paparan));
+  const requirementByKey = new Map(
+    classRequirements.map((requirement) => [`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`, requirement]),
+  );
 
   function updateSchool(kodSekolah: string) {
     const nextClasses = scopedClasses
@@ -176,94 +232,84 @@ export default function TimetableManager({
       {slotState.message && <p className={slotState.ok ? 'form-success' : 'form-message'}>{slotState.message}</p>}
       {autoState.message && <p className={autoState.ok ? 'form-success' : 'form-message'}>{autoState.message}</p>}
 
-      <div className="timetable-setup-grid">
-        <form action={requirementAction} className="timetable-requirement-form">
-          <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+      <form action={requirementAction} className="timetable-requirement-form timetable-requirement-bulk">
+        <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+        <input type="hidden" name="class_id" value={selectedClass} />
+        <div className="panel-head compact-head">
           <div>
-            <h3>Tetapan Subjek Kelas</h3>
-            <p className="table-note">Masukkan subjek yang perlu dijadualkan untuk kelas dipilih.</p>
+            <h3>{selectedClassRecord ? `Tetapan Subjek ${classLabel(selectedClassRecord)}` : 'Tetapan Subjek Kelas'}</h3>
+            <p className="table-note">
+              Senarai ini diambil daripada tetapan Guru Kelas & Guru Subjek. Isi bilangan masa dan pilihan gabung dua masa sahaja.
+            </p>
           </div>
-          <label>
-            Kelas
-            <select name="class_id" value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} required>
-              <option value="">Pilih kelas</option>
-              {yearClasses.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {classLabel(item)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Subjek
-            <select name="kod_subjek" value={selectedSubject} onChange={(event) => setSelectedSubject(event.target.value)} required>
-              <option value="">Pilih subjek</option>
-              {subjects.map((subject) => (
-                <option key={subject.kod_subjek} value={subject.kod_subjek}>
-                  {subject.nama_subjek}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Guru Subjek
-            <select name="teacher_id" required>
-              <option value="">Pilih guru</option>
-              {teachers.map((teacher) => (
-                <option key={teacher.id} value={teacher.id}>
-                  {teacher.nama}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Bilangan Masa Seminggu
-            <input name="bil_slot_seminggu" type="number" min="1" max="40" defaultValue={4} required />
-          </label>
-          <button className="button" type="submit" disabled={!selectedClass || !selectedSubject}>
-            SIMPAN TETAPAN
-          </button>
-          {requirementState.message && (
-            <p className={requirementState.ok ? 'form-success' : 'form-message'}>{requirementState.message}</p>
-          )}
-        </form>
+          <strong>{classRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0)} masa</strong>
+        </div>
 
-        <div className="timetable-requirement-list">
-          <div className="panel-head compact-head">
-            <div>
-              <h3>{selectedClassRecord ? `Subjek ${classLabel(selectedClassRecord)}` : 'Subjek Kelas'}</h3>
-              <p className="table-note">{classRequirements.length} tetapan subjek</p>
-            </div>
-            <strong>{classRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0)} masa</strong>
-          </div>
-          {classRequirements.length === 0 ? (
-            <p className="empty">Belum ada tetapan subjek untuk kelas ini.</p>
-          ) : (
+        {requirementSources.length === 0 ? (
+          <p className="empty">
+            Belum ada tetapan guru subjek untuk kelas ini. Tetapkan guru subjek dahulu di menu Guru Kelas & Guru Subjek.
+          </p>
+        ) : (
+          <>
             <div className="table-scroll">
-              <table className="compact-table">
+              <table className="compact-table timetable-requirement-table">
                 <thead>
                   <tr>
                     <th>Bil</th>
                     <th>Subjek</th>
                     <th>Guru</th>
-                    <th>Masa</th>
+                    <th>Bilangan Masa</th>
+                    <th>Gabung 2 Masa</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {classRequirements.map((requirement, index) => (
-                    <tr key={requirement.id}>
-                      <td>{index + 1}</td>
-                      <td>{subjectMap.get(requirement.kod_subjek) ?? requirement.kod_subjek}</td>
-                      <td>{requirement.teacher_id ? userMap.get(requirement.teacher_id) ?? '-' : '-'}</td>
-                      <td className="numeric-cell">{requirement.bil_slot_seminggu}</td>
-                    </tr>
-                  ))}
+                  {requirementSources.map((source, index) => {
+                    const saved = requirementByKey.get(source.key);
+                    return (
+                      <tr key={source.key}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <input type="hidden" name="requirement_kod_subjek" value={source.kod_subjek} />
+                          <input type="hidden" name="requirement_kod_komponen" value={source.kod_komponen} />
+                          <input type="hidden" name="requirement_nama_paparan" value={source.nama_paparan} />
+                          <strong>{source.nama_paparan}</strong>
+                          <small>{source.sub_note}</small>
+                        </td>
+                        <td>
+                          <input type="hidden" name="requirement_teacher_id" value={source.teacher_id} />
+                          {source.teacher_name}
+                        </td>
+                        <td>
+                          <input
+                            className="compact-number-input"
+                            name="requirement_bil_slot"
+                            type="number"
+                            min="0"
+                            max="40"
+                            defaultValue={saved?.bil_slot_seminggu ?? 4}
+                          />
+                        </td>
+                        <td>
+                          <select name="requirement_boleh_gabung" defaultValue={saved?.boleh_gabung ? 'YA' : 'TIDAK'}>
+                            <option value="TIDAK">Tidak</option>
+                            <option value="YA">Ya</option>
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      </div>
+            <button className="button" type="submit" disabled={!selectedClass}>
+              SIMPAN TETAPAN
+            </button>
+          </>
+        )}
+        {requirementState.message && (
+          <p className={requirementState.ok ? 'form-success' : 'form-message'}>{requirementState.message}</p>
+        )}
+      </form>
 
       <div className="panel-head module-subhead">
         <div>
@@ -299,7 +345,7 @@ export default function TimetableManager({
                       <small>{slot.label ?? '-'}</small>
                     </td>
                     <td>{timeRange(slot)}</td>
-                    <td>{entry?.kod_subjek ? subjectMap.get(entry.kod_subjek) ?? entry.kod_subjek : '-'}</td>
+                    <td>{entry?.kod_subjek ? entry.nama_paparan ?? subjectMap.get(entry.kod_subjek) ?? entry.kod_subjek : '-'}</td>
                     <td>{entry?.teacher_id ? userMap.get(entry.teacher_id) ?? '-' : '-'}</td>
                     <td>{entry?.bilik ?? '-'}</td>
                   </tr>

@@ -159,6 +159,8 @@ export type TimetableEntry = {
   class_id: string;
   kod_sekolah: string;
   kod_subjek: string | null;
+  kod_komponen?: string | null;
+  nama_paparan?: string | null;
   teacher_id: string | null;
   bilik: string | null;
   status: string;
@@ -169,8 +171,11 @@ export type TimetableRequirement = {
   kod_sekolah: string;
   class_id: string;
   kod_subjek: string;
+  kod_komponen?: string | null;
+  nama_paparan?: string | null;
   teacher_id: string | null;
   bil_slot_seminggu: number;
+  boleh_gabung?: boolean;
   status: string;
 };
 
@@ -1125,11 +1130,20 @@ export async function getTimetableEntries(): Promise<TimetableEntry[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_entries')
-    .select('id,slot_id,class_id,kod_sekolah,kod_subjek,teacher_id,bilik,status')
+    .select('id,slot_id,class_id,kod_sekolah,kod_subjek,kod_komponen,nama_paparan,teacher_id,bilik,status')
     .eq('status', 'AKTIF')
     .order('kod_sekolah');
 
-  if (error) return [];
+  if (error) {
+    const fallback = await supabase
+      .from('timetable_entries')
+      .select('id,slot_id,class_id,kod_sekolah,kod_subjek,teacher_id,bilik,status')
+      .eq('status', 'AKTIF')
+      .order('kod_sekolah');
+
+    if (fallback.error) return [];
+    return fallback.data ?? [];
+  }
   return data ?? [];
 }
 
@@ -1137,12 +1151,22 @@ export async function getTimetableRequirements(): Promise<TimetableRequirement[]
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_requirements')
-    .select('id,kod_sekolah,class_id,kod_subjek,teacher_id,bil_slot_seminggu,status')
+    .select('id,kod_sekolah,class_id,kod_subjek,kod_komponen,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
     .eq('status', 'AKTIF')
     .order('kod_sekolah')
     .order('class_id');
 
-  if (error) return [];
+  if (error) {
+    const fallback = await supabase
+      .from('timetable_requirements')
+      .select('id,kod_sekolah,class_id,kod_subjek,teacher_id,bil_slot_seminggu,status')
+      .eq('status', 'AKTIF')
+      .order('kod_sekolah')
+      .order('class_id');
+
+    if (fallback.error) return [];
+    return fallback.data ?? [];
+  }
   return data ?? [];
 }
 
