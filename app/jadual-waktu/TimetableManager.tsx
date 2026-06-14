@@ -18,6 +18,7 @@ import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import {
   generateAutoTimetable,
   generateDefaultTimetableSlots,
+  saveTimetableSlotSettings,
   saveTimetableRequirements,
   type TimetableActionState,
 } from './actions';
@@ -29,12 +30,17 @@ function classLabel(item: ClassRecord) {
   return `Tahun ${item.tahun} - ${item.nama_kelas}`;
 }
 
-function timeRange(slot: TimetableSlot) {
-  return `${slot.waktu_mula.slice(0, 5)} - ${slot.waktu_tamat.slice(0, 5)}`;
+function compactTimeRange(slot: Pick<TimetableSlot, 'waktu_mula' | 'waktu_tamat'>) {
+  const format = (value: string) => value.slice(0, 5).replace(/^0/, '').replace(':', '.');
+  return `${format(slot.waktu_mula)} - ${format(slot.waktu_tamat)}`;
 }
 
 function isTeachingSlot(slot: TimetableSlot) {
   return !(slot.label ?? '').toUpperCase().includes('REHAT');
+}
+
+function breakLabel(dayIndex: number) {
+  return 'REHAT'[dayIndex] ?? 'R';
 }
 
 function yearOptions(classes: ClassRecord[]) {
@@ -80,6 +86,36 @@ export default function TimetableManager({
   const schoolSlots = slots
     .filter((slot) => slot.kod_sekolah === selectedSchool)
     .sort((a, b) => days.indexOf(a.hari) - days.indexOf(b.hari) || a.susunan - b.susunan || a.waktu_mula.localeCompare(b.waktu_mula));
+  const slotSettings = useMemo(() => {
+    const byOrder = new Map<number, TimetableSlot>();
+    schoolSlots.forEach((slot) => {
+      if (!byOrder.has(slot.susunan)) {
+        byOrder.set(slot.susunan, slot);
+      }
+    });
+    return [...byOrder.values()].sort((a, b) => a.susunan - b.susunan || a.waktu_mula.localeCompare(b.waktu_mula));
+  }, [schoolSlots]);
+  const slotColumns = useMemo(() => {
+    const byTime = new Map<string, TimetableSlot>();
+    schoolSlots.forEach((slot) => {
+      const key = `${slot.susunan}|${slot.waktu_mula}|${slot.waktu_tamat}`;
+      if (!byTime.has(key)) {
+        byTime.set(key, slot);
+      }
+    });
+
+    return [...byTime.entries()]
+      .map(([key, slot]) => ({ key, slot }))
+      .sort((a, b) => a.slot.susunan - b.slot.susunan || a.slot.waktu_mula.localeCompare(b.slot.waktu_mula));
+  }, [schoolSlots]);
+  const slotByDayAndColumn = useMemo(() => {
+    const map = new Map<string, TimetableSlot>();
+    schoolSlots.forEach((slot) => {
+      const columnKey = `${slot.susunan}|${slot.waktu_mula}|${slot.waktu_tamat}`;
+      map.set(`${slot.hari}|${columnKey}`, slot);
+    });
+    return map;
+  }, [schoolSlots]);
   const teachingSlots = schoolSlots.filter(isTeachingSlot);
   const classEntries = entries.filter((entry) => entry.class_id === selectedClass);
   const entryBySlot = new Map(classEntries.map((entry) => [entry.slot_id, entry]));
@@ -105,6 +141,7 @@ export default function TimetableManager({
   const schoolYearEntries = entries.filter((entry) => schoolYearClassIds.has(entry.class_id));
   const totalRequiredSlots = schoolYearRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0);
   const [slotState, slotAction] = useActionState(generateDefaultTimetableSlots, initialState);
+  const [slotSettingState, slotSettingAction] = useActionState(saveTimetableSlotSettings, initialState);
   const [requirementState, requirementAction] = useActionState(saveTimetableRequirements, initialState);
   const [autoState, autoAction] = useActionState(generateAutoTimetable, initialState);
   const canChangeSchool = profile?.role === 'OWNER';
@@ -232,6 +269,54 @@ export default function TimetableManager({
       {slotState.message && <p className={slotState.ok ? 'form-success' : 'form-message'}>{slotState.message}</p>}
       {autoState.message && <p className={autoState.ok ? 'form-success' : 'form-message'}>{autoState.message}</p>}
 
+      {slotSettings.length > 0 && (
+        <form action={slotSettingAction} className="timetable-slot-settings">
+          <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+          <div className="panel-head compact-head">
+            <div>
+              <h3>Tetapan Waktu Slot Masa</h3>
+              <p className="table-note">Susun label, waktu mula dan waktu tamat bagi jadual sekolah.</p>
+            </div>
+            <strong>{slotSettings.length} slot</strong>
+          </div>
+          <div className="table-scroll">
+            <table className="compact-table timetable-slot-table">
+              <thead>
+                <tr>
+                  <th>Bil</th>
+                  <th>Label</th>
+                  <th>Waktu Mula</th>
+                  <th>Waktu Tamat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {slotSettings.map((slot, index) => (
+                  <tr key={slot.susunan}>
+                    <td>{index + 1}</td>
+                    <td>
+                      <input type="hidden" name="slot_susunan" value={slot.susunan} />
+                      <input name="slot_label" defaultValue={slot.label ?? `Masa ${slot.susunan}`} />
+                    </td>
+                    <td>
+                      <input name="slot_waktu_mula" type="time" defaultValue={slot.waktu_mula.slice(0, 5)} />
+                    </td>
+                    <td>
+                      <input name="slot_waktu_tamat" type="time" defaultValue={slot.waktu_tamat.slice(0, 5)} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="button" type="submit">
+            SIMPAN WAKTU SLOT
+          </button>
+          {slotSettingState.message && (
+            <p className={slotSettingState.ok ? 'form-success' : 'form-message'}>{slotSettingState.message}</p>
+          )}
+        </form>
+      )}
+
       <form action={requirementAction} className="timetable-requirement-form timetable-requirement-bulk">
         <input type="hidden" name="kod_sekolah" value={selectedSchool} />
         <input type="hidden" name="class_id" value={selectedClass} />
@@ -323,31 +408,40 @@ export default function TimetableManager({
         <p className="empty">Belum ada slot masa. Klik SEDIAKAN SLOT MASA dahulu.</p>
       ) : (
         <div className="table-scroll">
-          <table className="compact-table timetable-table">
+          <table className="timetable-matrix">
             <thead>
               <tr>
-                <th>Bil</th>
-                <th>Hari</th>
-                <th>Masa</th>
-                <th>Subjek</th>
-                <th>Guru</th>
-                <th>Bilik</th>
+                <th>Hari/Masa</th>
+                {slotColumns.map(({ key, slot }) => (
+                  <th key={key}>{compactTimeRange(slot)}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {schoolSlots.map((slot, index) => {
-                const entry = entryBySlot.get(slot.id);
+              {days.map((day, dayIndex) => {
                 return (
-                  <tr key={slot.id} className={!isTeachingSlot(slot) ? 'timetable-break-row' : undefined}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <strong>{slot.hari}</strong>
-                      <small>{slot.label ?? '-'}</small>
-                    </td>
-                    <td>{timeRange(slot)}</td>
-                    <td>{entry?.kod_subjek ? entry.nama_paparan ?? subjectMap.get(entry.kod_subjek) ?? entry.kod_subjek : '-'}</td>
-                    <td>{entry?.teacher_id ? userMap.get(entry.teacher_id) ?? '-' : '-'}</td>
-                    <td>{entry?.bilik ?? '-'}</td>
+                  <tr key={day}>
+                    <th>{day.charAt(0) + day.slice(1).toLowerCase()}</th>
+                    {slotColumns.map(({ key }) => {
+                      const slot = slotByDayAndColumn.get(`${day}|${key}`);
+                      const entry = slot ? entryBySlot.get(slot.id) : null;
+                      const subjectLabel = entry?.kod_subjek
+                        ? entry.nama_paparan ?? subjectMap.get(entry.kod_subjek) ?? entry.kod_subjek
+                        : '';
+                      const isBreak = slot ? !isTeachingSlot(slot) : false;
+
+                      return (
+                        <td key={`${day}|${key}`} className={isBreak ? 'timetable-matrix-break' : undefined}>
+                          {isBreak ? (
+                            <strong>{breakLabel(dayIndex)}</strong>
+                          ) : subjectLabel ? (
+                            <strong>{subjectLabel}</strong>
+                          ) : (
+                            <span className="timetable-empty-cell">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}

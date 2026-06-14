@@ -31,6 +31,17 @@ function requirementMissingMessage() {
 }
 
 async function ensureDefaultSlots(kodSekolah: string) {
+  if (!supabase) return { error: null };
+
+  const { count, error: lookupError } = await supabase
+    .from('timetable_slots')
+    .select('id', { count: 'exact', head: true })
+    .eq('kod_sekolah', kodSekolah)
+    .eq('status', 'AKTIF');
+
+  if (lookupError) return { error: lookupError };
+  if ((count ?? 0) > 0) return { error: null };
+
   const rows = defaultDays.flatMap((hari) =>
     defaultSlots.map((slot) => ({
       kod_sekolah: kodSekolah,
@@ -44,7 +55,7 @@ async function ensureDefaultSlots(kodSekolah: string) {
   );
 
   return supabase
-    ?.from('timetable_slots')
+    .from('timetable_slots')
     .upsert(rows, { onConflict: 'kod_sekolah,hari,waktu_mula,waktu_tamat' });
 }
 
@@ -69,6 +80,83 @@ export async function generateDefaultTimetableSlots(
 
   revalidatePath('/jadual-waktu');
   return { ok: true, message: 'Slot asas jadual waktu berjaya dijana.' };
+}
+
+function isValidTime(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+export async function saveTimetableSlotSettings(
+  _previousState: TimetableActionState,
+  formData: FormData,
+): Promise<TimetableActionState> {
+  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+
+  const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
+  const orders = stringList(formData, 'slot_susunan');
+  const labels = stringList(formData, 'slot_label');
+  const starts = stringList(formData, 'slot_waktu_mula');
+  const ends = stringList(formData, 'slot_waktu_tamat');
+
+  if (!kodSekolah) return { ok: false, message: 'Pilih sekolah dahulu.' };
+
+  const rows = orders.map((order, index) => ({
+    susunan: Number(order),
+    label: labels[index] || `Masa ${index + 1}`,
+    waktu_mula: starts[index],
+    waktu_tamat: ends[index],
+  }));
+
+  if (rows.length === 0) return { ok: false, message: 'Tiada slot masa untuk dikemaskini.' };
+
+  const invalid = rows.find(
+    (row) =>
+      !Number.isInteger(row.susunan) ||
+      row.susunan <= 0 ||
+      !isValidTime(row.waktu_mula) ||
+      !isValidTime(row.waktu_tamat) ||
+      row.waktu_mula >= row.waktu_tamat,
+  );
+
+  if (invalid) {
+    return { ok: false, message: 'Semak waktu slot. Waktu mula mesti lebih awal daripada waktu tamat.' };
+  }
+
+  const duplicateTime = new Set<string>();
+  const hasDuplicate = rows.some((row) => {
+    const key = `${row.waktu_mula}|${row.waktu_tamat}`;
+    if (duplicateTime.has(key)) return true;
+    duplicateTime.add(key);
+    return false;
+  });
+
+  if (hasDuplicate) {
+    return { ok: false, message: 'Ada slot masa yang bertindih atau berulang. Betulkan masa dahulu.' };
+  }
+
+  for (const row of rows) {
+    const { error } = await supabase
+      .from('timetable_slots')
+      .update({
+        label: row.label,
+        waktu_mula: row.waktu_mula,
+        waktu_tamat: row.waktu_tamat,
+      })
+      .eq('kod_sekolah', kodSekolah)
+      .eq('susunan', row.susunan)
+      .eq('status', 'AKTIF');
+
+    if (error) {
+      if (error.message.includes('timetable_slots')) {
+        return { ok: false, message: tableMissingMessage('Jadual waktu') };
+      }
+
+      return { ok: false, message: `Gagal simpan tetapan slot masa: ${error.message}` };
+    }
+  }
+
+  revalidatePath('/jadual-waktu');
+  return { ok: true, message: `${rows.length} tetapan slot masa berjaya dikemaskini.` };
 }
 
 export async function saveTimetableRequirement(
