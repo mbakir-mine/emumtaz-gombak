@@ -5,7 +5,7 @@ import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeUsers } from '../ui/scopedData';
 import { bulkAssignTeacherSubjects } from './actions';
-import { allowedSubjectForTahun, classLabel, schoolLabel, teacherOptionsForSchool } from './helpers';
+import { allowedSubjectForTahun, classLabel, displaySubjectCode, schoolLabel, teacherOptionsForSchool } from './helpers';
 import type {
   ClassRecord,
   School,
@@ -217,7 +217,7 @@ export default function TeacherSubjectDetailForm({
                   return (
                     <tr key={subject.kod_subjek}>
                       <td>{index + 1}</td>
-                      <td>{subject.kod_subjek}</td>
+                      <td>{displaySubjectCode(subject, selectedClass.tahun)}</td>
                       <td>{subject.nama_subjek}</td>
                       <td>
                         <div className="subject-teacher-stack">
