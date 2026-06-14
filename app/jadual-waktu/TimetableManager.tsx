@@ -84,6 +84,8 @@ export default function TimetableManager({
   const [selectedYear, setSelectedYear] = useState(years[0] ?? new Date().getFullYear());
   const yearClasses = schoolClasses.filter((item) => item.tahun_akademik === selectedYear);
   const [selectedClass, setSelectedClass] = useState(yearClasses[0]?.id ?? '');
+  const [scheduleView, setScheduleView] = useState<'kelas' | 'guru' | 'induk'>('kelas');
+  const [selectedTeacher, setSelectedTeacher] = useState('');
   const selectedClassRecord = yearClasses.find((item) => item.id === selectedClass) ?? yearClasses[0] ?? null;
   const schoolSlots = slots
     .filter((slot) => slot.kod_sekolah === selectedSchool)
@@ -123,6 +125,7 @@ export default function TimetableManager({
   const entryBySlot = new Map(classEntries.map((entry) => [entry.slot_id, entry]));
   const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject.nama_subjek]));
   const userMap = new Map(scopedUsers.map((user) => [user.id, user.nama]));
+  const classMap = new Map(yearClasses.map((item) => [item.id, item]));
   const teachers = scopedUsers
     .filter(
       (user) =>
@@ -141,6 +144,22 @@ export default function TimetableManager({
   const schoolYearClassIds = new Set(yearClasses.map((item) => item.id));
   const schoolYearRequirements = requirements.filter((requirement) => schoolYearClassIds.has(requirement.class_id));
   const schoolYearEntries = entries.filter((entry) => schoolYearClassIds.has(entry.class_id));
+  const selectedTeacherId = teachers.some((teacher) => teacher.id === selectedTeacher)
+    ? selectedTeacher
+    : teachers[0]?.id || '';
+  const teacherEntries = schoolYearEntries.filter((entry) => entry.teacher_id === selectedTeacherId);
+  const teacherEntryGroups = new Map<string, TimetableEntry[]>();
+  teacherEntries.forEach((entry) => {
+    const group = teacherEntryGroups.get(entry.slot_id) ?? [];
+    group.push(entry);
+    teacherEntryGroups.set(entry.slot_id, group);
+  });
+  const masterEntryGroups = new Map<string, TimetableEntry[]>();
+  schoolYearEntries.forEach((entry) => {
+    const group = masterEntryGroups.get(entry.slot_id) ?? [];
+    group.push(entry);
+    masterEntryGroups.set(entry.slot_id, group);
+  });
   const classesWithRequirements = new Set(schoolYearRequirements.map((requirement) => requirement.class_id));
   const completeClassCount = yearClasses.filter((item) => classesWithRequirements.has(item.id)).length;
   const incompleteClassCount = Math.max(0, yearClasses.length - completeClassCount);
@@ -196,6 +215,22 @@ export default function TimetableManager({
   const requirementByKey = new Map(
     classRequirements.map((requirement) => [`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`, requirement]),
   );
+  const scheduleTabs = [
+    { id: 'kelas', label: 'Jadual Kelas' },
+    { id: 'guru', label: 'Jadual Individu Guru' },
+    { id: 'induk', label: 'Jadual Induk Sekolah' },
+  ] as const;
+  const selectedTeacherName = selectedTeacherId ? userMap.get(selectedTeacherId) ?? 'Guru' : 'Guru';
+  const scheduleTitle =
+    scheduleView === 'kelas'
+      ? selectedClassRecord
+        ? `Jadual Kelas ${classLabel(selectedClassRecord)} ${selectedClassRecord.tahun_akademik}`
+        : 'Jadual Kelas'
+      : scheduleView === 'guru'
+        ? `Jadual Individu Guru ${selectedTeacherName} ${selectedYear}`
+        : `Jadual Induk Sekolah ${selectedYear}`;
+  const scheduleCount =
+    scheduleView === 'kelas' ? classEntries.length : scheduleView === 'guru' ? teacherEntries.length : schoolYearEntries.length;
 
   function updateSchool(kodSekolah: string) {
     const nextClasses = scopedClasses
@@ -205,6 +240,7 @@ export default function TimetableManager({
     setSelectedSchool(kodSekolah);
     setSelectedYear(nextYear);
     setSelectedClass(nextClasses.find((item) => item.tahun_akademik === nextYear)?.id ?? '');
+    setSelectedTeacher('');
   }
 
   function updateYear(tahun: number) {
@@ -462,11 +498,43 @@ export default function TimetableManager({
 
       <div className="panel-head module-subhead">
         <div>
-          <h2>{selectedClassRecord ? `Jadual ${classLabel(selectedClassRecord)} ${selectedClassRecord.tahun_akademik}` : 'Senarai Jadual'}</h2>
+          <h2>{scheduleTitle}</h2>
           <p className="table-note">Jadual di bawah dijana oleh sistem berdasarkan tetapan subjek dan guru.</p>
         </div>
-        <span>{classEntries.length} slot diisi</span>
+        <span>{scheduleCount} slot diisi</span>
       </div>
+
+      <div className="timetable-view-tabs" role="tablist" aria-label="Paparan jadual waktu">
+        {scheduleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={scheduleView === tab.id ? 'active' : ''}
+            onClick={() => setScheduleView(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {scheduleView === 'guru' && (
+        <div className="timetable-view-toolbar">
+          <label>
+            Guru
+            <select value={selectedTeacherId} onChange={(event) => setSelectedTeacher(event.target.value)}>
+              {teachers.length === 0 ? (
+                <option value="">Tiada guru aktif</option>
+              ) : (
+                teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.nama}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        </div>
+      )}
 
       {schoolSlots.length === 0 ? (
         <p className="empty">Belum ada slot masa. Klik SEDIAKAN SLOT MASA dahulu.</p>
@@ -488,18 +556,57 @@ export default function TimetableManager({
                     <th>{day.charAt(0) + day.slice(1).toLowerCase()}</th>
                     {slotColumns.map(({ key }) => {
                       const slot = slotByDayAndColumn.get(`${day}|${key}`);
-                      const entry = slot ? entryBySlot.get(slot.id) : null;
-                      const subjectLabel = entry?.kod_subjek
-                        ? entry.nama_paparan ?? subjectMap.get(entry.kod_subjek) ?? entry.kod_subjek
-                        : '';
                       const isBreak = slot ? !isTeachingSlot(slot) : false;
+                      const slotEntries =
+                        !slot || isBreak
+                          ? []
+                          : scheduleView === 'kelas'
+                            ? entryBySlot.get(slot.id)
+                              ? [entryBySlot.get(slot.id) as TimetableEntry]
+                              : []
+                            : scheduleView === 'guru'
+                              ? teacherEntryGroups.get(slot.id) ?? []
+                              : masterEntryGroups.get(slot.id) ?? [];
 
                       return (
                         <td key={`${day}|${key}`} className={isBreak ? 'timetable-matrix-break' : undefined}>
                           {isBreak ? (
                             <strong>{breakLabel(dayIndex)}</strong>
-                          ) : subjectLabel ? (
-                            <strong>{subjectLabel}</strong>
+                          ) : slotEntries.length > 0 ? (
+                            <div className="timetable-cell-list">
+                              {slotEntries.map((entry) => {
+                                const entrySubjectCode = entry.kod_subjek ?? '';
+                                const subjectLabel =
+                                  entry.nama_paparan ||
+                                  (entrySubjectCode ? subjectMap.get(entrySubjectCode) : '') ||
+                                  entrySubjectCode ||
+                                  '-';
+                                const entryClass = classMap.get(entry.class_id);
+                                const entryClassLabel = entryClass ? classLabel(entryClass) : '-';
+                                const entryTeacher = entry.teacher_id ? userMap.get(entry.teacher_id) ?? '-' : '-';
+
+                                return (
+                                  <span key={entry.id} className="timetable-cell-item">
+                                    {scheduleView === 'induk' ? (
+                                      <>
+                                        <strong>{entryClassLabel}</strong>
+                                        <small>
+                                          {subjectLabel}
+                                          {entryTeacher !== '-' ? ` - ${entryTeacher}` : ''}
+                                        </small>
+                                      </>
+                                    ) : scheduleView === 'guru' ? (
+                                      <>
+                                        <strong>{subjectLabel}</strong>
+                                        <small>{entryClassLabel}</small>
+                                      </>
+                                    ) : (
+                                      <strong>{subjectLabel}</strong>
+                                    )}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           ) : (
                             <span className="timetable-empty-cell">-</span>
                           )}

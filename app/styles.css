@@ -3359,6 +3359,45 @@ textarea {
   margin-top: 18px;
 }
 
+.timetable-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.timetable-view-tabs button {
+  min-height: 38px;
+  padding: 9px 16px;
+  border: 1px solid #d5e2d7;
+  border-radius: 8px;
+  background: #f4f8f3;
+  color: #34506b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.timetable-view-tabs button.active {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 109, 62, 0.14);
+}
+
+.timetable-view-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 420px);
+  margin: 0 0 12px;
+}
+
+.timetable-view-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .compact-table th,
 .compact-table td {
   padding: 8px 12px;
@@ -3423,6 +3462,26 @@ textarea {
   display: block;
   color: #001b36;
   font-size: 13px;
+  line-height: 1.25;
+}
+
+.timetable-cell-list {
+  display: grid;
+  gap: 5px;
+}
+
+.timetable-cell-item {
+  display: block;
+  padding: 5px 6px;
+  border-radius: 6px;
+  background: rgba(232, 244, 235, 0.78);
+}
+
+.timetable-cell-item small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
   line-height: 1.25;
 }
 
