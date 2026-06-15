@@ -74,6 +74,22 @@ export const defaultSubjectComponents: SubjectComponentDefinition[] = [
     susunan: 3,
     status: 'AKTIF',
   },
+  {
+    kod_subjek: 'IMLAK_KHAT',
+    kod_komponen: 'IMLAK',
+    nama_komponen: 'Imlak',
+    markah_penuh: 50,
+    susunan: 1,
+    status: 'AKTIF',
+  },
+  {
+    kod_subjek: 'IMLAK_KHAT',
+    kod_komponen: 'KHAT',
+    nama_komponen: 'Khat',
+    markah_penuh: 50,
+    susunan: 2,
+    status: 'AKTIF',
+  },
 ];
 
 export function defaultComponentsForSubject(kodSubjek: string) {

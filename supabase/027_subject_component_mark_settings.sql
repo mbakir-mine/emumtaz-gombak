@@ -31,7 +31,7 @@ select
   component.kod_komponen,
   component.markah_penuh
 from public.exams exam
-cross join (values (4), (5), (6)) as grade(tahun)
+cross join (values (3), (4), (5), (6)) as grade(tahun)
 join public.subject_components component on component.status = 'AKTIF'
 join public.subject_grade_rules rule
   on rule.tahun = grade.tahun

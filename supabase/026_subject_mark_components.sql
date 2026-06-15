@@ -53,7 +53,9 @@ values
   ('AS01', 'SIRAH', 'Sirah', 50, 2),
   ('JIK03', 'JAWI', 'Jawi', 60, 1),
   ('JIK03', 'IMLAK', 'Imlak', 10, 2),
-  ('JIK03', 'KHAT', 'Khat', 30, 3)
+  ('JIK03', 'KHAT', 'Khat', 30, 3),
+  ('IMLAK_KHAT', 'IMLAK', 'Imlak', 50, 1),
+  ('IMLAK_KHAT', 'KHAT', 'Khat', 50, 2)
 on conflict (kod_subjek, kod_komponen) do update set
   nama_komponen = excluded.nama_komponen,
   markah_penuh = excluded.markah_penuh,

@@ -26,7 +26,7 @@ export default function ComponentMarkSettingsManager({
   const examCodes = [...new Set(exams.map((exam) => exam.kod_peperiksaan))].sort();
   const [selectedYear, setSelectedYear] = useState(years[0] ?? new Date().getFullYear());
   const [selectedExamCode, setSelectedExamCode] = useState(examCodes[0] ?? 'UPSA');
-  const [selectedTahun, setSelectedTahun] = useState(4);
+  const [selectedTahun, setSelectedTahun] = useState(3);
   const [markValues, setMarkValues] = useState<Record<string, string>>({});
   const [state, action, pending] = useActionState(saveComponentMarkSettings, initialState);
 
@@ -73,7 +73,7 @@ export default function ComponentMarkSettingsManager({
         <div>
           <h2>Tetapan Komponen Markah</h2>
           <p className="table-note">
-            Pecahan ini digunakan semasa guru mengisi markah subjek gabungan seperti Jawi, Imlak & Khat.
+            Pecahan ini digunakan semasa guru mengisi markah subjek gabungan seperti Imlak dan Khat.
           </p>
         </div>
         <span>{groupedSubjects.length} subjek gabungan</span>
