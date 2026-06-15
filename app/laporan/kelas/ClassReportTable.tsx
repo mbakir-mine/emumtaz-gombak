@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import PrintButton from '../../ui/PrintButton';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
@@ -31,6 +31,18 @@ const subjectCodeLabels: Record<string, string> = {
 
 type SortDirection = 'asc' | 'desc';
 type SortKey = 'gender' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
+type SavedReportFilters = {
+  tahunAkademik?: number;
+  kodPeperiksaan?: string;
+  zon?: string;
+  kodSekolah?: string;
+  tahunMurid?: string;
+  classId?: string;
+  sortKey?: SortKey;
+  sortDirection?: SortDirection;
+};
+
+const reportFilterStorageKey = 'emumtaz:laporan-kelas:filters';
 
 function zoneLabel(zon: string) {
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
@@ -105,6 +117,11 @@ function isNumericSort(sortKey: SortKey) {
   return sortKey === 'total' || sortKey === 'average' || sortKey === 'grade' || sortKey.startsWith('subject:');
 }
 
+function isValidSortKey(value: string | null | undefined): value is SortKey {
+  if (!value) return false;
+  return ['gender', 'name', 'total', 'average', 'grade'].includes(value) || value.startsWith('subject:');
+}
+
 export default function ClassReportTable({
   schools,
   classes,
@@ -139,6 +156,77 @@ export default function ClassReportTable({
   const [selectedClass, setSelectedClass] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filtersReady, setFiltersReady] = useState(false);
+  const didRestoreFilters = useRef(false);
+
+  useEffect(() => {
+    if (didRestoreFilters.current) return;
+    didRestoreFilters.current = true;
+
+    let savedFilters: SavedReportFilters = {};
+    try {
+      const savedValue = window.localStorage.getItem(reportFilterStorageKey);
+      if (savedValue) savedFilters = JSON.parse(savedValue) as SavedReportFilters;
+    } catch {
+      savedFilters = {};
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const yearValue = params.get('tahun') ?? (savedFilters.tahunAkademik ? String(savedFilters.tahunAkademik) : '');
+    const nextYear = Number(yearValue);
+    if (Number.isFinite(nextYear) && yearOptions.includes(nextYear)) setSelectedYear(nextYear);
+
+    const nextExam = params.get('peperiksaan') ?? savedFilters.kodPeperiksaan ?? '';
+    const nextZone = params.get('zon') ?? savedFilters.zon ?? '';
+    const nextSchool = params.get('sekolah') ?? savedFilters.kodSekolah ?? '';
+    const nextTahun = params.get('tahun_murid') ?? savedFilters.tahunMurid ?? '';
+    const nextClass = params.get('kelas') ?? savedFilters.classId ?? '';
+    const nextSortKey = params.get('sort') ?? savedFilters.sortKey;
+    const nextSortDirection = params.get('arah') ?? savedFilters.sortDirection;
+
+    if (nextExam) setSelectedExam(nextExam);
+    if (nextZone) setSelectedZone(nextZone);
+    if (nextSchool) setSelectedSchool(nextSchool);
+    if (nextTahun) setSelectedTahun(nextTahun);
+    if (nextClass) setSelectedClass(nextClass);
+    if (isValidSortKey(nextSortKey)) setSortKey(nextSortKey);
+    if (nextSortDirection === 'asc' || nextSortDirection === 'desc') setSortDirection(nextSortDirection);
+
+    setFiltersReady(true);
+  }, [yearOptions]);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+
+    const savedFilters: SavedReportFilters = {
+      tahunAkademik: selectedYear,
+      kodPeperiksaan: selectedExam,
+      zon: selectedZone,
+      kodSekolah: selectedSchool,
+      tahunMurid: selectedTahun,
+      classId: selectedClass,
+      sortKey,
+      sortDirection,
+    };
+
+    try {
+      window.localStorage.setItem(reportFilterStorageKey, JSON.stringify(savedFilters));
+    } catch {
+      // Gagal simpan di browser bukan isu kritikal; URL masih jadi sandaran.
+    }
+
+    const params = new URLSearchParams();
+    params.set('tahun', String(selectedYear));
+    if (selectedExam) params.set('peperiksaan', selectedExam);
+    if (selectedZone) params.set('zon', selectedZone);
+    if (selectedSchool) params.set('sekolah', selectedSchool);
+    if (selectedTahun) params.set('tahun_murid', selectedTahun);
+    if (selectedClass) params.set('kelas', selectedClass);
+    params.set('sort', sortKey);
+    params.set('arah', sortDirection);
+
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, [filtersReady, selectedClass, selectedExam, selectedSchool, selectedTahun, selectedYear, selectedZone, sortDirection, sortKey]);
 
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
