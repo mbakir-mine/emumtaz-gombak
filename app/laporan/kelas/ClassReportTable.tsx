@@ -45,6 +45,10 @@ function genderShort(jantina: string | null | undefined) {
   return jantina;
 }
 
+function cleanMykid(mykid: string | null | undefined) {
+  return String(mykid ?? '').replace(/\D/g, '');
+}
+
 function gradeShort(markah: number | null | undefined) {
   const grade = gradeForMark(markah);
   if (!grade) return '';
@@ -330,7 +334,7 @@ export default function ClassReportTable({
                         <td className="student-name-col">
                           <strong>{student.nama_murid}</strong>
                           <small>
-                            {student.mykid} / {student.jantina ?? '-'}
+                            {cleanMykid(student.mykid)} / {student.jantina ?? '-'}
                           </small>
                         </td>
                         {reportSubjects.map((subject) => {
