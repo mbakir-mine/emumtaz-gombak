@@ -48,7 +48,7 @@ const groupedMenu = [
     key: 'settings',
     label: 'Tetapan',
     href: '/setup',
-    items: ['setup', 'users', 'schoolModules', 'changePassword'],
+    items: ['setup', 'componentMarks', 'users', 'schoolModules', 'changePassword'],
   },
 ];
 
@@ -64,6 +64,7 @@ const childLabels: Record<string, string> = {
   timetable: 'Jadual Waktu',
   rph: 'RPH AI',
   setup: 'Akses Markah',
+  componentMarks: 'Komponen Markah',
   marks: 'Kelas',
   reports: 'Pusat Laporan',
   reportIndividual: 'Individu',

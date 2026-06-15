@@ -241,6 +241,17 @@ export type SubjectComponentRecord = SubjectComponentDefinition & {
   id?: string;
 };
 
+export type SubjectComponentMarkSetting = {
+  id: string;
+  tahun_akademik: number;
+  kod_peperiksaan: string;
+  tahun: number;
+  kod_subjek: string;
+  kod_komponen: string;
+  markah_penuh: number;
+  status: string;
+};
+
 export type MarkComponentRecord = {
   id: string;
   exam_id: string;
@@ -1035,6 +1046,24 @@ export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> 
 
   if (error) return mergeSubjectComponents([]);
   return mergeSubjectComponents((data ?? []) as SubjectComponentRecord[]);
+}
+
+export async function getSubjectComponentMarkSettings(): Promise<SubjectComponentMarkSetting[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('subject_component_mark_settings')
+    .select('id,tahun_akademik,kod_peperiksaan,tahun,kod_subjek,kod_komponen,markah_penuh,status')
+    .eq('status', 'AKTIF')
+    .order('tahun_akademik', { ascending: false })
+    .order('kod_peperiksaan')
+    .order('tahun')
+    .order('kod_subjek');
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    ...item,
+    markah_penuh: Number(item.markah_penuh),
+  }));
 }
 
 export async function getMarkComponentsForSelection(

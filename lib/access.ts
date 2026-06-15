@@ -62,6 +62,7 @@ export const navItems: NavItem[] = [
     moduleKey: 'RPH_AI',
   },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
+  { key: 'componentMarks', label: 'Komponen Markah', href: '/komponen-markah', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
   { key: 'reportIndividual', label: 'Laporan Individu', href: '/laporan/individu', roles: allRoles },
@@ -138,7 +139,7 @@ export function visibleNavItems(
   allowedNav?: string[] | null,
   enabledModules?: OptionalSchoolModuleKey[] | null,
 ) {
-  const allowedSet = allowedNav && allowedNav.length > 0 ? new Set(allowedNav) : null;
+  const allowedSet = role !== 'OWNER' && allowedNav && allowedNav.length > 0 ? new Set(allowedNav) : null;
   const moduleSet = enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return navItems.filter((item) => {
     if (item.hidden) return false;

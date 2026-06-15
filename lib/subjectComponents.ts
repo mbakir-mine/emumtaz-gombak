@@ -7,6 +7,16 @@ export type SubjectComponentDefinition = {
   status: string;
 };
 
+export type SubjectComponentMarkSettingLike = {
+  tahun_akademik: number;
+  kod_peperiksaan: string;
+  tahun: number;
+  kod_subjek: string;
+  kod_komponen: string;
+  markah_penuh: number;
+  status?: string;
+};
+
 export const defaultSubjectComponents: SubjectComponentDefinition[] = [
   {
     kod_subjek: 'TF04',
@@ -92,5 +102,39 @@ export function mergeSubjectComponents(rows: SubjectComponentDefinition[]) {
       return left.kod_subjek.localeCompare(right.kod_subjek);
     }
     return left.susunan - right.susunan;
+  });
+}
+
+export function applySubjectComponentMarkSettings(
+  components: SubjectComponentDefinition[],
+  settings: SubjectComponentMarkSettingLike[],
+  context: {
+    tahun_akademik?: number;
+    kod_peperiksaan?: string;
+    tahun?: number;
+  },
+) {
+  if (!context.tahun_akademik || !context.kod_peperiksaan || !context.tahun) return components;
+
+  const settingByKey = new Map(
+    settings
+      .filter(
+        (setting) =>
+          setting.status !== 'TIDAK_AKTIF' &&
+          setting.tahun_akademik === context.tahun_akademik &&
+          setting.kod_peperiksaan === context.kod_peperiksaan &&
+          setting.tahun === context.tahun,
+      )
+      .map((setting) => [`${setting.kod_subjek}|${setting.kod_komponen}`, setting]),
+  );
+
+  return components.map((component) => {
+    const setting = settingByKey.get(`${component.kod_subjek}|${component.kod_komponen}`);
+    if (!setting) return component;
+
+    return {
+      ...component,
+      markah_penuh: Number(setting.markah_penuh),
+    };
   });
 }

@@ -7,11 +7,13 @@ import {
   getMarkComponentsForSelection,
   getMarksForSelection,
   getSchools,
+  getSubjectComponentMarkSettings,
   getStudentsByClass,
   getSubjectComponents,
   getSubjects,
 } from '@/lib/data';
 import { examAccessStatus } from '@/lib/examAccess';
+import { applySubjectComponentMarkSettings } from '@/lib/subjectComponents';
 
 export default async function MarkahPage({
   searchParams,
@@ -19,12 +21,13 @@ export default async function MarkahPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [schools, classes, exams, subjects, subjectComponents] = await Promise.all([
+  const [schools, classes, exams, subjects, subjectComponents, componentMarkSettings] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
     getSubjects(),
     getSubjectComponents(),
+    getSubjectComponentMarkSettings(),
   ]);
 
   const selectedSchool = params.kod_sekolah ?? '';
@@ -37,7 +40,15 @@ export default async function MarkahPage({
   const selectedExam = exams.find((exam) => exam.id === selectedExamId);
   const markAccess = examAccessStatus(selectedExam);
 
-  const selectedSubjectComponents = subjectComponents.filter((component) => component.kod_subjek === selectedSubject);
+  const selectedSubjectComponents = applySubjectComponentMarkSettings(
+    subjectComponents.filter((component) => component.kod_subjek === selectedSubject),
+    componentMarkSettings,
+    {
+      tahun_akademik: selectedYear,
+      kod_peperiksaan: selectedExam?.kod_peperiksaan,
+      tahun: selectedClass?.tahun,
+    },
+  );
   const [students, marks, componentMarks] =
     selectedExamId && selectedClassId && selectedSubject
       ? await Promise.all([

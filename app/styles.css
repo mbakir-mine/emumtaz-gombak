@@ -3359,6 +3359,91 @@ textarea {
   margin-top: 18px;
 }
 
+.component-mark-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.component-mark-toolbar {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.component-mark-form {
+  display: grid;
+  gap: 16px;
+}
+
+.component-mark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.component-mark-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #d7e5d7;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at right bottom, rgba(255, 232, 130, 0.28), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(243, 250, 245, 0.86));
+}
+
+.component-mark-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.component-mark-card-head h3 {
+  margin: 0;
+  color: #062313;
+  font-size: 18px;
+}
+
+.component-mark-card-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.component-mark-card-head strong {
+  color: var(--green);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.component-mark-card-head .component-total-warning {
+  color: #c81e3a;
+}
+
+.component-mark-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.component-mark-rows label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 10px;
+  color: #123c2a;
+  font-weight: 800;
+}
+
+.component-mark-rows input {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  text-align: center;
+  font-weight: 900;
+}
+
 .timetable-view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -4228,10 +4313,15 @@ button:disabled {
   .module-toolbar,
   .timetable-toolbar,
   .timetable-auto-toolbar,
+  .component-mark-toolbar,
   .attendance-toolbar,
   .module-form-grid,
   .compact-module-form,
   .rph-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .component-mark-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4374,6 +4464,11 @@ button:disabled {
 
   .student-report-summary {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .component-mark-toolbar,
+  .component-mark-grid {
+    grid-template-columns: 1fr;
   }
 
   h1,
