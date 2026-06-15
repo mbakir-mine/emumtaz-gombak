@@ -103,7 +103,7 @@ a {
   justify-content: space-between;
 }
 
-.nav-group-link::after {
+.nav-menu-trigger.nav-group-link::after {
   content: '›';
   color: rgba(255, 255, 255, 0.6);
 }
