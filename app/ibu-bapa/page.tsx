@@ -1,34 +1,19 @@
-'use client';
+import IbuBapaAccessForm from './IbuBapaAccessForm';
+import { getSchoolModuleAccesses, getSchools } from '@/lib/data';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export default function IbuBapaLoginPage() {
-  const router = useRouter();
-  const [mykid, setMykid] = useState('');
-  const [kodSekolah, setKodSekolah] = useState('');
-  const [message, setMessage] = useState('');
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleanMykid = mykid.replace(/\D/g, '');
-    const cleanKodSekolah = kodSekolah.trim().toUpperCase();
-
-    if (cleanMykid.length < 6) {
-      setMessage('Sila masukkan MyKid yang sah.');
-      return;
-    }
-
-    if (!cleanKodSekolah) {
-      setMessage('Sila masukkan kod sekolah.');
-      return;
-    }
-
-    router.push(
-      `/ibu-bapa/laporan?mykid=${encodeURIComponent(cleanMykid)}&kod_sekolah=${encodeURIComponent(cleanKodSekolah)}`,
-    );
-  }
+export default async function IbuBapaLoginPage() {
+  const [schools, accesses] = await Promise.all([getSchools(), getSchoolModuleAccesses()]);
+  const enabledSchoolCodes = new Set(
+    accesses
+      .filter((access) => access.module_key === 'AKSES_IBU_BAPA' && access.enabled)
+      .map((access) => access.kod_sekolah),
+  );
+  const enabledSchools = schools
+    .filter((school) => school.status === 'AKTIF' && enabledSchoolCodes.has(school.kod_sekolah))
+    .sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah));
 
   return (
     <main className="login-page">
@@ -42,40 +27,9 @@ export default function IbuBapaLoginPage() {
         </div>
 
         <h1>Semakan Anak</h1>
-        <p className="login-copy">Masukkan MyKid dan kod sekolah murid.</p>
+        <p className="login-copy">Masukkan MyKid dan pilih sekolah murid.</p>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <label>
-            MyKid Murid
-            <input
-              inputMode="numeric"
-              placeholder="Contoh: 150101100001"
-              value={mykid}
-              onChange={(event) => setMykid(event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            Kod Sekolah
-            <input
-              placeholder="Contoh: BYP7010"
-              value={kodSekolah}
-              onChange={(event) => setKodSekolah(event.target.value.toUpperCase())}
-              required
-            />
-          </label>
-
-          {message && <p className="form-message">{message}</p>}
-
-          <button className="button" type="submit">
-            Semak Laporan
-          </button>
-
-          <Link className="button secondary login-register-link" href="/login">
-            Kembali ke Login
-          </Link>
-        </form>
+        <IbuBapaAccessForm schools={enabledSchools} />
       </section>
     </main>
   );

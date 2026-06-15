@@ -34,6 +34,13 @@ export const optionalSchoolModules = [
     shortLabel: 'RPH AI',
     description: 'Bantuan AI untuk draf Rancangan Pengajaran Harian.',
   },
+  {
+    key: 'AKSES_IBU_BAPA',
+    navKey: 'parentAccess',
+    label: 'Akses Ibu Bapa',
+    shortLabel: 'Ibu Bapa',
+    description: 'Semakan laporan murid oleh ibu bapa mengikut sekolah yang diluluskan.',
+  },
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];

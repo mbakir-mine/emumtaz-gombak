@@ -42,10 +42,11 @@ export async function updateSchoolModuleAccess(
   });
 
   if (error) {
-    if (error.message.includes('school_module_access')) {
+    if (error.message.includes('school_module_access') || error.message.includes('module_key')) {
       return {
         ok: false,
-        message: 'Jadual school_module_access belum wujud. Jalankan SQL 023_school_module_access.sql di Supabase dahulu.',
+        message:
+          'Jadual/constraint modul sekolah belum dikemaskini. Jalankan SQL 030_parent_access_module.sql di Supabase dahulu.',
       };
     }
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import PrintButton from '../../ui/PrintButton';
-import { getStudentSummariesByMykid } from '@/lib/data';
+import { getSchoolModuleAccesses, getStudentSummariesByMykid } from '@/lib/data';
 import { gradeForMark } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,11 @@ export default async function IbuBapaLaporanPage({
   const params = await searchParams;
   const mykid = String(params.mykid ?? '').replace(/\D/g, '');
   const kodSekolah = String(params.kod_sekolah ?? '').trim().toUpperCase();
-  const summaries = mykid && kodSekolah ? await getStudentSummariesByMykid(mykid, kodSekolah) : [];
+  const accesses = kodSekolah ? await getSchoolModuleAccesses() : [];
+  const parentAccessEnabled = accesses.some(
+    (access) => access.kod_sekolah === kodSekolah && access.module_key === 'AKSES_IBU_BAPA' && access.enabled,
+  );
+  const summaries = mykid && kodSekolah && parentAccessEnabled ? await getStudentSummariesByMykid(mykid, kodSekolah) : [];
   const student = summaries[0];
 
   return (
@@ -38,6 +42,11 @@ export default async function IbuBapaLaporanPage({
 
         {!mykid || !kodSekolah ? (
           <p className="empty">Sila masukkan MyKid dan kod sekolah murid dahulu.</p>
+        ) : !parentAccessEnabled ? (
+          <div className="empty-state">
+            <strong>Akses Ibu Bapa belum dibuka.</strong>
+            <span>Sekolah ini belum diluluskan untuk menggunakan servis semakan ibu bapa.</span>
+          </div>
         ) : summaries.length === 0 ? (
           <div className="empty-state">
             <strong>Tiada laporan ditemui.</strong>
