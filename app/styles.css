@@ -2631,6 +2631,101 @@ textarea {
   justify-content: start;
 }
 
+.class-report-filter {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.class-report-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fbfdf9 0%, #f4fbf5 100%);
+}
+
+.class-report-meta span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.class-report-meta strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.class-mark-report table {
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.class-mark-report th,
+.class-mark-report td {
+  padding: 8px 9px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.class-mark-report .student-name-col {
+  min-width: 330px;
+  text-align: left;
+}
+
+.class-mark-report .student-name-col strong {
+  display: block;
+  color: #005f38;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.class-mark-report .student-name-col small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.score-cell {
+  min-width: 64px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.score-cell small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.score-excellent {
+  background: #4f7fdc;
+  color: #06142e;
+}
+
+.score-danger {
+  background: #ff969b;
+  color: #650b12;
+}
+
+.score-empty {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.score-total {
+  color: #006b3b;
+  font-weight: 800;
+}
+
 .print-report-title {
   display: none;
   margin-bottom: 18px;
@@ -4271,6 +4366,30 @@ textarea {
   .print-report-title {
     display: block;
   }
+
+  .class-report-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    break-inside: avoid;
+  }
+
+  .class-mark-report {
+    overflow: visible;
+  }
+
+  .class-mark-report table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .class-mark-report th,
+  .class-mark-report td {
+    padding: 5px;
+    font-size: 10px;
+  }
+
+  .class-mark-report .student-name-col {
+    min-width: 220px;
+  }
 }
 
 button:disabled {
@@ -4492,6 +4611,10 @@ button:disabled {
   }
 
   .report-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .class-report-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -5064,7 +5187,8 @@ button:disabled {
   }
 
   .report-filter-grid,
-  .student-report-summary {
+  .student-report-summary,
+  .class-report-meta {
     grid-template-columns: 1fr;
   }
 
