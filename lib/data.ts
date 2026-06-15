@@ -122,6 +122,20 @@ export type AttendanceRecord = {
   catatan: string | null;
 };
 
+export type TakwimEvent = {
+  id: string;
+  tahun_akademik: number;
+  kod_sekolah: string | null;
+  scope: 'DAERAH' | 'SEKOLAH';
+  kategori: string;
+  tajuk: string;
+  tarikh_mula: string;
+  tarikh_tamat: string;
+  keterangan: string | null;
+  warna: string | null;
+  status: string;
+};
+
 export type AmalKhairCategory = {
   id: string;
   nama_kategori: string;
@@ -1095,6 +1109,18 @@ export async function getAttendanceRecords(attendanceDate?: string): Promise<Att
   const { data, error } = await query.limit(5000);
   if (error) return [];
   return data ?? [];
+}
+
+export async function getTakwimEvents(): Promise<TakwimEvent[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('takwim_events')
+    .select('id,tahun_akademik,kod_sekolah,scope,kategori,tajuk,tarikh_mula,tarikh_tamat,keterangan,warna,status')
+    .eq('status', 'AKTIF')
+    .order('tarikh_mula', { ascending: true });
+
+  if (error) return [];
+  return (data ?? []) as TakwimEvent[];
 }
 
 export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {

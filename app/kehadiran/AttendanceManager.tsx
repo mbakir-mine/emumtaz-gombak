@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
-import type { AttendanceRecord, ClassRecord, School, StudentRecord } from '@/lib/data';
+import type { AttendanceRecord, ClassRecord, School, StudentRecord, TakwimEvent } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import { saveDailyAttendance, type AttendanceActionState } from './actions';
@@ -124,16 +124,35 @@ function buildMonthCalendar(year: number, monthIndex: number, studentRecords: At
   return { monthName: monthNames[monthIndex], blanks, dates };
 }
 
+function takwimEventInDay(event: TakwimEvent, iso: string) {
+  return event.tarikh_mula <= iso && event.tarikh_tamat >= iso;
+}
+
+function takwimCategoryLabel(value: string) {
+  const labels: Record<string, string> = {
+    HARI_PERSEKOLAHAN: 'Hari Persekolahan',
+    CUTI: 'Cuti',
+    PEPERIKSAAN: 'Peperiksaan',
+    PROGRAM: 'Program',
+    AKTIVITI: 'Aktiviti',
+    MESYUARAT: 'Mesyuarat',
+    LAIN: 'Lain-lain',
+  };
+  return labels[value] ?? value;
+}
+
 export default function AttendanceManager({
   schools,
   classes,
   students,
   records,
+  takwimEvents,
 }: {
   schools: School[];
   classes: ClassRecord[];
   students: StudentRecord[];
   records: AttendanceRecord[];
+  takwimEvents: TakwimEvent[];
 }) {
   const profile = useAccessProfile();
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -196,6 +215,16 @@ export default function AttendanceManager({
   const selectedStudentSummary = recordSummary(selectedStudentMonthRecords);
   const selectedStudentCalendar = selectedStudent ? buildMonthCalendar(year, monthIndex, selectedStudentMonthRecords) : null;
   const monthSummary = recordSummary(currentMonthRecords);
+  const activeTakwimEvents = useMemo(
+    () =>
+      takwimEvents.filter(
+        (event) =>
+          event.tahun_akademik === year &&
+          (event.scope === 'DAERAH' || event.kod_sekolah === selectedSchool),
+      ),
+    [selectedSchool, takwimEvents, year],
+  );
+  const selectedDateTakwimEvents = activeTakwimEvents.filter((event) => takwimEventInDay(event, selectedDate));
   const [state, action] = useActionState(saveDailyAttendance, initialState);
 
   function changeMonth(offset: number) {
@@ -305,8 +334,10 @@ export default function AttendanceManager({
                   <th rowSpan={2}>Bil</th>
                   <th rowSpan={2}>L/P</th>
                   <th rowSpan={2}>Nama Murid</th>
-                  {monthDays.map((date) => (
-                    <th className={`attendance-day-head day-${date.dayIndex}`} key={date.iso}>
+                  {monthDays.map((date) => {
+                    const hasTakwim = activeTakwimEvents.some((event) => takwimEventInDay(event, date.iso));
+                    return (
+                    <th className={`attendance-day-head day-${date.dayIndex} ${hasTakwim ? 'attendance-day-has-takwim' : ''}`} key={date.iso}>
                       <button
                         type="button"
                         onClick={() => {
@@ -319,13 +350,18 @@ export default function AttendanceManager({
                         <small>{dayShort[date.dayIndex]}</small>
                       </button>
                     </th>
-                  ))}
+                    );
+                  })}
                   <th colSpan={4}>Rumusan</th>
                 </tr>
                 <tr>
                   {monthDays.map((date) => (
                     <th className={`attendance-day-sub day-${date.dayIndex}`} key={`${date.iso}-sub`}>
-                      {selectedDate === date.iso ? 'Dipilih' : ''}
+                      {selectedDate === date.iso
+                        ? 'Dipilih'
+                        : activeTakwimEvents.some((event) => takwimEventInDay(event, date.iso))
+                          ? 'Takwim'
+                          : ''}
                     </th>
                   ))}
                   <th>Lewat</th>
@@ -418,6 +454,16 @@ export default function AttendanceManager({
                 </button>
               </div>
             </div>
+            {selectedDateTakwimEvents.length > 0 && (
+              <div className="attendance-takwim-note">
+                <strong>Rujukan Takwim:</strong>
+                {selectedDateTakwimEvents.map((event) => (
+                  <span key={event.id}>
+                    {takwimCategoryLabel(event.kategori)} - {event.tajuk}
+                  </span>
+                ))}
+              </div>
+            )}
             {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
             <div className="table-scroll">
               <table className="compact-table attendance-edit-table">

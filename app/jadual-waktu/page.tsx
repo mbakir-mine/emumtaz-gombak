@@ -10,6 +10,7 @@ import {
   getTimetableEntries,
   getTimetableRequirements,
   getTimetableSlots,
+  getTakwimEvents,
 } from '@/lib/data';
 import TimetableManager from './TimetableManager';
 
@@ -28,6 +29,7 @@ export default async function TimetablePage() {
     subjectAssignments,
     componentAssignments,
     subjectComponents,
+    takwimEvents,
   ] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -39,6 +41,7 @@ export default async function TimetablePage() {
     getTeacherSubjectAssignments(),
     getTeacherSubjectComponentAssignments(),
     getSubjectComponents(),
+    getTakwimEvents(),
   ]);
 
   return (
@@ -54,6 +57,7 @@ export default async function TimetablePage() {
         subjectAssignments={subjectAssignments}
         componentAssignments={componentAssignments}
         subjectComponents={subjectComponents}
+        takwimEvents={takwimEvents}
       />
     </AppFrame>
   );

@@ -34,6 +34,13 @@ export const navItems: NavItem[] = [
   { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
   { key: 'studentPromotion', label: 'Naik Tahun Murid', href: '/murid/naik-tahun', roles: ['OWNER', 'ADMIN_SEKOLAH'] },
   {
+    key: 'calendar',
+    label: 'Takwim',
+    href: '/takwim',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'TAKWIM',
+  },
+  {
     key: 'attendance',
     label: 'Kehadiran Harian',
     href: '/kehadiran',

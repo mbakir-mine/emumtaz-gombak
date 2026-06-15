@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
-import type { ClassRecord, RphRecord, School, SubjectRecord, UserRecord } from '@/lib/data';
+import type { ClassRecord, RphRecord, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import { createRphDraft, type RphActionState } from './actions';
@@ -20,18 +20,25 @@ function textLines(value: string | null) {
   return (value ?? '-').split('\n').filter(Boolean);
 }
 
+function takwimRange(event: TakwimEvent) {
+  if (event.tarikh_mula === event.tarikh_tamat) return event.tarikh_mula;
+  return `${event.tarikh_mula} - ${event.tarikh_tamat}`;
+}
+
 export default function RphManager({
   schools,
   classes,
   subjects,
   users,
   records,
+  takwimEvents,
 }: {
   schools: School[];
   classes: ClassRecord[];
   subjects: SubjectRecord[];
   users: UserRecord[];
   records: RphRecord[];
+  takwimEvents: TakwimEvent[];
 }) {
   const profile = useAccessProfile();
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -67,6 +74,14 @@ export default function RphManager({
     .filter((record) => record.kod_sekolah === selectedSchool)
     .filter((record) => !selectedClass || record.class_id === selectedClass)
     .slice(0, 20);
+  const takwimReferences = takwimEvents
+    .filter(
+      (event) =>
+        event.tahun_akademik === currentAcademicYear &&
+        (event.scope === 'DAERAH' || event.kod_sekolah === selectedSchool),
+    )
+    .sort((a, b) => a.tarikh_mula.localeCompare(b.tarikh_mula))
+    .slice(0, 4);
   const [state, action] = useActionState(createRphDraft, initialState);
   const canChangeSchool = profile?.role === 'OWNER';
 
@@ -79,6 +94,17 @@ export default function RphManager({
         </div>
         <span>{visibleRecords.length} draf</span>
       </div>
+
+      {takwimReferences.length > 0 && (
+        <div className="module-context-note">
+          <strong>Rujukan Takwim:</strong>
+          {takwimReferences.map((event) => (
+            <span key={event.id}>
+              {takwimRange(event)} - {event.tajuk}
+            </span>
+          ))}
+        </div>
+      )}
 
       <form action={action} className="module-form-grid rph-form">
         <input type="hidden" name="nama_kelas" value={selectedClassRecord ? classLabel(selectedClassRecord) : ''} />

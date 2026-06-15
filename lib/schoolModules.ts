@@ -1,5 +1,12 @@
 export const optionalSchoolModules = [
   {
+    key: 'TAKWIM',
+    navKey: 'calendar',
+    label: 'Takwim',
+    shortLabel: 'Takwim',
+    description: 'Kalendar akademik, cuti, peperiksaan dan aktiviti sekolah.',
+  },
+  {
     key: 'KEHADIRAN_HARIAN',
     navKey: 'attendance',
     label: 'Kehadiran Harian',

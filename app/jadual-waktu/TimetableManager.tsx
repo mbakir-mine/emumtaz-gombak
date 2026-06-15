@@ -6,6 +6,7 @@ import type {
   School,
   SubjectRecord,
   SubjectComponentRecord,
+  TakwimEvent,
   TeacherSubjectAssignment,
   TeacherSubjectComponentAssignment,
   TimetableEntry,
@@ -60,6 +61,7 @@ export default function TimetableManager({
   subjectAssignments,
   componentAssignments,
   subjectComponents,
+  takwimEvents,
 }: {
   schools: School[];
   classes: ClassRecord[];
@@ -71,6 +73,7 @@ export default function TimetableManager({
   subjectAssignments: TeacherSubjectAssignment[];
   componentAssignments: TeacherSubjectComponentAssignment[];
   subjectComponents: SubjectComponentRecord[];
+  takwimEvents: TakwimEvent[];
 }) {
   const profile = useAccessProfile();
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -164,6 +167,13 @@ export default function TimetableManager({
   const completeClassCount = yearClasses.filter((item) => classesWithRequirements.has(item.id)).length;
   const incompleteClassCount = Math.max(0, yearClasses.length - completeClassCount);
   const totalRequiredSlots = schoolYearRequirements.reduce((sum, item) => sum + item.bil_slot_seminggu, 0);
+  const schoolYearTakwimEvents = takwimEvents
+    .filter(
+      (event) =>
+        event.tahun_akademik === selectedYear &&
+        (event.scope === 'DAERAH' || event.kod_sekolah === selectedSchool),
+    )
+    .sort((a, b) => a.tarikh_mula.localeCompare(b.tarikh_mula));
   const [slotState, slotAction] = useActionState(generateDefaultTimetableSlots, initialState);
   const [slotSettingState, slotSettingAction] = useActionState(saveTimetableSlotSettings, initialState);
   const [slotAddState, slotAddAction] = useActionState(addTimetableSlotSetting, initialState);
@@ -332,6 +342,17 @@ export default function TimetableManager({
         Kelas paparan hanya untuk semakan jadual dan tetapan masa subjek kelas tersebut. Butang jana akan menyusun semua kelas
         yang mempunyai tetapan subjek dalam sesi {selectedYear}.
       </p>
+      {schoolYearTakwimEvents.length > 0 && (
+        <div className="module-context-note">
+          <strong>Rujukan Takwim:</strong>
+          <span>{schoolYearTakwimEvents.filter((event) => event.kategori === 'CUTI').length} cuti</span>
+          <span>{schoolYearTakwimEvents.filter((event) => event.kategori === 'PEPERIKSAAN').length} peperiksaan</span>
+          <span>
+            {schoolYearTakwimEvents.filter((event) => ['PROGRAM', 'AKTIVITI', 'MESYUARAT'].includes(event.kategori)).length}{' '}
+            program/aktiviti
+          </span>
+        </div>
+      )}
       {slotState.message && <p className={slotState.ok ? 'form-success' : 'form-message'}>{slotState.message}</p>}
       {autoState.message && <p className={autoState.ok ? 'form-success' : 'form-message'}>{autoState.message}</p>}
 

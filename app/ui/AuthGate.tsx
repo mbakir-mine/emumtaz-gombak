@@ -123,7 +123,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         let enabledModules: OptionalSchoolModuleKey[] = [];
         if (activeProfile.role === 'OWNER') {
-          enabledModules = ['KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI'];
+          enabledModules = ['TAKWIM', 'KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI'];
         } else if (activeProfile.kod_sekolah) {
           const moduleResult = await withTimeout(
             Promise.resolve(
