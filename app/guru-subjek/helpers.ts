@@ -60,6 +60,6 @@ export function teacherOptionsForSchool(users: UserRecord[], kodSekolah: string)
     (user) =>
       user.kod_sekolah === kodSekolah &&
       user.status === 'AKTIF' &&
-      ['GURU_KELAS', 'GURU_SUBJEK'].includes(user.role),
+      ['ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'].includes(user.role),
   );
 }

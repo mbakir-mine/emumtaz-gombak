@@ -10,6 +10,8 @@ import {
   getSubjectComponentMarkSettings,
   getStudentsByClass,
   getSubjectComponents,
+  getTeacherSubjectAssignments,
+  getTeacherSubjectComponentAssignments,
   getSubjects,
 } from '@/lib/data';
 import { examAccessStatus } from '@/lib/examAccess';
@@ -21,19 +23,31 @@ export default async function MarkahPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [schools, classes, exams, subjects, subjectComponents, componentMarkSettings] = await Promise.all([
+  const [
+    schools,
+    classes,
+    exams,
+    subjects,
+    subjectComponents,
+    componentMarkSettings,
+    subjectAssignments,
+    componentAssignments,
+  ] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
     getSubjects(),
     getSubjectComponents(),
     getSubjectComponentMarkSettings(),
+    getTeacherSubjectAssignments(),
+    getTeacherSubjectComponentAssignments(),
   ]);
 
   const selectedSchool = params.kod_sekolah ?? '';
   const selectedClassId = params.class_id ?? '';
   const selectedExamId = params.exam_id ?? '';
   const selectedSubject = params.kod_subjek ?? '';
+  const selectedMode = params.mode === 'mine' ? 'mine' : 'school';
   const currentYear = new Date().getFullYear();
   const selectedYear = Number(params.tahun_akademik ?? currentYear);
   const selectedClass = classes.find((item) => item.id === selectedClassId);
@@ -72,11 +86,14 @@ export default async function MarkahPage({
           classes={classes}
           exams={exams}
           subjects={subjects}
+          subjectAssignments={subjectAssignments}
+          componentAssignments={componentAssignments}
           initialYear={selectedYear}
           initialExamId={selectedExamId}
           initialSchool={selectedSchool}
           initialClassId={selectedClassId}
           initialSubject={selectedSubject}
+          initialMode={selectedMode}
         />
         {subjects.length === 0 && (
           <p className="notice mark-notice">

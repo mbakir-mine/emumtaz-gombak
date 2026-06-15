@@ -1,34 +1,50 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { ClassRecord, ExamRecord, School, SubjectRecord } from '@/lib/data';
+import { useEffect, useMemo, useState } from 'react';
+import type {
+  ClassRecord,
+  ExamRecord,
+  School,
+  SubjectRecord,
+  TeacherSubjectAssignment,
+  TeacherSubjectComponentAssignment,
+} from '@/lib/data';
 import { allowedSubjectForTahun } from '@/lib/subjects';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../ui/scopedData';
+
+type MarkMode = 'school' | 'mine';
 
 export default function MarkSelectionForm({
   schools,
   classes,
   exams,
   subjects,
+  subjectAssignments,
+  componentAssignments,
   initialYear,
   initialExamId,
   initialSchool,
   initialClassId,
   initialSubject,
+  initialMode,
 }: {
   schools: School[];
   classes: ClassRecord[];
   exams: ExamRecord[];
   subjects: SubjectRecord[];
+  subjectAssignments: TeacherSubjectAssignment[];
+  componentAssignments: TeacherSubjectComponentAssignment[];
   initialYear: number;
   initialExamId: string;
   initialSchool: string;
   initialClassId: string;
   initialSubject: string;
+  initialMode: MarkMode;
 }) {
   const profile = useAccessProfile();
   const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
+  const [selectedMode, setSelectedMode] = useState<MarkMode>(initialMode);
   const [selectedExamId, setSelectedExamId] = useState(initialExamId);
   const [selectedYear, setSelectedYear] = useState(initialYear);
   const [selectedSchool, setSelectedSchool] = useState(initialSchool);
@@ -36,17 +52,62 @@ export default function MarkSelectionForm({
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
+  const myTeachingKeys = useMemo(() => {
+    const keys = new Set<string>();
+    if (!profile?.id) return keys;
+
+    subjectAssignments
+      .filter((assignment) => assignment.user_id === profile.id)
+      .forEach((assignment) => keys.add(`${assignment.class_id}|${assignment.kod_subjek}`));
+
+    componentAssignments
+      .filter((assignment) => assignment.user_id === profile.id)
+      .forEach((assignment) => keys.add(`${assignment.class_id}|${assignment.kod_subjek}`));
+
+    return keys;
+  }, [componentAssignments, profile?.id, subjectAssignments]);
+
+  const myTeachingClassIds = useMemo(() => {
+    const classIds = new Set<string>();
+    myTeachingKeys.forEach((key) => classIds.add(key.split('|')[0]));
+    return classIds;
+  }, [myTeachingKeys]);
+  const hasTeachingAssignments = myTeachingKeys.size > 0;
+  const showModeToggle = profile?.role === 'ADMIN_SEKOLAH' || hasTeachingAssignments;
+
+  useEffect(() => {
+    if (selectedMode === 'mine' && !hasTeachingAssignments) {
+      setSelectedMode('school');
+    }
+  }, [hasTeachingAssignments, selectedMode]);
+
+  useEffect(() => {
+    if (!selectedSchool && scopedSchools.length === 1) {
+      setSelectedSchool(scopedSchools[0].kod_sekolah);
+      return;
+    }
+
+    if (selectedSchool && !scopedSchools.some((school) => school.kod_sekolah === selectedSchool)) {
+      setSelectedSchool('');
+      setSelectedClassId('');
+      setSelectedSubject('');
+    }
+  }, [scopedSchools, selectedSchool]);
 
   const filteredClasses = useMemo(
-    () =>
-      scopedClasses.filter(
+    () => {
+      const baseClasses = scopedClasses.filter(
         (item) =>
           selectedSchool &&
           item.kod_sekolah === selectedSchool &&
           item.tahun_akademik === selectedYear &&
           item.status === 'AKTIF',
-      ),
-    [scopedClasses, selectedSchool, selectedYear],
+      );
+
+      if (selectedMode !== 'mine') return baseClasses;
+      return baseClasses.filter((item) => myTeachingClassIds.has(item.id));
+    },
+    [myTeachingClassIds, scopedClasses, selectedMode, selectedSchool, selectedYear],
   );
   const filteredExams = useMemo(
     () => exams.filter((exam) => exam.tahun_akademik === selectedYear),
@@ -59,12 +120,64 @@ export default function MarkSelectionForm({
   );
 
   const filteredSubjects = useMemo(
-    () => subjects.filter((subject) => (selectedClass ? allowedSubjectForTahun(subject, selectedClass.tahun) : false)),
-    [subjects, selectedClass],
+    () => {
+      const allowedSubjects = subjects.filter((subject) =>
+        selectedClass ? allowedSubjectForTahun(subject, selectedClass.tahun) : false,
+      );
+
+      if (!selectedClass || selectedMode !== 'mine') return allowedSubjects;
+      return allowedSubjects.filter((subject) => myTeachingKeys.has(`${selectedClass.id}|${subject.kod_subjek}`));
+    },
+    [myTeachingKeys, selectedClass, selectedMode, subjects],
   );
+
+  useEffect(() => {
+    if (!selectedClassId) return;
+    if (!filteredClasses.some((item) => item.id === selectedClassId)) {
+      setSelectedClassId('');
+      setSelectedSubject('');
+    }
+  }, [filteredClasses, selectedClassId]);
+
+  useEffect(() => {
+    if (!selectedSubject) return;
+    if (!filteredSubjects.some((subject) => subject.kod_subjek === selectedSubject)) {
+      setSelectedSubject('');
+    }
+  }, [filteredSubjects, selectedSubject]);
 
   return (
     <form className="form-grid inline-form" method="get">
+      <input name="mode" type="hidden" value={selectedMode} />
+      {showModeToggle && (
+        <div className="mark-mode-toggle">
+          <button
+            type="button"
+            className={selectedMode === 'school' ? 'mark-mode-button active' : 'mark-mode-button'}
+            onClick={() => {
+              setSelectedMode('school');
+              setSelectedClassId('');
+              setSelectedSubject('');
+            }}
+          >
+            Semua Markah Sekolah
+          </button>
+          <button
+            type="button"
+            className={selectedMode === 'mine' ? 'mark-mode-button active' : 'mark-mode-button'}
+            onClick={() => {
+              setSelectedMode('mine');
+              setSelectedClassId('');
+              setSelectedSubject('');
+            }}
+            disabled={!hasTeachingAssignments}
+            title={hasTeachingAssignments ? 'Papar kelas dan subjek yang ditetapkan kepada saya' : 'Belum ada tugasan guru subjek'}
+          >
+            Markah Subjek Saya
+          </button>
+        </div>
+      )}
+
       <label>
         Tahun Akademik
         <select
