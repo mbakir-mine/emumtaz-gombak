@@ -2674,6 +2674,42 @@ textarea {
   vertical-align: middle;
 }
 
+.sort-header-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sort-header-button:hover,
+.sort-header-button:focus-visible {
+  color: #006b3b;
+  outline: 0;
+}
+
+.sort-header-button small {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(0, 107, 59, 0.1);
+  color: #006b3b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sort-header-button.active span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .class-mark-report .student-name-col {
   min-width: 330px;
   text-align: left;

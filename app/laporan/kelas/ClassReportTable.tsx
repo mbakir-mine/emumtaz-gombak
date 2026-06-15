@@ -29,6 +29,9 @@ const subjectCodeLabels: Record<string, string> = {
   HAFAZAN: 'HF',
 };
 
+type SortDirection = 'asc' | 'desc';
+type SortKey = 'gender' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
+
 function zoneLabel(zon: string) {
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
 }
@@ -71,6 +74,37 @@ function formatExam(exam: ExamRecord | undefined, kodPeperiksaan: string) {
   return `${exam.kod_peperiksaan} - ${exam.nama_peperiksaan}`;
 }
 
+function isMissingNumber(value: number | null | undefined) {
+  return value === null || value === undefined || Number.isNaN(value);
+}
+
+function compareNullableNumber(a: number | null | undefined, b: number | null | undefined, direction: SortDirection) {
+  const aMissing = isMissingNumber(a);
+  const bMissing = isMissingNumber(b);
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  return direction === 'asc' ? Number(a) - Number(b) : Number(b) - Number(a);
+}
+
+function compareText(a: string, b: string, direction: SortDirection) {
+  const result = a.localeCompare(b, 'ms', { sensitivity: 'base' });
+  return direction === 'asc' ? result : -result;
+}
+
+function gradeSortValue(markah: number | null | undefined) {
+  if (isMissingNumber(markah)) return null;
+  if (Number(markah) >= 90) return 5;
+  if (Number(markah) >= 75) return 4;
+  if (Number(markah) >= 60) return 3;
+  if (Number(markah) >= 40) return 2;
+  return 1;
+}
+
+function isNumericSort(sortKey: SortKey) {
+  return sortKey === 'total' || sortKey === 'average' || sortKey === 'grade' || sortKey.startsWith('subject:');
+}
+
 export default function ClassReportTable({
   schools,
   classes,
@@ -103,6 +137,8 @@ export default function ClassReportTable({
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
@@ -151,6 +187,40 @@ export default function ClassReportTable({
   }, [selectedClassRecord, selectedMarks, subjectMap, subjects]);
   const markMap = new Map(selectedMarks.map((mark) => [`${mark.student_id}|${mark.kod_subjek}`, mark.markah]));
 
+  const reportRows = classStudents
+    .map((student) => {
+      const subjectMarks = new Map<string, number | null | undefined>();
+      reportSubjects.forEach((subject) => {
+        subjectMarks.set(subject.kod_subjek, markMap.get(`${student.id}|${subject.kod_subjek}`));
+      });
+      const validMarks = [...subjectMarks.values()].filter(
+        (markah): markah is number => markah !== null && markah !== undefined && Number.isFinite(markah),
+      );
+      const totalMarks = validMarks.length > 0 ? validMarks.reduce((total, markah) => total + markah, 0) : null;
+      const average = validMarks.length > 0 && totalMarks !== null ? Number((totalMarks / validMarks.length).toFixed(2)) : null;
+
+      return {
+        student,
+        gender: genderShort(student.jantina),
+        mykid: cleanMykid(student.mykid),
+        subjectMarks,
+        totalMarks,
+        average,
+      };
+    })
+    .sort((a, b) => {
+      if (sortKey === 'gender') return compareText(a.gender, b.gender, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      if (sortKey === 'name') return compareText(a.student.nama_murid, b.student.nama_murid, sortDirection);
+      if (sortKey === 'total') return compareNullableNumber(a.totalMarks, b.totalMarks, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      if (sortKey === 'average') return compareNullableNumber(a.average, b.average, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      if (sortKey === 'grade') return compareNullableNumber(gradeSortValue(a.average), gradeSortValue(b.average), sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      const kodSubjek = sortKey.replace('subject:', '');
+      return (
+        compareNullableNumber(a.subjectMarks.get(kodSubjek), b.subjectMarks.get(kodSubjek), sortDirection) ||
+        compareText(a.student.nama_murid, b.student.nama_murid, 'asc')
+      );
+    });
+
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
     setSelectedExam('');
@@ -163,6 +233,34 @@ export default function ClassReportTable({
     setSelectedSchool(kodSekolah);
     setSelectedClass('');
   };
+
+  const toggleSort = (nextSortKey: SortKey) => {
+    if (sortKey === nextSortKey) {
+      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortKey(nextSortKey);
+    setSortDirection('asc');
+  };
+
+  const sortLabel = (key: SortKey) => {
+    if (sortKey !== key) return '';
+    if (isNumericSort(key)) return sortDirection === 'asc' ? '1-9' : '9-1';
+    return sortDirection === 'asc' ? 'A-Z' : 'Z-A';
+  };
+
+  const renderSortButton = (label: string, key: SortKey, title?: string) => (
+    <button
+      type="button"
+      className={sortKey === key ? 'sort-header-button active' : 'sort-header-button'}
+      onClick={() => toggleSort(key)}
+      title={title ?? `Susun ${label}`}
+    >
+      <span>{label}</span>
+      {sortLabel(key) && <small>{sortLabel(key)}</small>}
+    </button>
+  );
 
   return (
     <>
@@ -301,44 +399,37 @@ export default function ClassReportTable({
               <thead>
                 <tr>
                   <th>Bil</th>
-                  <th>L/P</th>
-                  <th className="student-name-col">Nama / MyKid / Jantina</th>
+                  <th>{renderSortButton('L/P', 'gender')}</th>
+                  <th className="student-name-col">{renderSortButton('Nama / MyKid / Jantina', 'name')}</th>
                   {reportSubjects.map((subject) => (
                     <th key={subject.kod_subjek} title={subject.nama_subjek}>
-                      {subjectLabel(subject)}
+                      {renderSortButton(subjectLabel(subject), `subject:${subject.kod_subjek}`, subject.nama_subjek)}
                     </th>
                   ))}
-                  <th>Jumlah</th>
-                  <th>%</th>
-                  <th>Gred</th>
+                  <th>{renderSortButton('Jumlah', 'total')}</th>
+                  <th>{renderSortButton('%', 'average')}</th>
+                  <th>{renderSortButton('Gred', 'grade')}</th>
                 </tr>
               </thead>
               <tbody>
-                {classStudents.length === 0 ? (
+                {reportRows.length === 0 ? (
                   <tr>
                     <td colSpan={reportSubjects.length + 6}>Tiada murid aktif dalam kelas ini.</td>
                   </tr>
                 ) : (
-                  classStudents.map((student, index) => {
-                    const subjectMarks = reportSubjects.map((subject) => markMap.get(`${student.id}|${subject.kod_subjek}`));
-                    const validMarks = subjectMarks.filter(
-                      (markah): markah is number => markah !== null && markah !== undefined && Number.isFinite(markah),
-                    );
-                    const totalMarks = validMarks.reduce((total, markah) => total + markah, 0);
-                    const average = validMarks.length > 0 ? Number((totalMarks / validMarks.length).toFixed(2)) : null;
-
+                  reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average }, index) => {
                     return (
                       <tr key={student.id}>
                         <td>{index + 1}</td>
-                        <td>{genderShort(student.jantina)}</td>
+                        <td>{gender}</td>
                         <td className="student-name-col">
                           <strong>{student.nama_murid}</strong>
                           <small>
-                            {cleanMykid(student.mykid)} / {student.jantina ?? '-'}
+                            {mykid} / {student.jantina ?? '-'}
                           </small>
                         </td>
                         {reportSubjects.map((subject) => {
-                          const markah = markMap.get(`${student.id}|${subject.kod_subjek}`);
+                          const markah = subjectMarks.get(subject.kod_subjek);
                           return (
                             <td key={subject.kod_subjek} className={scoreClass(markah)}>
                               {markah ?? '-'}
@@ -346,7 +437,7 @@ export default function ClassReportTable({
                             </td>
                           );
                         })}
-                        <td className="score-total">{validMarks.length > 0 ? totalMarks : '-'}</td>
+                        <td className="score-total">{totalMarks ?? '-'}</td>
                         <td>{average ?? '-'}</td>
                         <td>{gradeForMark(average) || '-'}</td>
                       </tr>
