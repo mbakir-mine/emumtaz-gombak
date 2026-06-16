@@ -143,17 +143,28 @@ a {
 }
 
 .nav-logout {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  border: 1px solid rgba(244, 201, 79, 0.52);
-  background: linear-gradient(135deg, rgba(255, 245, 211, 0.98), rgba(244, 201, 79, 0.72));
-  color: #5b3a05;
+  border: 1px solid rgba(226, 244, 232, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d8e5dc;
   text-align: left;
   cursor: pointer;
 }
 
+.nav-logout::after {
+  content: '->';
+  color: rgba(244, 201, 79, 0.72);
+  font-weight: 900;
+}
+
 .nav-logout:hover {
-  background: linear-gradient(135deg, rgba(244, 201, 79, 0.98), rgba(255, 245, 211, 0.9));
-  color: #052615;
+  border-color: rgba(244, 201, 79, 0.34);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .date-clock {
@@ -4573,15 +4584,16 @@ button:disabled {
 
   .nav-logout {
     width: auto;
-    border-color: rgba(244, 201, 79, 0.58);
-    background: linear-gradient(135deg, rgba(255, 245, 211, 0.98), rgba(244, 201, 79, 0.78));
-    color: #5b3a05;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+    border-color: rgba(226, 244, 232, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: #d8e5dc;
+    box-shadow: none;
   }
 
   .nav-logout:hover {
-    background: linear-gradient(135deg, rgba(244, 201, 79, 0.98), rgba(255, 245, 211, 0.92));
-    color: #052615;
+    border-color: rgba(244, 201, 79, 0.34);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
   }
 
   .date-clock {
@@ -5399,9 +5411,9 @@ button:disabled {
   }
 
   .nav-logout {
-    border-color: rgba(244, 201, 79, 0.62);
-    background: linear-gradient(135deg, #fff5d3, #f4c94f);
-    color: #563704;
+    border-color: rgba(226, 244, 232, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: #d8e5dc;
   }
 
   .date-clock {
