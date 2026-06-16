@@ -163,7 +163,14 @@ export default function SidebarNav({ active }: { active: string }) {
         </div>
       ))}
       <button className="nav-logout" type="button" onClick={logout}>
-        Keluar
+        <span className="nav-logout-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M9 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9" />
+            <path d="M13 12H3" />
+            <path d="m6 8-4 4 4 4" />
+          </svg>
+        </span>
+        <span>Log Keluar</span>
       </button>
     </nav>
   );

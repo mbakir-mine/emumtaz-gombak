@@ -146,25 +146,47 @@ a {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 10px;
   width: 100%;
   border: 1px solid rgba(226, 244, 232, 0.14);
   background: rgba(255, 255, 255, 0.04);
   color: #d8e5dc;
   text-align: left;
+  letter-spacing: 0;
   cursor: pointer;
 }
 
-.nav-logout::after {
-  content: '->';
-  color: rgba(244, 201, 79, 0.72);
-  font-weight: 900;
+.nav-logout-icon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(244, 201, 79, 0.15);
+  color: rgba(244, 201, 79, 0.88);
+}
+
+.nav-logout-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .nav-logout:hover {
   border-color: rgba(244, 201, 79, 0.34);
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
+}
+
+.nav-logout:hover .nav-logout-icon {
+  background: rgba(244, 201, 79, 0.22);
+  color: #f7d86b;
 }
 
 .date-clock {
