@@ -349,7 +349,7 @@ export default function ClassReportTable({
 
   return (
     <>
-      <div className="panel-head">
+      <div className="panel-head no-print">
         <div>
           <h2>Laporan Markah Kelas</h2>
           <p className="table-note">Pilih kelas dan peperiksaan untuk memaparkan markah murid mengikut subjek.</p>
