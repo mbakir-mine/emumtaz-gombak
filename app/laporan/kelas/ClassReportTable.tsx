@@ -31,7 +31,7 @@ const subjectCodeLabels: Record<string, string> = {
 };
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = 'gender' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
+type SortKey = 'gender' | 'mykid' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
 type SavedReportFilters = {
   tahunAkademik?: number;
   kodPeperiksaan?: string;
@@ -116,7 +116,7 @@ function isNumericSort(sortKey: SortKey) {
 
 function isValidSortKey(value: string | null | undefined): value is SortKey {
   if (!value) return false;
-  return ['gender', 'name', 'total', 'average', 'grade'].includes(value) || value.startsWith('subject:');
+  return ['gender', 'mykid', 'name', 'total', 'average', 'grade'].includes(value) || value.startsWith('subject:');
 }
 
 export default function ClassReportTable({
@@ -295,6 +295,7 @@ export default function ClassReportTable({
     })
     .sort((a, b) => {
       if (sortKey === 'gender') return compareText(a.gender, b.gender, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      if (sortKey === 'mykid') return compareText(a.mykid, b.mykid, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
       if (sortKey === 'name') return compareText(a.student.nama_murid, b.student.nama_murid, sortDirection);
       if (sortKey === 'total') return compareNullableNumber(a.totalMarks, b.totalMarks, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
       if (sortKey === 'average') return compareNullableNumber(a.average, b.average, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
@@ -484,8 +485,13 @@ export default function ClassReportTable({
               <thead>
                 <tr>
                   <th>Bil</th>
-                  <th>{renderSortButton('L/P', 'gender')}</th>
-                  <th className="student-name-col">{renderSortButton('Nama / MyKid / Jantina', 'name')}</th>
+                  <th className="student-name-col">
+                    <div className="student-sort-group">
+                      {renderSortButton('Nama', 'name')}
+                      {renderSortButton('MyKid', 'mykid')}
+                      {renderSortButton('Jantina', 'gender')}
+                    </div>
+                  </th>
                   {reportSubjects.map((subject) => (
                     <th key={subject.kod_subjek} title={subject.nama_subjek}>
                       {renderSortButton(subjectLabel(subject), `subject:${subject.kod_subjek}`, subject.nama_subjek)}
@@ -499,14 +505,13 @@ export default function ClassReportTable({
               <tbody>
                 {reportRows.length === 0 ? (
                   <tr>
-                    <td colSpan={reportSubjects.length + 6}>Tiada murid aktif dalam kelas ini.</td>
+                    <td colSpan={reportSubjects.length + 5}>Tiada murid aktif dalam kelas ini.</td>
                   </tr>
                 ) : (
                   reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average }, index) => {
                     return (
                       <tr key={student.id}>
                         <td>{index + 1}</td>
-                        <td>{gender}</td>
                         <td className="student-name-col">
                           <strong>{student.nama_murid}</strong>
                           <small>

@@ -2781,6 +2781,25 @@ textarea {
   text-align: left;
 }
 
+.student-sort-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.student-sort-group .sort-header-button {
+  width: auto;
+  min-height: 26px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.student-sort-group .sort-header-button:hover,
+.student-sort-group .sort-header-button:focus-visible {
+  background: rgba(0, 107, 59, 0.08);
+}
+
 .class-mark-report .student-name-col strong {
   display: block;
   color: #005f38;
