@@ -1,4 +1,5 @@
 import AppFrame from '../ui/AppFrame';
+import ReportSignatureBlock from '../ui/ReportSignatureBlock';
 import { getStudentSummaries } from '@/lib/data';
 
 type Pair = {
@@ -39,38 +40,41 @@ export default async function PerbandinganPage() {
         {rows.length === 0 ? (
           <p className="empty">Belum ada data UPSA/UASA untuk dibandingkan.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Bil</th>
-                <th>Sekolah</th>
-                <th>Nama Murid</th>
-                <th>Purata UPSA</th>
-                <th>Purata UASA</th>
-                <th>Beza</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item, index) => {
-                const beza =
-                  item.upsa !== undefined && item.uasa !== undefined && item.upsa !== null && item.uasa !== null
-                    ? Number((item.uasa - item.upsa).toFixed(2))
-                    : null;
-                return (
-                  <tr key={item.key}>
-                    <td>{index + 1}</td>
-                    <td>{item.kod_sekolah}</td>
-                    <td>{item.nama_murid}</td>
-                    <td>{item.upsa ?? '-'}</td>
-                    <td>{item.uasa ?? '-'}</td>
-                    <td>{beza ?? '-'}</td>
-                    <td>{beza === null ? 'Belum lengkap' : beza > 0 ? 'Meningkat' : beza < 0 ? 'Menurun' : 'Kekal'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>Bil</th>
+                  <th>Sekolah</th>
+                  <th>Nama Murid</th>
+                  <th>Purata UPSA</th>
+                  <th>Purata UASA</th>
+                  <th>Beza</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((item, index) => {
+                  const beza =
+                    item.upsa !== undefined && item.uasa !== undefined && item.upsa !== null && item.uasa !== null
+                      ? Number((item.uasa - item.upsa).toFixed(2))
+                      : null;
+                  return (
+                    <tr key={item.key}>
+                      <td>{index + 1}</td>
+                      <td>{item.kod_sekolah}</td>
+                      <td>{item.nama_murid}</td>
+                      <td>{item.upsa ?? '-'}</td>
+                      <td>{item.uasa ?? '-'}</td>
+                      <td>{beza ?? '-'}</td>
+                      <td>{beza === null ? 'Belum lengkap' : beza > 0 ? 'Meningkat' : beza < 0 ? 'Menurun' : 'Kekal'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <ReportSignatureBlock />
+          </>
         )}
       </section>
     </AppFrame>

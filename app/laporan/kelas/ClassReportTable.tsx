@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PrintButton from '../../ui/PrintButton';
+import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type {
@@ -534,6 +535,8 @@ export default function ClassReportTable({
               </tbody>
             </table>
           </div>
+
+          <ReportSignatureBlock />
         </>
       )}
     </>

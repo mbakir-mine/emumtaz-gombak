@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import AppFrame from '../../../ui/AppFrame';
 import PrintButton from '../../../ui/PrintButton';
+import ReportSignatureBlock from '../../../ui/ReportSignatureBlock';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
 import { gradeForMark } from '@/lib/subjects';
@@ -142,6 +143,8 @@ export default async function CetakLaporanIndividuPage({
                 <strong>{gradeForMark(summary.purata)}</strong>
               </div>
             </div>
+
+            <ReportSignatureBlock />
           </>
         )}
       </section>

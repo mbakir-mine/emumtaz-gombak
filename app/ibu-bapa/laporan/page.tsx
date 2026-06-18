@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import PrintButton from '../../ui/PrintButton';
+import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { getSchoolModuleAccesses, getStudentSummariesByMykid } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
 import { gradeForMark } from '@/lib/subjects';
@@ -96,6 +97,8 @@ export default async function IbuBapaLaporanPage({
                 </tbody>
               </table>
             </div>
+
+            <ReportSignatureBlock />
           </>
         )}
       </section>

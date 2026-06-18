@@ -2858,6 +2858,35 @@ textarea {
   font-weight: 800;
 }
 
+.report-signature-block {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(28px, 7vw, 110px);
+  margin-top: 48px;
+  padding: 0 8px 8px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.report-signature-item {
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: center;
+}
+
+.report-signature-item p {
+  margin: 0 0 54px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.report-signature-line {
+  width: 100%;
+  border-bottom: 1px dotted rgba(5, 31, 21, 0.8);
+}
+
 .print-report-title {
   display: none;
   margin-bottom: 18px;
@@ -4522,6 +4551,22 @@ textarea {
   .class-mark-report .student-name-col {
     min-width: 220px;
   }
+
+  .report-signature-block {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 34px;
+    margin-top: 32px;
+    padding: 0;
+  }
+
+  .report-signature-item {
+    min-height: 92px;
+  }
+
+  .report-signature-item p {
+    margin-bottom: 46px;
+    font-size: 12px;
+  }
 }
 
 button:disabled {
@@ -4882,6 +4927,20 @@ button:disabled {
 }
 
 @media (max-width: 640px) {
+  .report-signature-block {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 32px;
+  }
+
+  .report-signature-item {
+    min-height: 86px;
+  }
+
+  .report-signature-item p {
+    margin-bottom: 38px;
+  }
+
   .main {
     padding: 0;
   }
