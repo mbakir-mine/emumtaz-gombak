@@ -8,15 +8,28 @@ function formatGregorian(date: Date) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    timeZone: 'Asia/Kuala_Lumpur',
   }).format(date);
 }
 
 function formatHijri(date: Date) {
-  return new Intl.DateTimeFormat('ms-MY-u-ca-islamic', {
+  const formatter = new Intl.DateTimeFormat('ms-MY-u-ca-islamic-civil', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
-  }).format(date);
+    timeZone: 'Asia/Kuala_Lumpur',
+  });
+  const monthNames: Record<string, string> = {
+    Muharam: 'Muharam',
+    Muharram: 'Muharam',
+    Zulhijah: 'Zulhijjah',
+    Zulhijjah: 'Zulhijjah',
+  };
+
+  return formatter
+    .formatToParts(date)
+    .map((part) => (part.type === 'month' ? monthNames[part.value] ?? part.value : part.value))
+    .join('');
 }
 
 function formatTime(date: Date) {
@@ -24,6 +37,7 @@ function formatTime(date: Date) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+    timeZone: 'Asia/Kuala_Lumpur',
   }).format(date);
 }
 
