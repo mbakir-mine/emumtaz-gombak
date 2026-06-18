@@ -480,8 +480,9 @@ function TeacherDashboard({
   const relatedClassNames = isGuruKelas
     ? classes.map((item) => `Tahun ${item.tahun} - ${item.nama_kelas}`)
     : [...new Set(subjects.map((item) => `Tahun ${item.tahun} - ${item.nama_kelas}`))];
+  const countRows = isGuruKelas && classes.length > 0 ? classes : subjects;
   const uniqueClassTotals = new Map<string, { jumlah: number; lelaki: number; perempuan: number }>();
-  [...classes, ...subjects].forEach((item) => {
+  countRows.forEach((item) => {
     if (!uniqueClassTotals.has(item.class_id)) {
       uniqueClassTotals.set(item.class_id, {
         jumlah: item.jumlah_murid,
