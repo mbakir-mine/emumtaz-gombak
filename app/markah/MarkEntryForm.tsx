@@ -104,6 +104,22 @@ export default function MarkEntryForm({
           value={component.markah_penuh}
         />
       ))}
+      {activeComponents.map((component) => (
+        <input
+          key={`${component.kod_komponen}-name`}
+          type="hidden"
+          name={`component_name_${component.kod_komponen}`}
+          value={component.nama_komponen}
+        />
+      ))}
+      {activeComponents.map((component) => (
+        <input
+          key={`${component.kod_komponen}-order`}
+          type="hidden"
+          name={`component_order_${component.kod_komponen}`}
+          value={component.susunan}
+        />
+      ))}
 
       {hasComponents && (
         <div className="component-mark-banner">

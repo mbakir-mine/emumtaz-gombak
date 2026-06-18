@@ -3,11 +3,22 @@
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { examAccessStatus } from '@/lib/examAccess';
+import { defaultComponentsForSubject } from '@/lib/subjectComponents';
 
 export type MarkActionState = {
   ok: boolean;
   message: string;
 };
+
+function positiveNumber(value: FormDataEntryValue | null, fallback: number) {
+  const parsed = Number(value ?? fallback);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function positiveInteger(value: FormDataEntryValue | null, fallback: number) {
+  const parsed = Number(value ?? fallback);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 export async function saveMarks(
   _previousState: MarkActionState,
@@ -41,12 +52,45 @@ export async function saveMarks(
   }
 
   if (componentCodes.length > 0) {
-    const componentMaxByCode = new Map(
-      componentCodes.map((componentCode) => [
-        componentCode,
-        Number(formData.get(`component_max_${componentCode}`) ?? 100),
-      ]),
+    const defaultComponentByCode = new Map(
+      defaultComponentsForSubject(kodSubjek).map((component) => [component.kod_komponen, component]),
     );
+    const componentDefinitions = componentCodes.map((componentCode, index) => {
+      const defaultComponent = defaultComponentByCode.get(componentCode);
+      const componentName = String(
+        formData.get(`component_name_${componentCode}`) ?? defaultComponent?.nama_komponen ?? componentCode,
+      ).trim();
+
+      return {
+        kod_subjek: kodSubjek,
+        kod_komponen: componentCode,
+        nama_komponen: componentName || componentCode,
+        markah_penuh: positiveNumber(
+          formData.get(`component_max_${componentCode}`),
+          defaultComponent?.markah_penuh ?? 100,
+        ),
+        susunan: positiveInteger(
+          formData.get(`component_order_${componentCode}`),
+          defaultComponent?.susunan ?? index + 1,
+        ),
+        status: 'AKTIF',
+      };
+    });
+    const componentMaxByCode = new Map(
+      componentDefinitions.map((component) => [component.kod_komponen, component.markah_penuh]),
+    );
+
+    const { error: definitionError } = await supabase.from('subject_components').upsert(componentDefinitions, {
+      onConflict: 'kod_subjek,kod_komponen',
+      ignoreDuplicates: true,
+    });
+
+    if (definitionError) {
+      return {
+        ok: false,
+        message: `Tetapan komponen markah belum lengkap. Jalankan SQL 026_subject_mark_components.sql dan 029_year3_imlak_khat_components.sql dahulu. Ralat: ${definitionError.message}`,
+      };
+    }
 
     const componentRows = studentIds.flatMap((studentId) =>
       componentCodes.map((componentCode) => {
