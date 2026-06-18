@@ -2800,6 +2800,11 @@ textarea {
   background: rgba(0, 107, 59, 0.08);
 }
 
+.student-sort-separator {
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .class-mark-report .student-name-col strong {
   display: block;
   color: #005f38;

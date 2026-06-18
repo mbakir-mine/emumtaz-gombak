@@ -488,7 +488,9 @@ export default function ClassReportTable({
                   <th className="student-name-col">
                     <div className="student-sort-group">
                       {renderSortButton('Nama', 'name')}
+                      <span className="student-sort-separator">/</span>
                       {renderSortButton('MyKid', 'mykid')}
+                      <span className="student-sort-separator">/</span>
                       {renderSortButton('Jantina', 'gender')}
                     </div>
                   </th>
