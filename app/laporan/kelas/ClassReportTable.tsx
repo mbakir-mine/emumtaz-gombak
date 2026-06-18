@@ -13,6 +13,7 @@ import type {
   SubjectRecord,
   TeacherClassAssignment,
 } from '@/lib/data';
+import { cleanMykid } from '@/lib/mykid';
 import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
 
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
@@ -58,10 +59,6 @@ function genderShort(jantina: string | null | undefined) {
   if (value.startsWith('L')) return 'L';
   if (value.startsWith('P')) return 'P';
   return jantina;
-}
-
-function cleanMykid(mykid: string | null | undefined) {
-  return String(mykid ?? '').replace(/\D/g, '');
 }
 
 function gradeShort(markah: number | null | undefined) {

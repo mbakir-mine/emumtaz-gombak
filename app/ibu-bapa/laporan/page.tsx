@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import PrintButton from '../../ui/PrintButton';
 import { getSchoolModuleAccesses, getStudentSummariesByMykid } from '@/lib/data';
+import { cleanMykid } from '@/lib/mykid';
 import { gradeForMark } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
@@ -61,7 +62,7 @@ export default async function IbuBapaLaporanPage({
               </div>
               <div>
                 <span>MyKid</span>
-                <strong>{student.mykid}</strong>
+                <strong>{cleanMykid(student.mykid)}</strong>
               </div>
               <div>
                 <span>Sekolah</span>

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { ClassRecord, School, StudentEnrollmentDetail, StudentRecord } from '@/lib/data';
+import { cleanMykid } from '@/lib/mykid';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../../ui/scopedData';
 import { promoteStudents } from './actions';
@@ -372,7 +373,7 @@ export default function PromotionPlanner({
                         <strong>{item.student.nama_murid}</strong>
                       </td>
                       <td>
-                        <span>{item.student.mykid}</span>
+                        <span>{cleanMykid(item.student.mykid)}</span>
                       </td>
                       <td>
                         {item.sourceClass ? (

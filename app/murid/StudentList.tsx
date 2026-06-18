@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AccessProfile } from '@/lib/access';
 import type { ClassRecord, School, StudentRecord, StudentSchoolSummary } from '@/lib/data';
+import { cleanMykid } from '@/lib/mykid';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import StudentForm from './StudentForm';
@@ -332,7 +333,16 @@ export default function StudentList({
       const classRecord = student.class_id ? classById.get(student.class_id) : null;
       const classLabel = classRecord ? `Tahun ${classRecord.tahun} ${classRecord.nama_kelas}` : 'Tiada kelas';
       const school = schoolMap.get(student.kod_sekolah);
-      return [student.nama_murid, student.mykid, student.kod_sekolah, school?.nama_sekolah, school?.zon, classLabel, student.jantina, student.status]
+      return [
+        student.nama_murid,
+        cleanMykid(student.mykid),
+        student.kod_sekolah,
+        school?.nama_sekolah,
+        school?.zon,
+        classLabel,
+        student.jantina,
+        student.status,
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -532,7 +542,7 @@ export default function StudentList({
                     <td>{index + 1}</td>
                     <td>
                       <strong>{student.nama_murid}</strong>
-                      <small className="cell-subtext">{student.mykid}</small>
+                      <small className="cell-subtext">{cleanMykid(student.mykid)}</small>
                     </td>
                     <td>{schoolLabel(student.kod_sekolah, schoolMap)}</td>
                     <td>{classRecord ? `Tahun ${classRecord.tahun}` : '-'}</td>

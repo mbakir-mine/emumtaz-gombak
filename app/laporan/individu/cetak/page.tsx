@@ -2,6 +2,7 @@ import Link from 'next/link';
 import AppFrame from '../../../ui/AppFrame';
 import PrintButton from '../../../ui/PrintButton';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
+import { cleanMykid } from '@/lib/mykid';
 import { gradeForMark } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +73,7 @@ export default async function CetakLaporanIndividuPage({
               </div>
               <div>
                 <span>MyKid</span>
-                <strong>{summary.mykid}</strong>
+                <strong>{cleanMykid(summary.mykid)}</strong>
               </div>
               <div>
                 <span>Sekolah</span>
