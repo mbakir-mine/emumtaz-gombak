@@ -110,10 +110,6 @@ function gradeSortValue(markah: number | null | undefined) {
   return 1;
 }
 
-function isNumericSort(sortKey: SortKey) {
-  return sortKey === 'total' || sortKey === 'average' || sortKey === 'grade' || sortKey.startsWith('subject:');
-}
-
 function isValidSortKey(value: string | null | undefined): value is SortKey {
   if (!value) return false;
   return ['gender', 'mykid', 'name', 'total', 'average', 'grade'].includes(value) || value.startsWith('subject:');
@@ -332,8 +328,7 @@ export default function ClassReportTable({
 
   const sortLabel = (key: SortKey) => {
     if (sortKey !== key) return '';
-    if (isNumericSort(key)) return sortDirection === 'asc' ? '1-9' : '9-1';
-    return sortDirection === 'asc' ? 'A-Z' : 'Z-A';
+    return sortDirection === 'asc' ? '↑' : '↓';
   };
 
   const renderSortButton = (label: string, key: SortKey, title?: string) => (
