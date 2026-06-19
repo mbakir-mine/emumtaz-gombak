@@ -1,5 +1,5 @@
 import { hasSupabaseEnv, supabase } from './supabase';
-import { compareExamCode } from './examOrdering';
+import { compareExamCode, isStandardExamCode } from './examOrdering';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 
@@ -413,6 +413,34 @@ export type MarkDetailRecord = {
   classes?: ClassRecord;
 };
 
+export type PbdAssessmentRecord = {
+  id: string;
+  kod_sekolah: string;
+  class_id: string;
+  tahun_akademik: number;
+  kod_subjek: string;
+  teacher_id: string | null;
+  tarikh: string;
+  tajuk: string;
+  instrumen: string;
+  markah_penuh: number;
+  status: string;
+  subjects?: SubjectRecord;
+  classes?: ClassRecord;
+  users?: UserRecord;
+};
+
+export type PbdMarkDetailRecord = {
+  id: string;
+  assessment_id: string;
+  student_id: string;
+  markah: number | null;
+  tahap_penguasaan: number | null;
+  catatan: string | null;
+  students?: StudentRecord;
+  pbd_assessments?: PbdAssessmentRecord;
+};
+
 export type TeacherClassAssignment = {
   id: string;
   user_id: string;
@@ -770,7 +798,9 @@ function latestRelevantExam<T extends { tahun_akademik: number; kod_peperiksaan:
   items: T[],
   currentYear = new Date().getFullYear(),
 ) {
-  const currentOrPast = items.filter((item) => item.tahun_akademik <= currentYear);
+  const standardItems = items.filter((item) => isStandardExamCode(item.kod_peperiksaan));
+  const examItems = standardItems.length > 0 ? standardItems : items;
+  const currentOrPast = examItems.filter((item) => item.tahun_akademik <= currentYear);
   const currentYearItems = currentOrPast.filter((item) => item.tahun_akademik === currentYear);
   const candidates = currentYearItems.length > 0 ? currentYearItems : currentOrPast;
   return [...candidates].sort((a, b) => examSortValue(b) - examSortValue(a))[0] ?? null;
@@ -1538,6 +1568,63 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
     exams: Array.isArray(item.exams) ? item.exams[0] : item.exams,
     classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,
   })) as MarkDetailRecord[];
+}
+
+export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('pbd_marks')
+    .select(
+      `
+      id,
+      assessment_id,
+      student_id,
+      markah,
+      tahap_penguasaan,
+      catatan,
+      students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status),
+      pbd_assessments(
+        id,
+        kod_sekolah,
+        class_id,
+        tahun_akademik,
+        kod_subjek,
+        teacher_id,
+        tarikh,
+        tajuk,
+        instrumen,
+        markah_penuh,
+        status,
+        subjects(kod_subjek,nama_subjek,markah_penuh,dikira_purata,susunan,status),
+        classes(id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status),
+        users:app_users(id,email,nama,role,kod_sekolah,status)
+      )
+    `,
+    )
+    .order('student_id');
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    id: item.id,
+    assessment_id: item.assessment_id,
+    student_id: item.student_id,
+    markah: item.markah,
+    tahap_penguasaan: item.tahap_penguasaan,
+    catatan: item.catatan,
+    students: Array.isArray(item.students) ? item.students[0] : item.students,
+    pbd_assessments: item.pbd_assessments
+      ? {
+          ...item.pbd_assessments,
+          subjects: Array.isArray(item.pbd_assessments.subjects)
+            ? item.pbd_assessments.subjects[0]
+            : item.pbd_assessments.subjects,
+          classes: Array.isArray(item.pbd_assessments.classes)
+            ? item.pbd_assessments.classes[0]
+            : item.pbd_assessments.classes,
+          users: Array.isArray(item.pbd_assessments.users) ? item.pbd_assessments.users[0] : item.pbd_assessments.users,
+        }
+      : undefined,
+  })) as PbdMarkDetailRecord[];
 }
 
 export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssignment[]> {

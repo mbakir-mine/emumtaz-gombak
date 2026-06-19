@@ -7,15 +7,13 @@ import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type {
   ClassRecord,
-  ExamRecord,
-  MarkDetailRecord,
+  PbdMarkDetailRecord,
   School,
   SchoolModuleAccess,
   StudentRecord,
   SubjectRecord,
   TeacherClassAssignment,
 } from '@/lib/data';
-import { compareExamRecords } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
 import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
 
@@ -103,28 +101,20 @@ function subjectMatchesColumn(subject: SubjectRecord, column: PbdColumn) {
   return column.aliases.map(normalizeText).some((alias) => code === alias || name.includes(alias));
 }
 
-function valueForPbdColumn(studentId: string, column: PbdColumn, reportSubjects: SubjectRecord[], markMap: Map<string, number | null>) {
+function valueForPbdColumn(
+  studentId: string,
+  column: PbdColumn,
+  reportSubjects: SubjectRecord[],
+  markMap: Map<string, number[]>,
+) {
   const matchedSubjectCodes = new Set(
     reportSubjects.filter((subject) => subjectMatchesColumn(subject, column)).map((subject) => subject.kod_subjek),
   );
-  const values = [...matchedSubjectCodes]
-    .map((kodSubjek) => markMap.get(`${studentId}|${kodSubjek}`))
-    .filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+  const values = [...matchedSubjectCodes].flatMap((kodSubjek) => markMap.get(`${studentId}|${kodSubjek}`) ?? []);
 
   if (values.length === 0) return null;
   const average = values.reduce((total, value) => total + value, 0) / values.length;
   return Number(average.toFixed(2));
-}
-
-function formatExam(exam: ExamRecord | undefined, fallback = '-') {
-  if (!exam) return fallback;
-  return `${exam.kod_peperiksaan} - ${exam.nama_peperiksaan}`;
-}
-
-function isPbdExam(exam: ExamRecord) {
-  const code = normalizeText(exam.kod_peperiksaan);
-  const name = normalizeText(exam.nama_peperiksaan);
-  return code === 'PBD' || name.includes('PBD') || name.includes('PENTAKSIRANBILIKDARJAH');
 }
 
 function rankRows(rows: Omit<PbdRow, 'rank'>[]): PbdRow[] {
@@ -173,7 +163,6 @@ function buildAnalysis(rows: PbdRow[]) {
       total: values.length,
       percentPass: values.length > 0 ? (pass / values.length) * 100 : null,
       percentFail: values.length > 0 ? (fail / values.length) * 100 : null,
-      percentTh: values.length > 0 ? (th / values.length) * 100 : null,
       gps,
     };
   });
@@ -192,8 +181,7 @@ export default function PbdReport({
   classes,
   students,
   subjects,
-  exams,
-  marks,
+  pbdMarks,
   teacherClassAssignments,
   moduleAccesses,
 }: {
@@ -201,8 +189,7 @@ export default function PbdReport({
   classes: ClassRecord[];
   students: StudentRecord[];
   subjects: SubjectRecord[];
-  exams: ExamRecord[];
-  marks: MarkDetailRecord[];
+  pbdMarks: PbdMarkDetailRecord[];
   teacherClassAssignments: TeacherClassAssignment[];
   moduleAccesses: SchoolModuleAccess[];
 }) {
@@ -210,42 +197,35 @@ export default function PbdReport({
   const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(() => {
     const years = new Set<number>();
-    exams.forEach((exam) => {
-      if (isPbdExam(exam) && exam.tahun_akademik <= currentYear) years.add(exam.tahun_akademik);
+    pbdMarks.forEach((mark) => {
+      const year = mark.pbd_assessments?.tahun_akademik;
+      if (year && year <= currentYear) years.add(year);
     });
     classes.forEach((classRecord) => {
       if (classRecord.tahun_akademik <= currentYear) years.add(classRecord.tahun_akademik);
     });
     years.add(currentYear);
     return [...years].sort((a, b) => b - a);
-  }, [classes, currentYear, exams]);
+  }, [classes, currentYear, pbdMarks]);
   const defaultYear = yearOptions.includes(currentYear) ? currentYear : yearOptions[0] ?? 2026;
   const [selectedYear, setSelectedYear] = useState(defaultYear);
-  const [selectedExam, setSelectedExam] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
 
   useEffect(() => {
-    if (profile?.role === 'ADMIN_SEKOLAH' && profile.kod_sekolah) {
+    if ((profile?.role === 'ADMIN_SEKOLAH' || profile?.role === 'GURU_KELAS') && profile.kod_sekolah) {
       setSelectedSchool(profile.kod_sekolah);
     }
   }, [profile]);
 
-  const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
+  const isSchoolScoped = profile?.role === 'ADMIN_SEKOLAH' || profile?.role === 'GURU_KELAS';
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
-  const effectiveSchool = isSchoolAdmin || profile?.role === 'GURU_KELAS' ? profile?.kod_sekolah ?? selectedSchool : selectedSchool;
+  const effectiveSchool = isSchoolScoped ? profile?.kod_sekolah ?? selectedSchool : selectedSchool;
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
-  const examOptions = useMemo(
-    () =>
-      exams
-        .filter((exam) => exam.tahun_akademik === selectedYear && isPbdExam(exam) && exam.status !== 'DITUTUP')
-        .sort(compareExamRecords),
-    [exams, selectedYear],
-  );
   const classOptions = scopedClasses
     .filter((classRecord) => {
       if (classRecord.tahun_akademik !== selectedYear) return false;
@@ -253,21 +233,9 @@ export default function PbdReport({
       if (selectedTahun && classRecord.tahun !== Number(selectedTahun)) return false;
       return true;
     })
-    .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas));
-
-  useEffect(() => {
-    if (!selectedExam && examOptions.length === 1) {
-      setSelectedExam(examOptions[0].id);
-      return;
-    }
-
-    if (selectedExam && !examOptions.some((exam) => exam.id === selectedExam)) {
-      setSelectedExam('');
-    }
-  }, [examOptions, selectedExam]);
+    .sort((a, b) => a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas, 'ms', { sensitivity: 'base' }));
 
   const selectedClassRecord = classOptions.find((classRecord) => classRecord.id === selectedClass);
-  const selectedExamRecord = examOptions.find((exam) => exam.id === selectedExam);
   const selectedSchoolRecord = effectiveSchool
     ? schools.find((school) => school.kod_sekolah === effectiveSchool)
     : selectedClassRecord
@@ -284,41 +252,54 @@ export default function PbdReport({
 
   const classStudents = students
     .filter((student) => student.class_id === selectedClassRecord?.id && student.status === 'AKTIF')
-    .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid));
-  const selectedMarks = useMemo(
+    .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid, 'ms', { sensitivity: 'base' }));
+
+  const selectedPbdMarks = useMemo(
     () =>
-      marks.filter((mark) => {
-        if (mark.exam_id !== selectedExam) return false;
-        if (mark.class_id !== selectedClassRecord?.id) return false;
+      pbdMarks.filter((mark) => {
+        const assessment = mark.pbd_assessments;
+        if (!assessment) return false;
+        if (assessment.tahun_akademik !== selectedYear) return false;
+        if (assessment.class_id !== selectedClassRecord?.id) return false;
         return mark.students?.status === 'AKTIF';
       }),
-    [marks, selectedClassRecord?.id, selectedExam],
+    [pbdMarks, selectedClassRecord?.id, selectedYear],
   );
-  const selectedMarkCount = selectedMarks.length;
+
   const subjectMap = useMemo(() => new Map(subjects.map((subject) => [subject.kod_subjek, subject])), [subjects]);
   const reportSubjects = useMemo(() => {
     if (!selectedClassRecord) return [];
     const allowed = subjects.filter((subject) => allowedSubjectForTahun(subject, selectedClassRecord.tahun));
-    const fromMarks = selectedMarks
-      .map((mark) => subjectMap.get(mark.kod_subjek) ?? mark.subjects)
+    const fromPbd = selectedPbdMarks
+      .map((mark) => subjectMap.get(mark.pbd_assessments?.kod_subjek ?? '') ?? mark.pbd_assessments?.subjects)
       .filter((subject): subject is SubjectRecord => Boolean(subject));
     const merged = new Map<string, SubjectRecord>();
-    [...allowed, ...fromMarks].forEach((subject) => merged.set(subject.kod_subjek, subject));
+    [...allowed, ...fromPbd].forEach((subject) => merged.set(subject.kod_subjek, subject));
     return [...merged.values()].sort(
       (a, b) => (a.susunan ?? 999) - (b.susunan ?? 999) || a.kod_subjek.localeCompare(b.kod_subjek),
     );
-  }, [selectedClassRecord, selectedMarks, subjectMap, subjects]);
+  }, [selectedClassRecord, selectedPbdMarks, subjectMap, subjects]);
 
-  const markMap = useMemo(
-    () => new Map(selectedMarks.map((mark) => [`${mark.student_id}|${mark.kod_subjek}`, mark.markah])),
-    [selectedMarks],
-  );
+  const pbdMarkMap = useMemo(() => {
+    const map = new Map<string, number[]>();
+    selectedPbdMarks.forEach((mark) => {
+      const assessment = mark.pbd_assessments;
+      if (!assessment || mark.markah === null || mark.markah === undefined) return;
+      const markahPenuh = Number(assessment.markah_penuh || 100);
+      if (!Number.isFinite(markahPenuh) || markahPenuh <= 0) return;
+      const normalized = Number(((Number(mark.markah) / markahPenuh) * 100).toFixed(2));
+      if (!Number.isFinite(normalized)) return;
+      const key = `${mark.student_id}|${assessment.kod_subjek}`;
+      map.set(key, [...(map.get(key) ?? []), normalized]);
+    });
+    return map;
+  }, [selectedPbdMarks]);
 
   const reportRows = useMemo(() => {
     const baseRows = classStudents.map((student) => {
       const values = new Map<string, number | null>();
       pbdColumns.forEach((column) => {
-        values.set(column.key, valueForPbdColumn(student.id, column, reportSubjects, markMap));
+        values.set(column.key, valueForPbdColumn(student.id, column, reportSubjects, pbdMarkMap));
       });
       const validValues = [...values.values()].filter(
         (value): value is number => value !== null && Number.isFinite(value),
@@ -337,14 +318,13 @@ export default function PbdReport({
       };
     });
 
-    return rankRows(baseRows).sort((a, b) => a.student.nama_murid.localeCompare(b.student.nama_murid));
-  }, [classStudents, markMap, reportSubjects]);
+    return rankRows(baseRows).sort((a, b) => a.student.nama_murid.localeCompare(b.student.nama_murid, 'ms', { sensitivity: 'base' }));
+  }, [classStudents, pbdMarkMap, reportSubjects]);
 
   const analysis = buildAnalysis(reportRows);
   const overallGpsValues = analysis.map((item) => item.gps).filter((value): value is number => value !== null);
-  const overallGps = overallGpsValues.length > 0
-    ? overallGpsValues.reduce((sum, value) => sum + value, 0) / overallGpsValues.length
-    : null;
+  const overallGps =
+    overallGpsValues.length > 0 ? overallGpsValues.reduce((sum, value) => sum + value, 0) / overallGpsValues.length : null;
   const classTitle = selectedClassRecord
     ? `Tahun ${selectedClassRecord.tahun} - ${selectedClassRecord.nama_kelas} / ${selectedClassRecord.tahun_akademik}`
     : '-';
@@ -359,7 +339,7 @@ export default function PbdReport({
         <div>
           <h2>Pelaporan PBD JAIS</h2>
           <p className="table-note">
-            Pilih penilaian PBD dan kelas untuk memaparkan rekod pentaksiran yang diisi oleh guru subjek.
+            Pilih sekolah dan kelas untuk memaparkan rekod PBD yang diisi oleh guru subjek sepanjang tahun.
           </p>
         </div>
         <div className="row-actions no-print">
@@ -374,7 +354,6 @@ export default function PbdReport({
             value={selectedYear}
             onChange={(event) => {
               setSelectedYear(Number(event.target.value));
-              setSelectedExam('');
               resetClassSelection();
             }}
           >
@@ -386,19 +365,7 @@ export default function PbdReport({
           </select>
         </label>
 
-        <label>
-          Peperiksaan PBD
-          <select value={selectedExam} onChange={(event) => setSelectedExam(event.target.value)}>
-            <option value="">Pilih PBD</option>
-            {examOptions.map((exam) => (
-              <option key={exam.id} value={exam.id}>
-                {formatExam(exam)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {!isSchoolAdmin && profile?.role !== 'GURU_KELAS' && (
+        {!isSchoolScoped && (
           <label>
             Zon
             <select
@@ -420,7 +387,7 @@ export default function PbdReport({
           </label>
         )}
 
-        {!isSchoolAdmin && profile?.role !== 'GURU_KELAS' && (
+        {!isSchoolScoped && (
           <label>
             Sekolah
             <select
@@ -478,14 +445,7 @@ export default function PbdReport({
         </p>
       )}
 
-      {examOptions.length === 0 ? (
-        <p className="empty">
-          Penilaian PBD belum diwujudkan untuk tahun ini. Jalankan SQL PBD dahulu supaya guru subjek boleh memilih PBD
-          dalam menu Pemarkahan.
-        </p>
-      ) : !selectedExam ? (
-        <p className="empty">Pilih peperiksaan PBD untuk memaparkan pelaporan.</p>
-      ) : !selectedClassRecord ? (
+      {!selectedClassRecord ? (
         <p className="empty">Pilih kelas untuk memaparkan Pelaporan PBD.</p>
       ) : !pbdEnabled ? (
         <p className="empty">Pelaporan PBD tidak dipaparkan kerana sekolah belum diberi akses modul ini.</p>
@@ -510,8 +470,8 @@ export default function PbdReport({
               <strong>{classTitle}</strong>
             </div>
             <div>
-              <span>Penilaian PBD</span>
-              <strong>{formatExam(selectedExamRecord, selectedExam)}</strong>
+              <span>Penilaian</span>
+              <strong>PBD Berterusan</strong>
             </div>
             <div>
               <span>Guru Kelas</span>
@@ -527,10 +487,9 @@ export default function PbdReport({
               </div>
               <span>{reportRows.length} murid</span>
             </div>
-            {selectedMarkCount === 0 && (
+            {selectedPbdMarks.length === 0 && (
               <p className="notice no-print">
-                Belum ada markah PBD direkodkan untuk kelas ini. Guru subjek boleh isi melalui menu Pemarkahan dengan
-                memilih peperiksaan PBD.
+                Belum ada rekod PBD untuk kelas ini. Guru subjek boleh isi melalui menu Modul Sekolah &gt; PBD.
               </p>
             )}
             <div className="table-scroll pbd-table-scroll">
@@ -570,9 +529,7 @@ export default function PbdReport({
                           const value = row.values.get(column.key) ?? null;
                           return (
                             <Fragment key={column.key}>
-                              <td className={scoreClass(value)}>
-                                {formatNumber(value)}
-                              </td>
+                              <td className={scoreClass(value)}>{formatNumber(value)}</td>
                               <td>{value === null ? '-' : gradeShort(value)}</td>
                             </Fragment>
                           );

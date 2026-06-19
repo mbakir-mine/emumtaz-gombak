@@ -43,10 +43,10 @@ export const optionalSchoolModules = [
   },
   {
     key: 'PELAPORAN_PBD',
-    navKey: 'reportPbd',
-    label: 'Pelaporan PBD',
+    navKey: 'pbd',
+    label: 'PBD',
     shortLabel: 'PBD',
-    description: 'Pelaporan PBD rasmi mengikut format JAIS untuk sekolah yang diluluskan.',
+    description: 'Kemasukan dan pelaporan PBD rasmi untuk sekolah yang diluluskan.',
   },
 ] as const;
 

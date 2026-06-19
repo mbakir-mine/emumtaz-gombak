@@ -6,6 +6,7 @@ import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeSchools } from '../../ui/scopedData';
 import type { School, SchoolSummaryRecord } from '@/lib/data';
+import { isStandardExamCode } from '@/lib/examOrdering';
 import { gradeForMark } from '@/lib/subjects';
 
 export default function SchoolReportTable({
@@ -19,7 +20,7 @@ export default function SchoolReportTable({
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const allowedSchools = new Set(scopedSchools.map((school) => school.kod_sekolah));
   const schoolName = new Map(schools.map((school) => [school.kod_sekolah, school.nama_sekolah]));
-  const scopedSummaries = summaries.filter((item) => allowedSchools.has(item.kod_sekolah));
+  const scopedSummaries = summaries.filter((item) => allowedSchools.has(item.kod_sekolah) && isStandardExamCode(item.kod_peperiksaan));
 
   return (
     <>

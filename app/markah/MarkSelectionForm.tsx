@@ -9,7 +9,7 @@ import type {
   TeacherSubjectAssignment,
   TeacherSubjectComponentAssignment,
 } from '@/lib/data';
-import { compareExamRecords } from '@/lib/examOrdering';
+import { compareExamRecords, isStandardExamCode } from '@/lib/examOrdering';
 import { allowedSubjectForTahun } from '@/lib/subjects';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../ui/scopedData';
@@ -111,7 +111,10 @@ export default function MarkSelectionForm({
     [myTeachingClassIds, scopedClasses, selectedMode, selectedSchool, selectedYear],
   );
   const filteredExams = useMemo(
-    () => exams.filter((exam) => exam.tahun_akademik === selectedYear).sort(compareExamRecords),
+    () =>
+      exams
+        .filter((exam) => exam.tahun_akademik === selectedYear && isStandardExamCode(exam.kod_peperiksaan))
+        .sort(compareExamRecords),
     [exams, selectedYear],
   );
 

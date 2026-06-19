@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
-import { compareExamCode } from '@/lib/examOrdering';
+import { compareExamCode, isStandardExamCode } from '@/lib/examOrdering';
 import { gradeForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
@@ -53,7 +53,9 @@ export default function IndividualReportTable({
     return summaries.filter((item) => teacherClassIds.has(item.class_id));
   }, [summaries, teacherClassIds]);
   const teacherExamOptions = useMemo(() => {
-    return [...new Set(teacherSummaries.filter((item) => item.tahun_akademik === selectedYear).map((item) => item.kod_peperiksaan))]
+    return [...new Set(teacherSummaries
+      .filter((item) => item.tahun_akademik === selectedYear && isStandardExamCode(item.kod_peperiksaan))
+      .map((item) => item.kod_peperiksaan))]
       .sort(compareExamCode);
   }, [selectedYear, teacherSummaries]);
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
@@ -69,6 +71,7 @@ export default function IndividualReportTable({
 
   const filteredSummaries = summaries.filter((item) => {
     if (item.tahun_akademik !== selectedYear) return false;
+    if (!isStandardExamCode(item.kod_peperiksaan)) return false;
     if (!allowedSchools.has(item.kod_sekolah)) return false;
     if (effectiveSchool && item.kod_sekolah !== effectiveSchool) return false;
 

@@ -6,6 +6,7 @@ import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses } from '../../ui/scopedData';
 import type { ClassRecord, School, SubjectSummaryRecord } from '@/lib/data';
+import { isStandardExamCode } from '@/lib/examOrdering';
 import { gradeForMark } from '@/lib/subjects';
 
 export default function SubjectReportTable({
@@ -20,7 +21,7 @@ export default function SubjectReportTable({
   const profile = useAccessProfile();
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const classById = new Map(scopedClasses.map((item) => [item.id, item]));
-  const scopedSummaries = summaries.filter((item) => classById.has(item.class_id));
+  const scopedSummaries = summaries.filter((item) => classById.has(item.class_id) && isStandardExamCode(item.kod_peperiksaan));
 
   return (
     <>

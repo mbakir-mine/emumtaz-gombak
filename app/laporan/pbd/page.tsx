@@ -1,8 +1,7 @@
 import AppFrame from '../../ui/AppFrame';
 import {
   getClasses,
-  getExams,
-  getMarkDetails,
+  getPbdMarkDetails,
   getSchoolModuleAccesses,
   getSchools,
   getStudents,
@@ -15,17 +14,15 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function LaporanPbdPage() {
-  const [schools, classes, students, subjects, exams, marks, teacherClassAssignments, moduleAccesses] =
-    await Promise.all([
-      getSchools(),
-      getClasses(),
-      getStudents(),
-      getSubjects(),
-      getExams(),
-      getMarkDetails(),
-      getTeacherClassAssignments(),
-      getSchoolModuleAccesses(),
-    ]);
+  const [schools, classes, students, subjects, pbdMarks, teacherClassAssignments, moduleAccesses] = await Promise.all([
+    getSchools(),
+    getClasses(),
+    getStudents(),
+    getSubjects(),
+    getPbdMarkDetails(),
+    getTeacherClassAssignments(),
+    getSchoolModuleAccesses(),
+  ]);
 
   return (
     <AppFrame title="Pelaporan PBD" subtitle="Format pelaporan rasmi JAIS mengikut sekolah dan kelas." active="reportPbd">
@@ -35,8 +32,7 @@ export default async function LaporanPbdPage() {
           classes={classes}
           students={students}
           subjects={subjects}
-          exams={exams}
-          marks={marks}
+          pbdMarks={pbdMarks}
           teacherClassAssignments={teacherClassAssignments}
           moduleAccesses={moduleAccesses}
         />

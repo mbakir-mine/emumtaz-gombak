@@ -14,7 +14,7 @@ import type {
   SubjectRecord,
   TeacherClassAssignment,
 } from '@/lib/data';
-import { compareExamRecords } from '@/lib/examOrdering';
+import { compareExamRecords, isStandardExamCode } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
 import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
 
@@ -230,7 +230,7 @@ export default function ClassReportTable({
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
   const examOptions = exams
-    .filter((exam) => exam.tahun_akademik === selectedYear)
+    .filter((exam) => exam.tahun_akademik === selectedYear && isStandardExamCode(exam.kod_peperiksaan))
     .sort(compareExamRecords);
 
   const classOptions = scopedClasses

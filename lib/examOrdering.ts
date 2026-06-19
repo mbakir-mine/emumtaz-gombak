@@ -1,11 +1,15 @@
 const EXAM_PRIORITY: Record<string, number> = {
   UPSA: 1,
   UASA: 2,
-  PBD: 3,
 };
 
-function normalizeExamCode(code: string | null | undefined) {
+export function normalizeExamCode(code: string | null | undefined) {
   return String(code ?? '').trim().toUpperCase();
+}
+
+export function isStandardExamCode(code: string | null | undefined) {
+  const normalized = normalizeExamCode(code);
+  return normalized === 'UPSA' || normalized === 'UASA';
 }
 
 export function examPriority(code: string | null | undefined) {

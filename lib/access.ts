@@ -55,6 +55,13 @@ export const navItems: NavItem[] = [
     moduleKey: 'AMAL_KHAIR',
   },
   {
+    key: 'pbd',
+    label: 'PBD',
+    href: '/pbd',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'PELAPORAN_PBD',
+  },
+  {
     key: 'timetable',
     label: 'Jadual Waktu',
     href: '/jadual-waktu',
