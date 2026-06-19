@@ -23,6 +23,8 @@ function isUpkkAssessmentType(value: string): value is UpkkJakimAssessmentType {
   return value === 'PCHI' || value === 'AMALI_SOLAT';
 }
 
+const UPKK_STUDENT_YEAR = 5;
+
 export async function saveUpkkJakimMarks(
   _previousState: UpkkJakimActionState,
   formData: FormData,
@@ -45,6 +47,25 @@ export async function saveUpkkJakimMarks(
 
   if (studentIds.length === 0) {
     return { ok: false, message: 'Tiada murid untuk disimpan.' };
+  }
+
+  const { data: selectedClass, error: classError } = await supabase
+    .from('classes')
+    .select('id,tahun,kod_sekolah,tahun_akademik,status')
+    .eq('id', classId)
+    .eq('kod_sekolah', kodSekolah)
+    .eq('tahun_akademik', tahunAkademik)
+    .maybeSingle();
+
+  if (classError) {
+    return { ok: false, message: `Gagal semak kelas UPKK. Ralat: ${classError.message}` };
+  }
+
+  if (!selectedClass || selectedClass.status !== 'AKTIF' || selectedClass.tahun !== UPKK_STUDENT_YEAR) {
+    return {
+      ok: false,
+      message: 'UPKK JAKIM hanya boleh disimpan untuk kelas Tahun 5 yang aktif.',
+    };
   }
 
   const components = upkkComponentsByType(assessmentType);

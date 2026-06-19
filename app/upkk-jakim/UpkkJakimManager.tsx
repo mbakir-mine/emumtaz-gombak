@@ -14,6 +14,7 @@ import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import { saveUpkkJakimMarks, type UpkkJakimActionState } from './actions';
 
 const initialState: UpkkJakimActionState = { ok: false, message: '' };
+const UPKK_STUDENT_YEAR = 5;
 
 function sortByClass(a: ClassRecord, b: ClassRecord) {
   return a.tahun - b.tahun || a.nama_kelas.localeCompare(b.nama_kelas, 'ms', { sensitivity: 'base' });
@@ -73,6 +74,7 @@ export default function UpkkJakimManager({
           (item) =>
             item.kod_sekolah === selectedSchool &&
             item.tahun_akademik === selectedYear &&
+            item.tahun === UPKK_STUDENT_YEAR &&
             item.status === 'AKTIF',
         )
         .sort(sortByClass),
@@ -129,7 +131,7 @@ export default function UpkkJakimManager({
       <div className="panel-head">
         <div>
           <h2>UPKK JAKIM</h2>
-          <p>Pemarkahan Penghayatan Cara Hidup Islam (PCHI) dan Amali Solat berdasarkan format UPKK JAKIM.</p>
+          <p>Pemarkahan Penghayatan Cara Hidup Islam (PCHI) dan Amali Solat untuk murid Tahun 5 sahaja.</p>
         </div>
         <span>{savedCount} skor disimpan</span>
       </div>
@@ -172,7 +174,7 @@ export default function UpkkJakimManager({
         <label>
           Kelas
           <select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} disabled={!selectedSchool}>
-            <option value="">{selectedSchool ? 'Pilih kelas' : 'Pilih sekolah dahulu'}</option>
+            <option value="">{selectedSchool ? 'Pilih kelas Tahun 5' : 'Pilih sekolah dahulu'}</option>
             {schoolClasses.map((item) => (
               <option key={item.id} value={item.id}>
                 {classLabel(item)}
@@ -221,7 +223,9 @@ export default function UpkkJakimManager({
           </div>
 
           {!selectedClass ? (
-            <p className="empty">Pilih kelas untuk memaparkan senarai murid.</p>
+            <p className="empty">
+              Pilih kelas Tahun 5 untuk memaparkan senarai murid. UPKK JAKIM tidak melibatkan murid tahun lain.
+            </p>
           ) : classStudents.length === 0 ? (
             <p className="empty">Tiada murid aktif dalam kelas ini.</p>
           ) : (
