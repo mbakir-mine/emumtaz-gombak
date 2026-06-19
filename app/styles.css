@@ -3075,7 +3075,7 @@ textarea {
 }
 
 .report-signature-block {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(28px, 7vw, 110px);
   margin-top: 48px;
@@ -4801,6 +4801,7 @@ textarea {
   }
 
   .report-signature-block {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 34px;
     margin-top: 32px;
