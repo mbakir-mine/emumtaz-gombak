@@ -15,7 +15,8 @@ alter table public.school_module_access
       'JADUAL_WAKTU',
       'RPH_AI',
       'AKSES_IBU_BAPA',
-      'PELAPORAN_PBD'
+      'PELAPORAN_PBD',
+      'UPKK_JAKIM'
     )
   );
 

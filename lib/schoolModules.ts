@@ -48,6 +48,13 @@ export const optionalSchoolModules = [
     shortLabel: 'PBD',
     description: 'Kemasukan dan pelaporan PBD rasmi untuk sekolah yang diluluskan.',
   },
+  {
+    key: 'UPKK_JAKIM',
+    navKey: 'upkkJakim',
+    label: 'UPKK JAKIM',
+    shortLabel: 'UPKK',
+    description: 'Kemasukan markah PCHI dan Amali Solat UPKK JAKIM.',
+  },
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];
