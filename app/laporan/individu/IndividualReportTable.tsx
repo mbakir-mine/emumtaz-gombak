@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
+import { compareExamCode } from '@/lib/examOrdering';
 import { gradeForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
@@ -53,7 +54,7 @@ export default function IndividualReportTable({
   }, [summaries, teacherClassIds]);
   const teacherExamOptions = useMemo(() => {
     return [...new Set(teacherSummaries.filter((item) => item.tahun_akademik === selectedYear).map((item) => item.kod_peperiksaan))]
-      .sort();
+      .sort(compareExamCode);
   }, [selectedYear, teacherSummaries]);
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
   const effectiveSchool = profile?.role === 'ADMIN_SEKOLAH' ? profile.kod_sekolah ?? '' : selectedSchool;

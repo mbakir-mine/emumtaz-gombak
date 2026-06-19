@@ -14,6 +14,7 @@ import type {
   SubjectRecord,
   TeacherClassAssignment,
 } from '@/lib/data';
+import { compareExamRecords } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
 import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
 
@@ -230,7 +231,7 @@ export default function ClassReportTable({
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
   const examOptions = exams
     .filter((exam) => exam.tahun_akademik === selectedYear)
-    .sort((a, b) => a.kod_peperiksaan.localeCompare(b.kod_peperiksaan));
+    .sort(compareExamRecords);
 
   const classOptions = scopedClasses
     .filter((classRecord) => {

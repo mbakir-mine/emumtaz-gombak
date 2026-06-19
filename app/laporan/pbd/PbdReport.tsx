@@ -15,6 +15,7 @@ import type {
   SubjectRecord,
   TeacherClassAssignment,
 } from '@/lib/data';
+import { compareExamRecords } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
 import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
 
@@ -242,7 +243,7 @@ export default function PbdReport({
     () =>
       exams
         .filter((exam) => exam.tahun_akademik === selectedYear && isPbdExam(exam) && exam.status !== 'DITUTUP')
-        .sort((a, b) => a.kod_peperiksaan.localeCompare(b.kod_peperiksaan)),
+        .sort(compareExamRecords),
     [exams, selectedYear],
   );
   const classOptions = scopedClasses

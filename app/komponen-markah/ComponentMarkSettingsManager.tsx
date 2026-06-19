@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import type { ExamRecord, SubjectComponentMarkSetting, SubjectComponentRecord, SubjectRecord } from '@/lib/data';
+import { compareExamCode } from '@/lib/examOrdering';
 import { allowedSubjectForTahun } from '@/lib/subjects';
 import { saveComponentMarkSettings, type ComponentMarkActionState } from './actions';
 
@@ -23,7 +24,7 @@ export default function ComponentMarkSettingsManager({
   settings: SubjectComponentMarkSetting[];
 }) {
   const years = [...new Set(exams.map((exam) => exam.tahun_akademik))].sort((a, b) => b - a);
-  const examCodes = [...new Set(exams.map((exam) => exam.kod_peperiksaan))].sort();
+  const examCodes = [...new Set(exams.map((exam) => exam.kod_peperiksaan))].sort(compareExamCode);
   const [selectedYear, setSelectedYear] = useState(years[0] ?? new Date().getFullYear());
   const [selectedExamCode, setSelectedExamCode] = useState(examCodes[0] ?? 'UPSA');
   const [selectedTahun, setSelectedTahun] = useState(3);

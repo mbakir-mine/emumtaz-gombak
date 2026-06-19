@@ -1,4 +1,5 @@
 import { hasSupabaseEnv, supabase } from './supabase';
+import { compareExamCode } from './examOrdering';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 
@@ -1254,7 +1255,7 @@ export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
   const rows = await fetchStudentSummariesInBatches();
   return rows.sort((a, b) => {
     if (a.kod_sekolah !== b.kod_sekolah) return a.kod_sekolah.localeCompare(b.kod_sekolah);
-    if (a.kod_peperiksaan !== b.kod_peperiksaan) return a.kod_peperiksaan.localeCompare(b.kod_peperiksaan);
+    if (a.kod_peperiksaan !== b.kod_peperiksaan) return compareExamCode(a.kod_peperiksaan, b.kod_peperiksaan);
     return (b.purata ?? -1) - (a.purata ?? -1);
   });
 }
