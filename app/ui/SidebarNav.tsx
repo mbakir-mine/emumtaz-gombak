@@ -36,7 +36,7 @@ const groupedMenu = [
     key: 'reports',
     label: 'Laporan',
     href: '/laporan',
-    items: ['reportIndividual', 'reportClass', 'reportSchool', 'reportSubject', 'comparison', 'reportAnnual'],
+    items: ['reportIndividual', 'reportClass', 'reportSchool', 'reportSubject', 'reportPbd', 'comparison', 'reportAnnual'],
   },
   {
     key: 'analysis',
@@ -72,6 +72,7 @@ const childLabels: Record<string, string> = {
   reportClass: 'Kelas',
   reportSchool: 'Sekolah',
   reportSubject: 'Subjek',
+  reportPbd: 'PBD',
   analysis: 'Analisis Subjek',
   comparison: 'UPSA vs UASA',
   reportAnnual: 'Perbandingan Tahunan',
@@ -100,6 +101,9 @@ export default function SidebarNav({ active }: { active: string }) {
           if (visibleKeys.has(key) || key === 'changePassword') return true;
           if (group.key !== 'reports' || !visibleKeys.has('reports') || !profile) return false;
           const item = allItemMap.get(key);
+          if (item?.moduleKey && profile.role !== 'OWNER' && !profile.enabled_modules?.includes(item.moduleKey)) {
+            return false;
+          }
           return item ? item.roles.includes(profile.role) : false;
         })
         .map((key) => allItemMap.get(key))

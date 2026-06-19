@@ -41,6 +41,13 @@ export const optionalSchoolModules = [
     shortLabel: 'Ibu Bapa',
     description: 'Semakan laporan murid oleh ibu bapa mengikut sekolah yang diluluskan.',
   },
+  {
+    key: 'PELAPORAN_PBD',
+    navKey: 'reportPbd',
+    label: 'Pelaporan PBD',
+    shortLabel: 'PBD',
+    description: 'Pelaporan PBD rasmi mengikut format JAIS untuk sekolah yang diluluskan.',
+  },
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];

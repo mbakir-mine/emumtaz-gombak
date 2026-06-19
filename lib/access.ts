@@ -76,6 +76,13 @@ export const navItems: NavItem[] = [
   { key: 'reportClass', label: 'Laporan Kelas', href: '/laporan/kelas', roles: allRoles },
   { key: 'reportSchool', label: 'Laporan Sekolah', href: '/laporan/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'reportSubject', label: 'Laporan Subjek', href: '/laporan/subjek', roles: allRoles },
+  {
+    key: 'reportPbd',
+    label: 'Pelaporan PBD',
+    href: '/laporan/pbd',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS'],
+    moduleKey: 'PELAPORAN_PBD',
+  },
   { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'schoolModules', label: 'Akses Modul Sekolah', href: '/modul-sekolah', roles: ['OWNER'] },

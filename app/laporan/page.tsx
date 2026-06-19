@@ -5,6 +5,7 @@ import { gradeForMark } from '@/lib/subjects';
 const reports = [
   ['Laporan Individu', 'Slip prestasi murid, purata, gred dan perbandingan UPSA/UASA.', '/laporan/individu'],
   ['Laporan Kelas', 'Ranking murid, purata kelas, taburan gred dan subjek lemah.', '/laporan/kelas'],
+  ['Pelaporan PBD', 'Rekod PBD JAIS, analisa pencapaian dan GPS kelas.', '/laporan/pbd'],
   ['Laporan Sekolah', 'Prestasi keseluruhan sekolah, peratus lulus dan bilangan cemerlang.', '/laporan/sekolah'],
   ['Laporan Subjek', 'Analisis setiap subjek mengikut kelas, sekolah dan daerah.', '/laporan/subjek'],
   ['UPSA vs UASA', 'Perbandingan peperiksaan tahun semasa.', '/perbandingan'],

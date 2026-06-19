@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import { canAccessPath, choosePrimaryProfile, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
+import { optionalSchoolModules } from '@/lib/schoolModules';
 import type { OptionalSchoolModuleKey } from '@/lib/schoolModules';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
@@ -123,7 +124,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         let enabledModules: OptionalSchoolModuleKey[] = [];
         if (activeProfile.role === 'OWNER') {
-          enabledModules = ['TAKWIM', 'KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI'];
+          enabledModules = optionalSchoolModules.map((module) => module.key);
         } else if (activeProfile.kod_sekolah) {
           const moduleResult = await withTimeout(
             Promise.resolve(

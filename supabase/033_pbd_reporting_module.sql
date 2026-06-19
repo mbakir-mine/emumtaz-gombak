@@ -1,5 +1,5 @@
--- Tambah Akses Ibu Bapa sebagai modul pilihan sekolah.
--- Jalankan di Supabase SQL Editor sebelum menanda checkbox "Ibu Bapa".
+-- Tambah Pelaporan PBD sebagai modul pilihan sekolah.
+-- Jalankan di Supabase SQL Editor sebelum menanda checkbox "PBD".
 
 alter table public.school_module_access
   drop constraint if exists school_module_access_module_key_check;

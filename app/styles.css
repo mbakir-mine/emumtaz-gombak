@@ -2858,6 +2858,101 @@ textarea {
   font-weight: 800;
 }
 
+.pbd-report-page {
+  overflow: hidden;
+}
+
+.pbd-report-filter {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.pbd-meta {
+  margin-top: 10px;
+}
+
+.pbd-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.pbd-section h3 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 21px;
+}
+
+.pbd-table-scroll table,
+.pbd-analysis-scroll table,
+.pbd-gps-scroll table {
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pbd-rtl-table th,
+.pbd-rtl-table td,
+.pbd-analysis-table th,
+.pbd-analysis-table td,
+.pbd-gps-table th,
+.pbd-gps-table td {
+  padding: 8px 9px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pbd-rtl-table .pbd-student-col {
+  min-width: 300px;
+  text-align: left;
+  direction: ltr;
+}
+
+.pbd-student-col strong {
+  display: block;
+  color: #005f38;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.pbd-student-col small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pbd-score {
+  min-width: 60px;
+  font-weight: 800;
+}
+
+.pbd-score-excellent {
+  background: #4f7fdc;
+  color: #06142e;
+}
+
+.pbd-score-danger {
+  background: #ff969b;
+  color: #650b12;
+}
+
+.pbd-score-empty {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.pbd-analysis-table th:first-child,
+.pbd-gps-table th:first-child {
+  text-align: left;
+}
+
+.pbd-total-row th,
+.pbd-total-row td {
+  border-top: 2px solid #7fbf95;
+  background: #f0faf3;
+  font-weight: 900;
+}
+
 .report-signature-block {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4552,6 +4647,38 @@ textarea {
     min-width: 220px;
   }
 
+  .pbd-table-scroll,
+  .pbd-analysis-scroll,
+  .pbd-gps-scroll {
+    overflow: visible;
+  }
+
+  .pbd-table-scroll table,
+  .pbd-analysis-scroll table,
+  .pbd-gps-scroll table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pbd-rtl-table th,
+  .pbd-rtl-table td,
+  .pbd-analysis-table th,
+  .pbd-analysis-table td,
+  .pbd-gps-table th,
+  .pbd-gps-table td {
+    padding: 4px;
+    font-size: 8.5px;
+  }
+
+  .pbd-rtl-table .pbd-student-col {
+    min-width: 180px;
+  }
+
+  .pbd-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .report-signature-block {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 34px;
@@ -5381,6 +5508,10 @@ button:disabled {
   .report-filter-grid,
   .student-report-summary,
   .class-report-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .pbd-report-filter {
     grid-template-columns: 1fr;
   }
 
