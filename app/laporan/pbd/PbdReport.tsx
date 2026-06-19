@@ -206,16 +206,19 @@ export default function PbdReport({
   moduleAccesses: SchoolModuleAccess[];
 }) {
   const profile = useAccessProfile();
+  const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(() => {
     const years = new Set<number>();
     exams.forEach((exam) => {
-      if (isPbdExam(exam)) years.add(exam.tahun_akademik);
+      if (isPbdExam(exam) && exam.tahun_akademik <= currentYear) years.add(exam.tahun_akademik);
     });
-    classes.forEach((classRecord) => years.add(classRecord.tahun_akademik));
-    years.add(new Date().getFullYear());
+    classes.forEach((classRecord) => {
+      if (classRecord.tahun_akademik <= currentYear) years.add(classRecord.tahun_akademik);
+    });
+    years.add(currentYear);
     return [...years].sort((a, b) => b - a);
-  }, [classes, exams]);
-  const defaultYear = yearOptions.includes(new Date().getFullYear()) ? new Date().getFullYear() : yearOptions[0] ?? 2026;
+  }, [classes, currentYear, exams]);
+  const defaultYear = yearOptions.includes(currentYear) ? currentYear : yearOptions[0] ?? 2026;
   const [selectedYear, setSelectedYear] = useState(defaultYear);
   const [selectedExam, setSelectedExam] = useState('');
   const [selectedZone, setSelectedZone] = useState('');

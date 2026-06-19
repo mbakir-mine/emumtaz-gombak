@@ -760,12 +760,23 @@ function gradePointFromAverage(purata: number | null | undefined) {
 }
 
 function examSortValue(item: { tahun_akademik: number; kod_peperiksaan: string }) {
-  const examWeight = item.kod_peperiksaan === 'UASA' ? 2 : item.kod_peperiksaan === 'UPSA' ? 1 : 0;
+  const examCode = item.kod_peperiksaan.toUpperCase();
+  const examWeight = examCode === 'UASA' ? 2 : examCode === 'UPSA' ? 1 : 0;
   return item.tahun_akademik * 10 + examWeight;
 }
 
+function latestRelevantExam<T extends { tahun_akademik: number; kod_peperiksaan: string }>(
+  items: T[],
+  currentYear = new Date().getFullYear(),
+) {
+  const currentOrPast = items.filter((item) => item.tahun_akademik <= currentYear);
+  const currentYearItems = currentOrPast.filter((item) => item.tahun_akademik === currentYear);
+  const candidates = currentYearItems.length > 0 ? currentYearItems : currentOrPast;
+  return [...candidates].sort((a, b) => examSortValue(b) - examSortValue(a))[0] ?? null;
+}
+
 function latestExamKey(items: Array<{ tahun_akademik: number; kod_peperiksaan: string }>) {
-  const latest = [...items].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
+  const latest = latestRelevantExam(items);
   if (!latest) return null;
   return `${latest.tahun_akademik}-${latest.kod_peperiksaan}`;
 }
@@ -1303,7 +1314,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
     exams,
   });
 
-  const latestExam = [...exams].sort((a, b) => examSortValue(b) - examSortValue(a))[0];
+  const latestExam = latestRelevantExam(exams);
   const key = latestExam
     ? `${latestExam.tahun_akademik}-${latestExam.kod_peperiksaan}`
     : latestExamKey([...schoolSummaries, ...studentSummaries]);

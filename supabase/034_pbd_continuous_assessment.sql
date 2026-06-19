@@ -28,13 +28,22 @@ select
   'DIBUKA',
   make_date(tahun_akademik, 1, 1),
   make_date(tahun_akademik, 12, 31)
-from generate_series(2026, 2031) as years(tahun_akademik)
+from (select extract(year from current_date)::int as tahun_akademik) as years
 on conflict (kod_peperiksaan, tahun_akademik)
 do update set
   nama_peperiksaan = excluded.nama_peperiksaan,
   status = excluded.status,
   tarikh_mula = coalesce(exams.tarikh_mula, excluded.tarikh_mula),
   tarikh_tamat = coalesce(exams.tarikh_tamat, excluded.tarikh_tamat);
+
+delete from public.exams exam
+where exam.kod_peperiksaan = 'PBD'
+  and exam.tahun_akademik > extract(year from current_date)::int
+  and not exists (
+    select 1
+    from public.marks mark
+    where mark.exam_id = exam.id
+  );
 
 do $$
 begin
