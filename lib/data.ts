@@ -412,24 +412,6 @@ export type MarkDetailRecord = {
   classes?: ClassRecord;
 };
 
-export type PbdMarkDetailRecord = {
-  id: string;
-  assessment_id: string;
-  student_id: string;
-  markah: number | null;
-  catatan: string | null;
-  tahun_akademik: number;
-  kod_sekolah: string;
-  class_id: string;
-  kod_subjek: string;
-  jenis: string;
-  tajuk: string;
-  tarikh: string;
-  markah_penuh: number;
-  pemberat: number;
-  status: string;
-};
-
 export type TeacherClassAssignment = {
   id: string;
   user_id: string;
@@ -1544,68 +1526,6 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
     exams: Array.isArray(item.exams) ? item.exams[0] : item.exams,
     classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,
   })) as MarkDetailRecord[];
-}
-
-export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('pbd_marks')
-    .select(
-      `
-      id,
-      assessment_id,
-      student_id,
-      markah,
-      catatan,
-      pbd_assessments!inner(
-        id,
-        tahun_akademik,
-        kod_sekolah,
-        class_id,
-        kod_subjek,
-        jenis,
-        tajuk,
-        tarikh,
-        markah_penuh,
-        pemberat,
-        status
-      )
-    `,
-    )
-    .order('assessment_id')
-    .order('student_id');
-
-  if (error) {
-    const message = String(error.message ?? '');
-    if (error.code === '42P01' || message.includes('schema cache') || message.includes('pbd_marks')) {
-      return [];
-    }
-    return [];
-  }
-
-  return (data ?? [])
-    .map((item: any) => {
-      const assessment = Array.isArray(item.pbd_assessments) ? item.pbd_assessments[0] : item.pbd_assessments;
-      if (!assessment) return null;
-      return {
-        id: item.id,
-        assessment_id: item.assessment_id,
-        student_id: item.student_id,
-        markah: item.markah === null || item.markah === undefined ? null : Number(item.markah),
-        catatan: item.catatan ?? null,
-        tahun_akademik: Number(assessment.tahun_akademik),
-        kod_sekolah: assessment.kod_sekolah,
-        class_id: assessment.class_id,
-        kod_subjek: assessment.kod_subjek,
-        jenis: assessment.jenis,
-        tajuk: assessment.tajuk,
-        tarikh: assessment.tarikh,
-        markah_penuh: Number(assessment.markah_penuh ?? 100),
-        pemberat: Number(assessment.pemberat ?? 1),
-        status: assessment.status,
-      };
-    })
-    .filter(Boolean) as PbdMarkDetailRecord[];
 }
 
 export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssignment[]> {
