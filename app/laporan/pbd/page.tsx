@@ -1,8 +1,7 @@
 import AppFrame from '../../ui/AppFrame';
 import {
   getClasses,
-  getExams,
-  getMarkDetails,
+  getPbdMarkDetails,
   getSchoolModuleAccesses,
   getSchools,
   getStudents,
@@ -15,14 +14,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function LaporanPbdPage() {
-  const [schools, classes, students, subjects, exams, marks, teacherClassAssignments, moduleAccesses] =
+  const [schools, classes, students, subjects, pbdMarks, teacherClassAssignments, moduleAccesses] =
     await Promise.all([
       getSchools(),
       getClasses(),
       getStudents(),
       getSubjects(),
-      getExams(),
-      getMarkDetails(),
+      getPbdMarkDetails(),
       getTeacherClassAssignments(),
       getSchoolModuleAccesses(),
     ]);
@@ -35,8 +33,7 @@ export default async function LaporanPbdPage() {
           classes={classes}
           students={students}
           subjects={subjects}
-          exams={exams}
-          marks={marks}
+          pbdMarks={pbdMarks}
           teacherClassAssignments={teacherClassAssignments}
           moduleAccesses={moduleAccesses}
         />
