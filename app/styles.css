@@ -11,6 +11,8 @@
   --blue: #2563eb;
   --amber: #b7791f;
   --gold: #f4c94f;
+  --lift-shadow: 0 12px 24px rgba(2, 46, 25, 0.14);
+  --press-shadow: 0 4px 10px rgba(2, 46, 25, 0.1);
 }
 
 * {
@@ -187,6 +189,125 @@ a {
 .nav-logout:hover .nav-logout-icon {
   background: rgba(244, 201, 79, 0.22);
   color: #f7d86b;
+}
+
+.nav a,
+.nav-menu-trigger,
+.nav-logout,
+.button,
+.danger-button,
+.soft-action-button,
+.table-action,
+.access-choice-card,
+.completion-button,
+.school-count-button,
+.teacher-count-button,
+.summary-number,
+.year-stat button,
+.zone-mini-list button,
+.table-number-button,
+.attendance-day-head button,
+.attendance-student-name button,
+.sort-header-button,
+.card-grid .card {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.button:hover:not(:disabled),
+.button:focus-visible:not(:disabled),
+.danger-button:hover:not(:disabled),
+.danger-button:focus-visible:not(:disabled),
+.soft-action-button:hover:not(:disabled),
+.soft-action-button:focus-visible:not(:disabled),
+.table-action:hover,
+.table-action:focus-visible,
+.access-choice-card:hover,
+.access-choice-card:focus-visible,
+.completion-button:hover,
+.completion-button:focus-visible,
+.school-count-button:hover,
+.school-count-button:focus-visible,
+.teacher-count-button:hover,
+.teacher-count-button:focus-visible,
+.summary-number:hover,
+.summary-number:focus-visible,
+.year-stat button:hover,
+.year-stat button:focus-visible,
+.zone-mini-list button:hover,
+.zone-mini-list button:focus-visible,
+.table-number-button:hover,
+.table-number-button:focus-visible,
+.attendance-day-head button:hover,
+.attendance-day-head button:focus-visible,
+.attendance-student-name button:hover,
+.attendance-student-name button:focus-visible,
+.sort-header-button:hover,
+.sort-header-button:focus-visible,
+.card-grid .card:hover,
+.card-grid .card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--lift-shadow);
+}
+
+.nav a:hover,
+.nav a:focus-visible,
+.nav-menu-trigger:hover,
+.nav-menu-trigger:focus-visible,
+.nav-logout:hover,
+.nav-logout:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+}
+
+.button:active:not(:disabled),
+.danger-button:active:not(:disabled),
+.soft-action-button:active:not(:disabled),
+.table-action:active,
+.access-choice-card:active,
+.completion-button:active,
+.school-count-button:active,
+.teacher-count-button:active,
+.summary-number:active,
+.year-stat button:active,
+.zone-mini-list button:active,
+.table-number-button:active,
+.attendance-day-head button:active,
+.attendance-student-name button:active,
+.sort-header-button:active,
+.nav a:active,
+.nav-menu-trigger:active,
+.nav-logout:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: var(--press-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav a,
+  .nav-menu-trigger,
+  .nav-logout,
+  .button,
+  .danger-button,
+  .soft-action-button,
+  .table-action,
+  .access-choice-card,
+  .completion-button,
+  .school-count-button,
+  .teacher-count-button,
+  .summary-number,
+  .year-stat button,
+  .zone-mini-list button,
+  .table-number-button,
+  .attendance-day-head button,
+  .attendance-student-name button,
+  .sort-header-button,
+  .card-grid .card {
+    transition: none;
+  }
 }
 
 .date-clock {
