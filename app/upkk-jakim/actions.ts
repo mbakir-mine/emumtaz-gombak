@@ -172,6 +172,7 @@ export async function saveUpkkJakimMarks(
   }
 
   revalidatePath('/upkk-jakim');
+  revalidatePath(`/upkk-jakim/murid/${encodeURIComponent(studentId)}`);
   return {
     ok: true,
     message: `Markah ${assessmentType === 'PCHI' ? 'PCHI' : 'Amali Solat'} untuk ${selectedStudent.nama_murid} berjaya disimpan.`,

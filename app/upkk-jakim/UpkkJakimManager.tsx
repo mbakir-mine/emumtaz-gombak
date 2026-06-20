@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   ClassRecord,
   School,
@@ -16,12 +17,9 @@ import {
   upkkTotalMaxMark,
   type UpkkJakimAssessmentType,
 } from '@/lib/upkkJakim';
-import { upkkScorableQuestionsByType, type UpkkScorableQuestion } from '@/lib/upkkJakimQuestions';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
-import { saveUpkkJakimMarks, type UpkkJakimActionState } from './actions';
 
-const initialState: UpkkJakimActionState = { ok: false, message: '' };
 const UPKK_STUDENT_YEAR = 5;
 
 function sortByClass(a: ClassRecord, b: ClassRecord) {
@@ -41,6 +39,10 @@ function studentGenderLabel(value: string | null) {
   return 'Lelaki';
 }
 
+function isUpkkAssessmentType(value: string | null | undefined): value is UpkkJakimAssessmentType {
+  return value === 'PCHI' || value === 'AMALI_SOLAT';
+}
+
 export default function UpkkJakimManager({
   schools,
   classes,
@@ -48,6 +50,10 @@ export default function UpkkJakimManager({
   marks,
   itemMarks,
   moduleAccesses,
+  initialSchool,
+  initialYear,
+  initialClassId,
+  initialType,
 }: {
   schools: School[];
   classes: ClassRecord[];
@@ -55,6 +61,10 @@ export default function UpkkJakimManager({
   marks: UpkkJakimMarkRecord[];
   itemMarks: UpkkJakimItemMarkRecord[];
   moduleAccesses: SchoolModuleAccess[];
+  initialSchool?: string;
+  initialYear?: number;
+  initialClassId?: string;
+  initialType?: string;
 }) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -62,12 +72,12 @@ export default function UpkkJakimManager({
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedStudents = useMemo(() => scopeStudents(profile, students, classes, schools), [classes, profile, schools, students]);
-  const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? '');
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedType, setSelectedType] = useState<UpkkJakimAssessmentType>('PCHI');
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [state, action, pending] = useActionState(saveUpkkJakimMarks, initialState);
+  const [selectedSchool, setSelectedSchool] = useState(initialSchool ?? profile?.kod_sekolah ?? '');
+  const [selectedYear, setSelectedYear] = useState(initialYear ?? currentYear);
+  const [selectedClassId, setSelectedClassId] = useState(initialClassId ?? '');
+  const [selectedType, setSelectedType] = useState<UpkkJakimAssessmentType>(
+    isUpkkAssessmentType(initialType) ? initialType : 'PCHI',
+  );
 
   useEffect(() => {
     if (!selectedSchool && scopedSchools.length === 1) {
@@ -103,14 +113,9 @@ export default function UpkkJakimManager({
     }
   }, [schoolClasses, selectedClassId]);
 
-  useEffect(() => {
-    setSelectedStudentId('');
-  }, [selectedClassId, selectedType]);
-
   const selectedClass = schoolClasses.find((item) => item.id === selectedClassId) ?? null;
   const selectedSchoolRecord = scopedSchools.find((school) => school.kod_sekolah === selectedSchool) ?? null;
   const components = useMemo(() => upkkComponentsByType(selectedType), [selectedType]);
-  const questions = useMemo(() => upkkScorableQuestionsByType(selectedType), [selectedType]);
   const maxTotal = upkkTotalMaxMark(selectedType);
   const classStudents = useMemo(
     () =>
@@ -119,8 +124,6 @@ export default function UpkkJakimManager({
         .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid, 'ms', { sensitivity: 'base' })),
     [scopedStudents, selectedClassId],
   );
-
-  const selectedStudent = classStudents.find((student) => student.mykid === selectedStudentId) ?? null;
 
   const summaryMarkMap = useMemo(() => {
     const map = new Map<string, UpkkJakimMarkRecord>();
@@ -134,19 +137,6 @@ export default function UpkkJakimManager({
       .forEach((mark) => map.set(`${mark.student_id}|${mark.component_key}`, mark));
     return map;
   }, [marks, selectedClassId, selectedType, selectedYear]);
-
-  const itemMarkMap = useMemo(() => {
-    const map = new Map<string, UpkkJakimItemMarkRecord>();
-    itemMarks
-      .filter(
-        (mark) =>
-          mark.tahun_akademik === selectedYear &&
-          mark.class_id === selectedClassId &&
-          mark.assessment_type === selectedType,
-      )
-      .forEach((mark) => map.set(`${mark.student_id}|${mark.item_key}`, mark));
-    return map;
-  }, [itemMarks, selectedClassId, selectedType, selectedYear]);
 
   const itemMarksByStudent = useMemo(() => {
     const map = new Map<string, UpkkJakimItemMarkRecord[]>();
@@ -173,12 +163,7 @@ export default function UpkkJakimManager({
     return components.reduce((sum, component) => sum + componentTotal(studentId, component.key), 0);
   }
 
-  function questionsForComponent(componentKey: string): UpkkScorableQuestion[] {
-    return questions.filter((question) => question.componentKey === componentKey);
-  }
-
   const savedCount = [...summaryMarkMap.values()].filter((mark) => mark.markah !== null && mark.markah !== undefined).length;
-  const selectedStudentTotal = selectedStudent ? studentTotal(selectedStudent.mykid) : 0;
 
   return (
     <section className="panel optional-module-panel upkk-panel">
@@ -316,18 +301,17 @@ export default function UpkkJakimManager({
                   <tbody>
                     {classStudents.map((student, index) => {
                       const total = studentTotal(student.mykid);
+                      const href = `/upkk-jakim/murid/${encodeURIComponent(student.mykid)}?sekolah=${encodeURIComponent(
+                        selectedSchool,
+                      )}&tahun=${selectedYear}&kelas=${selectedClass.id}&jenis=${selectedType}`;
                       return (
-                        <tr key={student.id} className={selectedStudentId === student.mykid ? 'selected-row' : ''}>
+                        <tr key={student.id}>
                           <td>{index + 1}</td>
                           <td>
-                            <button
-                              type="button"
-                              className="upkk-student-button"
-                              onClick={() => setSelectedStudentId(student.mykid)}
-                            >
+                            <Link className="upkk-student-button" href={href}>
                               <strong>{student.nama_murid}</strong>
                               <small>{studentGenderLabel(student.jantina)}</small>
-                            </button>
+                            </Link>
                           </td>
                           {components.map((component) => (
                             <td key={`${student.id}-${component.key}`} className="upkk-score-total">
@@ -346,91 +330,7 @@ export default function UpkkJakimManager({
                 </table>
               </div>
 
-              {!selectedStudent ? (
-                <p className="empty">Klik nama murid untuk membuka borang soalan {upkkAssessmentLabel(selectedType)}.</p>
-              ) : (
-                <form action={action} className="upkk-student-detail-form">
-                  <input type="hidden" name="kod_sekolah" value={selectedSchool} />
-                  <input type="hidden" name="tahun_akademik" value={selectedYear} />
-                  <input type="hidden" name="class_id" value={selectedClass.id} />
-                  <input type="hidden" name="assessment_type" value={selectedType} />
-                  <input type="hidden" name="teacher_id" value={profile?.id ?? ''} />
-                  <input type="hidden" name="student_id" value={selectedStudent.mykid} />
-
-                  <div className="panel-head compact-head">
-                    <div>
-                      <h3>
-                        Borang {upkkJakimAssessmentOptions.find((item) => item.value === selectedType)?.shortLabel} -{' '}
-                        {selectedStudent.nama_murid}
-                      </h3>
-                      <p className="table-note">
-                        {classLabel(selectedClass)} - {studentGenderLabel(selectedStudent.jantina)}
-                      </p>
-                    </div>
-                    <span>
-                      {formatNumber(selectedStudentTotal)} / {formatNumber(maxTotal)}
-                    </span>
-                  </div>
-
-                  <div className="upkk-question-sections">
-                    {components.map((component) => {
-                      const componentQuestions = questionsForComponent(component.key);
-                      const subtotal = componentTotal(selectedStudent.mykid, component.key);
-                      return (
-                        <article className="upkk-question-section" key={component.key}>
-                          <div className="upkk-question-section-head">
-                            <div>
-                              <span>{component.section}</span>
-                              <strong>{component.title}</strong>
-                            </div>
-                            <em>
-                              {formatNumber(subtotal)} / {formatNumber(component.maxMark)}
-                            </em>
-                          </div>
-                          {component.key === 'PCHI_D' && (
-                            <p className="upkk-section-note">
-                              Bahagian D mempunyai banyak item pilihan. Isi item yang berkaitan sahaja dan jumlah bahagian ini
-                              dikawal maksimum {formatNumber(component.maxMark)} markah.
-                            </p>
-                          )}
-                          <div className="upkk-question-list">
-                            {componentQuestions.map((question) => {
-                              const saved = itemMarkMap.get(`${selectedStudent.mykid}|${question.key}`);
-                              return (
-                                <label className="upkk-question-row" key={question.key}>
-                                  <span className="upkk-question-copy">
-                                    <strong>
-                                      {question.number} {question.title}
-                                    </strong>
-                                    {question.helper && <small>{question.helper}</small>}
-                                  </span>
-                                  <input
-                                    className="upkk-score-input"
-                                    name={`item_mark_${question.key}`}
-                                    type="number"
-                                    min="0"
-                                    max={question.maxMark}
-                                    step="0.5"
-                                    defaultValue={saved?.markah ?? ''}
-                                    placeholder={`/${formatNumber(question.maxMark)}`}
-                                  />
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-
-                  <div className="form-actions">
-                    <button className="button" type="submit" disabled={pending}>
-                      {pending ? 'Menyimpan...' : `Simpan ${upkkJakimAssessmentOptions.find((item) => item.value === selectedType)?.shortLabel}`}
-                    </button>
-                    {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
-                  </div>
-                </form>
-              )}
+              <p className="empty">Klik nama murid untuk membuka borang pemarkahan khusus di halaman baharu.</p>
             </div>
           )}
         </>

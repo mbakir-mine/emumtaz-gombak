@@ -3625,6 +3625,7 @@ textarea {
   background: transparent;
   color: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -3632,8 +3633,22 @@ textarea {
   color: #006b3f;
 }
 
-.upkk-student-button:hover strong {
+.upkk-student-button:hover strong,
+.upkk-student-button:focus-visible strong {
   text-decoration: underline;
+}
+
+.upkk-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.upkk-detail-actions span {
+  color: #006b3f;
+  font-size: 20px;
+  font-weight: 900;
 }
 
 .upkk-table tr.selected-row td {
