@@ -6,6 +6,7 @@ import {
   upkkComponentsByType,
   type UpkkJakimAssessmentType,
 } from '@/lib/upkkJakim';
+import { upkkScorableQuestionsByType } from '@/lib/upkkJakimQuestions';
 
 export type UpkkJakimActionState = {
   ok: boolean;
@@ -36,17 +37,14 @@ export async function saveUpkkJakimMarks(
   const tahunAkademik = Number(formData.get('tahun_akademik'));
   const assessmentType = String(formData.get('assessment_type') ?? '').trim();
   const teacherId = String(formData.get('teacher_id') ?? '').trim() || null;
-  const studentIds = formData
-    .getAll('student_id')
-    .map((value) => String(value).trim())
-    .filter(Boolean);
+  const studentId = String(formData.get('student_id') ?? '').trim();
 
   if (!kodSekolah || !classId || !Number.isFinite(tahunAkademik) || !isUpkkAssessmentType(assessmentType)) {
     return { ok: false, message: 'Pilih sekolah, tahun akademik, kelas dan jenis borang terlebih dahulu.' };
   }
 
-  if (studentIds.length === 0) {
-    return { ok: false, message: 'Tiada murid untuk disimpan.' };
+  if (!studentId) {
+    return { ok: false, message: 'Pilih nama murid untuk mengisi markah UPKK.' };
   }
 
   const { data: selectedClass, error: classError } = await supabase
@@ -68,37 +66,101 @@ export async function saveUpkkJakimMarks(
     };
   }
 
+  const { data: selectedStudent, error: studentError } = await supabase
+    .from('students')
+    .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
+    .eq('mykid', studentId)
+    .eq('kod_sekolah', kodSekolah)
+    .eq('class_id', classId)
+    .maybeSingle();
+
+  if (studentError) {
+    return { ok: false, message: `Gagal semak murid UPKK. Ralat: ${studentError.message}` };
+  }
+
+  if (!selectedStudent || selectedStudent.status !== 'AKTIF') {
+    return { ok: false, message: 'Murid yang dipilih tidak aktif dalam kelas ini.' };
+  }
+
   const components = upkkComponentsByType(assessmentType);
-  const rows = studentIds.flatMap((studentId) =>
-    components.map((component) => {
-      const markah = cleanNumber(formData.get(`markah_${studentId}_${component.key}`));
-      const catatan = String(formData.get(`catatan_${studentId}_${component.key}`) ?? '').trim();
+  const questions = upkkScorableQuestionsByType(assessmentType);
+  const itemRows = questions.map((question) => {
+    const markah = cleanNumber(formData.get(`item_mark_${question.key}`));
+    const catatan = String(formData.get(`item_note_${question.key}`) ?? '').trim();
 
-      return {
-        tahun_akademik: tahunAkademik,
-        kod_sekolah: kodSekolah,
-        class_id: classId,
-        student_id: studentId,
-        assessment_type: assessmentType,
-        component_key: component.key,
-        component_title: `${component.section}: ${component.title}`,
-        max_mark: component.maxMark,
-        markah,
-        teacher_id: teacherId,
-        catatan: catatan || null,
-      };
-    }),
-  );
+    return {
+      tahun_akademik: tahunAkademik,
+      kod_sekolah: kodSekolah,
+      class_id: classId,
+      student_id: studentId,
+      assessment_type: assessmentType,
+      component_key: question.componentKey,
+      component_title: question.componentTitle,
+      item_key: question.key,
+      item_number: question.number,
+      item_title: question.title,
+      max_mark: question.maxMark,
+      markah,
+      teacher_id: teacherId,
+      catatan: catatan || null,
+    };
+  });
 
-  const invalid = rows.find((row) => row.markah !== null && (row.markah < 0 || row.markah > row.max_mark));
+  const invalid = itemRows.find((row) => row.markah !== null && (row.markah < 0 || row.markah > row.max_mark));
   if (invalid) {
     return {
       ok: false,
-      message: `${invalid.component_title} tidak boleh kurang 0 atau lebih ${invalid.max_mark}.`,
+      message: `${invalid.item_number} ${invalid.item_title} tidak boleh kurang 0 atau lebih ${invalid.max_mark}.`,
     };
   }
 
-  const { error } = await supabase.from('upkk_jakim_marks').upsert(rows, {
+  const rowsByComponent = new Map<string, typeof itemRows>();
+  itemRows.forEach((row) => {
+    rowsByComponent.set(row.component_key, [...(rowsByComponent.get(row.component_key) ?? []), row]);
+  });
+
+  for (const component of components) {
+    const subtotal = (rowsByComponent.get(component.key) ?? []).reduce((sum, row) => sum + (row.markah ?? 0), 0);
+    if (subtotal > component.maxMark) {
+      return {
+        ok: false,
+        message: `${component.section} ${component.title} melebihi markah maksimum ${component.maxMark}.`,
+      };
+    }
+  }
+
+  const { error: itemError } = await supabase.from('upkk_jakim_item_marks').upsert(itemRows, {
+    onConflict: 'tahun_akademik,class_id,student_id,assessment_type,item_key',
+  });
+
+  if (itemError) {
+    return {
+      ok: false,
+      message: `Gagal simpan item UPKK JAKIM. Jalankan SQL 035_upkk_jakim_module.sql dahulu. Ralat: ${itemError.message}`,
+    };
+  }
+
+  const summaryRows = components.map((component) => {
+    const componentRows = rowsByComponent.get(component.key) ?? [];
+    const hasMark = componentRows.some((row) => row.markah !== null);
+    const total = componentRows.reduce((sum, row) => sum + (row.markah ?? 0), 0);
+
+    return {
+      tahun_akademik: tahunAkademik,
+      kod_sekolah: kodSekolah,
+      class_id: classId,
+      student_id: studentId,
+      assessment_type: assessmentType,
+      component_key: component.key,
+      component_title: `${component.section}: ${component.title}`,
+      max_mark: component.maxMark,
+      markah: hasMark ? total : null,
+      teacher_id: teacherId,
+      catatan: null,
+    };
+  });
+
+  const { error } = await supabase.from('upkk_jakim_marks').upsert(summaryRows, {
     onConflict: 'tahun_akademik,class_id,student_id,assessment_type,component_key',
   });
 
@@ -110,5 +172,8 @@ export async function saveUpkkJakimMarks(
   }
 
   revalidatePath('/upkk-jakim');
-  return { ok: true, message: `${studentIds.length} rekod ${assessmentType === 'PCHI' ? 'PCHI' : 'Amali Solat'} berjaya disimpan.` };
+  return {
+    ok: true,
+    message: `Markah ${assessmentType === 'PCHI' ? 'PCHI' : 'Amali Solat'} untuk ${selectedStudent.nama_murid} berjaya disimpan.`,
+  };
 }
