@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import PrintButton from '../../ui/PrintButton';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
@@ -384,6 +385,28 @@ export default function ClassReportTable({
     </button>
   );
 
+  const classReportReturnPath = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('tahun', String(selectedYear));
+    if (selectedExam) params.set('peperiksaan', selectedExam);
+    if (selectedZone) params.set('zon', selectedZone);
+    if (selectedSchool) params.set('sekolah', selectedSchool);
+    if (selectedTahun) params.set('tahun_murid', selectedTahun);
+    if (selectedClass) params.set('kelas', selectedClass);
+    params.set('sort', sortKey);
+    params.set('arah', sortDirection);
+    return `/laporan/kelas?${params.toString()}`;
+  }, [selectedClass, selectedExam, selectedSchool, selectedTahun, selectedYear, selectedZone, sortDirection, sortKey]);
+
+  const individualReportHref = (studentId: string) => {
+    const params = new URLSearchParams();
+    params.set('student_id', studentId);
+    params.set('tahun_akademik', String(selectedYear));
+    params.set('kod_peperiksaan', selectedExamRecord?.kod_peperiksaan ?? selectedExam);
+    params.set('return_to', classReportReturnPath);
+    return `/laporan/individu/cetak?${params.toString()}`;
+  };
+
   return (
     <>
       <div className="panel-head no-print">
@@ -556,7 +579,9 @@ export default function ClassReportTable({
                       <tr key={student.id}>
                         <td>{index + 1}</td>
                         <td className="student-name-col">
-                          <strong>{student.nama_murid}</strong>
+                          <Link className="text-link class-report-student-link" href={individualReportHref(student.id)}>
+                            <strong>{student.nama_murid}</strong>
+                          </Link>
                           <small>
                             {mykid} / {student.jantina ?? '-'}
                           </small>

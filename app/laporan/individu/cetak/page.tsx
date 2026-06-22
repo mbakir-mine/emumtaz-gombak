@@ -25,6 +25,9 @@ export default async function CetakLaporanIndividuPage({
   const studentId = params.student_id ?? '';
   const tahunAkademik = Number(params.tahun_akademik ?? 0);
   const kodPeperiksaan = params.kod_peperiksaan ?? '';
+  const returnTo = params.return_to && params.return_to.startsWith('/') && !params.return_to.startsWith('//')
+    ? params.return_to
+    : '/laporan/individu';
   const [schools, classes, summaries, marks] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -61,7 +64,7 @@ export default async function CetakLaporanIndividuPage({
           <div className="row-actions">
             <PrintButton label="CETAK" />
             <PrintButton label="CETAK PDF" />
-            <Link className="button secondary" href="/laporan/individu">
+            <Link className="button secondary" href={returnTo}>
               Kembali
             </Link>
           </div>
