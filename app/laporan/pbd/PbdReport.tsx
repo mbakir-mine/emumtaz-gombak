@@ -15,7 +15,7 @@ import type {
   TeacherClassAssignment,
 } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
-import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
+import { allowedSubjectForTahun, gradeForMark, gradePointForGrade, gradeShortForMark, officialGradeRows } from '@/lib/subjects';
 
 type PbdColumn = {
   key: string;
@@ -45,14 +45,7 @@ const pbdColumns: PbdColumn[] = [
   { key: 'jawiKhatImlak', label: 'Jawi / Khat / Imlak', aliases: ['JIK03', 'JAWI', 'IMLAK_KHAT', 'IMLAKKHAT', 'IMLAK', 'KHAT'] },
 ];
 
-const gradeRows = ['Mumtaz', 'Jayyid Jiddan', 'Jayyid', 'Maqbul', "Musa'adah"];
-const gradePoint: Record<string, number> = {
-  Mumtaz: 1,
-  'Jayyid Jiddan': 2,
-  Jayyid: 3,
-  Maqbul: 4,
-  "Musa'adah": 5,
-};
+const gradeRows = officialGradeRows;
 
 function normalizeText(value: string | null | undefined) {
   return String(value ?? '')
@@ -73,13 +66,7 @@ function genderShort(jantina: string | null | undefined) {
 }
 
 function gradeShort(markah: number | null | undefined) {
-  const grade = gradeForMark(markah);
-  if (!grade) return '';
-  if (grade === 'Mumtaz') return 'MM';
-  if (grade === 'Jayyid Jiddan') return 'JJ';
-  if (grade === 'Jayyid') return 'J';
-  if (grade === 'Maqbul') return 'M';
-  return 'D';
+  return gradeShortForMark(markah);
 }
 
 function scoreClass(markah: number | null | undefined) {
@@ -151,7 +138,7 @@ function buildAnalysis(rows: PbdRow[]) {
     const th = values.length - counted.length;
     const pass = counted.filter((value) => value >= 40).length;
     const fail = counted.filter((value) => value < 40).length;
-    const ngpmTotal = gradeRows.reduce((total, grade) => total + (gradeCounts.get(grade) ?? 0) * gradePoint[grade], 0);
+    const ngpmTotal = gradeRows.reduce((total, grade) => total + (gradeCounts.get(grade) ?? 0) * gradePointForGrade(grade), 0);
     const gps = counted.length > 0 ? ngpmTotal / counted.length : null;
 
     return {
@@ -643,7 +630,7 @@ export default function PbdReport({
             <div className="panel-head compact-head">
               <div>
                 <h3>Gred Purata Kelas</h3>
-                <p className="table-note">Kiraan GPS menggunakan skala Mumtaz 1 hingga Musa'adah 5.</p>
+                <p className="table-note">Kiraan GPS menggunakan skala Mumtaz 1 hingga Musaadah 5.</p>
               </div>
               <span>Skor PKSR {pksrScore(overallGps)}</span>
             </div>

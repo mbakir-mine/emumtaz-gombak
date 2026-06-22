@@ -46,6 +46,15 @@ const yearThreeSubjectCodes = [
   'HAFAZAN',
 ];
 const upperPrimarySubjectCodes = ['AS01', 'BA02', 'JIK03', 'TF04', 'TJ05', 'TILAWAH', 'HAFAZAN'];
+const officialGradeScale = [
+  { name: 'Mumtaz', short: 'MM', min: 90, max: 100, point: 1 },
+  { name: 'Jayyid Jiddan', short: 'JJ', min: 75, max: 89.99, point: 2 },
+  { name: 'Jayyid', short: 'J', min: 60, max: 74.99, point: 3 },
+  { name: 'Maqbul', short: 'M', min: 40, max: 59.99, point: 4 },
+  { name: 'Musaadah', short: 'Ms', min: 0, max: 39.99, point: 5 },
+];
+
+export const officialGradeRows = officialGradeScale.map((grade) => grade.name);
 
 export function canonicalSubjectCode(kodSubjek: string) {
   return canonicalSubjectCodeMap[kodSubjek] ?? kodSubjek;
@@ -100,9 +109,15 @@ export function allowedSubjectForTahun(subject: SubjectRecord, tahun: number) {
 
 export function gradeForMark(markah: number | null | undefined) {
   if (markah === null || markah === undefined || Number.isNaN(markah)) return '';
-  if (markah >= 90) return 'Mumtaz';
-  if (markah >= 75) return 'Jayyid Jiddan';
-  if (markah >= 60) return 'Jayyid';
-  if (markah >= 40) return 'Maqbul';
-  return "Musa'adah";
+  const value = Number(markah);
+  return officialGradeScale.find((grade) => value >= grade.min && value <= grade.max)?.name ?? '';
+}
+
+export function gradeShortForMark(markah: number | null | undefined) {
+  const grade = gradeForMark(markah);
+  return officialGradeScale.find((item) => item.name === grade)?.short ?? '';
+}
+
+export function gradePointForGrade(grade: string) {
+  return officialGradeScale.find((item) => item.name === grade)?.point ?? 0;
 }

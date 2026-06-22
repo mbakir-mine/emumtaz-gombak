@@ -145,7 +145,7 @@ values
   ('Jayyid Jiddan', 75, 89.99, 'Sangat Baik', 2),
   ('Jayyid', 60, 74.99, 'Baik', 3),
   ('Maqbul', 40, 59.99, 'Lulus', 4),
-  ('Musa''adah', 0, 39.99, 'Bantuan / Intervensi', 5)
+  ('Musaadah', 0, 39.99, 'Bantuan / Intervensi', 5)
 on conflict (nama_gred) do update set
   markah_min = excluded.markah_min,
   markah_max = excluded.markah_max,

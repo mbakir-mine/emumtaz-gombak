@@ -20,6 +20,7 @@ import {
   allowedSubjectForTahun,
   fallbackSubjectForCode,
   gradeForMark,
+  gradeShortForMark,
   normalizeSubjectRecord,
   subjectAliasCodes,
 } from '@/lib/subjects';
@@ -71,13 +72,7 @@ function genderShort(jantina: string | null | undefined) {
 }
 
 function gradeShort(markah: number | null | undefined) {
-  const grade = gradeForMark(markah);
-  if (!grade) return '';
-  if (grade === 'Mumtaz') return 'MM';
-  if (grade === 'Jayyid Jiddan') return 'JJ';
-  if (grade === 'Jayyid') return 'J';
-  if (grade === 'Maqbul') return 'M';
-  return 'D';
+  return gradeShortForMark(markah);
 }
 
 function scoreClass(markah: number | null | undefined) {

@@ -144,7 +144,7 @@ Tilawah dan Hafazan ada markah dan gred, tetapi tidak masuk purata keseluruhan.
 | 75-89 | Jayyid Jiddan |
 | 60-74 | Jayyid |
 | 40-59 | Maqbul |
-| 0-39 | Musa'adah |
+| 0-39 | Musaadah |
 
 ## Laporan Yang Diperlukan
 
