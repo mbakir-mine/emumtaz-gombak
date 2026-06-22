@@ -290,11 +290,19 @@ export default function ClassReportTable({
   }, [selectedClassRecord, selectedMarks, subjectMap, subjects]);
   const markMap = useMemo(() => {
     const map = new Map<string, number | null>();
+    const setMark = (key: string, markah: number | null) => {
+      const existing = map.get(key);
+      const existingHasValue = existing !== null && existing !== undefined && Number.isFinite(existing);
+      const nextHasValue = markah !== null && markah !== undefined && Number.isFinite(markah);
+      if (!map.has(key) || (!existingHasValue && nextHasValue)) {
+        map.set(key, markah);
+      }
+    };
+
     selectedMarks.forEach((mark) => {
-      map.set(`${mark.student_id}|${mark.kod_subjek}`, mark.markah);
+      setMark(`${mark.student_id}|${mark.kod_subjek}`, mark.markah);
       subjectAliasCodes(mark.kod_subjek).forEach((kodSubjek) => {
-        const key = `${mark.student_id}|${kodSubjek}`;
-        if (!map.has(key)) map.set(key, mark.markah);
+        setMark(`${mark.student_id}|${kodSubjek}`, mark.markah);
       });
     });
     return map;

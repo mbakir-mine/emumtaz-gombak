@@ -1570,28 +1570,43 @@ export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
 
 export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('marks')
-    .select(
-      `
-      id,
-      markah,
-      kod_subjek,
-      kod_sekolah,
-      exam_id,
-      student_id,
-      class_id,
-      students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status),
-      subjects(kod_subjek,nama_subjek,markah_penuh,dikira_purata,susunan,status),
-      exams(id,kod_peperiksaan,nama_peperiksaan,tahun_akademik,status),
-      classes(id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status)
-    `,
-    )
-    .order('kod_sekolah')
-    .order('kod_subjek');
 
-  if (error) return [];
-  return (data ?? []).map((item: any) => ({
+  const pageSize = 1000;
+  let from = 0;
+  const rows: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('marks')
+      .select(
+        `
+        id,
+        markah,
+        kod_subjek,
+        kod_sekolah,
+        exam_id,
+        student_id,
+        class_id,
+        students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status),
+        subjects(kod_subjek,nama_subjek,markah_penuh,dikira_purata,susunan,status),
+        exams(id,kod_peperiksaan,nama_peperiksaan,tahun_akademik,status),
+        classes(id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status)
+      `,
+      )
+      .order('kod_sekolah')
+      .order('kod_subjek')
+      .order('id')
+      .range(from, from + pageSize - 1);
+
+    if (error) break;
+    if (!data || data.length === 0) break;
+
+    rows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows.map((item: any) => ({
     id: item.id,
     markah: item.markah,
     kod_subjek: item.kod_subjek,
