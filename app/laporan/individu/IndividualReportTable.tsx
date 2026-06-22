@@ -6,7 +6,7 @@ import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
 import { compareExamCode, isStandardExamCode } from '@/lib/examOrdering';
-import { gradeForMark } from '@/lib/subjects';
+import { formatGradePoint, gradeForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
@@ -154,6 +154,7 @@ export default function IndividualReportTable({
                   <th>Jumlah Markah</th>
                   <th>Peratus</th>
                   <th>Pangkat</th>
+                  <th>GPM</th>
                   <th>Kedudukan</th>
                 </tr>
               </thead>
@@ -172,6 +173,7 @@ export default function IndividualReportTable({
                       <td>{item.jumlah_markah ?? '-'}</td>
                       <td>{item.purata !== null && item.purata !== undefined ? `${item.purata}%` : '-'}</td>
                       <td>{gradeForMark(item.purata)}</td>
+                      <td>{formatGradePoint(item.purata)}</td>
                       <td>{rank} / {rankedTeacherSummaries.length}</td>
                     </tr>
                   );
@@ -301,6 +303,7 @@ export default function IndividualReportTable({
                 <th>Bil Subjek</th>
                 <th>Purata</th>
                 <th>Gred</th>
+                <th>GPM</th>
               </tr>
             </thead>
             <tbody>
@@ -323,6 +326,7 @@ export default function IndividualReportTable({
                     <td>{item.bil_subjek_dikira}</td>
                     <td>{item.purata ?? '-'}</td>
                     <td>{gradeForMark(item.purata)}</td>
+                    <td>{formatGradePoint(item.purata)}</td>
                   </tr>
                 );
               })}

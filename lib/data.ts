@@ -2,6 +2,7 @@ import { hasSupabaseEnv, supabase } from './supabase';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
+import { gradePointForMark } from './subjects';
 import type { UpkkJakimAssessmentType } from './upkkJakim';
 
 export type SetupCounts = {
@@ -816,12 +817,7 @@ function buildDashboardScopeCounts({
 }
 
 function gradePointFromAverage(purata: number | null | undefined) {
-  if (purata === null || purata === undefined) return null;
-  if (purata >= 90) return 1;
-  if (purata >= 75) return 2;
-  if (purata >= 60) return 3;
-  if (purata >= 40) return 4;
-  return 5;
+  return gradePointForMark(purata);
 }
 
 function examSortValue(item: { tahun_akademik: number; kod_peperiksaan: string }) {

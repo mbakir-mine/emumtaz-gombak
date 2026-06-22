@@ -2824,7 +2824,7 @@ textarea {
 
 .class-report-meta {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
   margin: 14px 0;
   padding: 12px 14px;
@@ -2849,7 +2849,7 @@ textarea {
 }
 
 .class-mark-report table {
-  min-width: 1120px;
+  min-width: 1180px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -3115,7 +3115,7 @@ textarea {
 
 .student-report-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-top: 18px;
 }

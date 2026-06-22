@@ -118,6 +118,21 @@ export function gradeShortForMark(markah: number | null | undefined) {
   return officialGradeScale.find((item) => item.name === grade)?.short ?? '';
 }
 
+export function gradePointForMark(markah: number | null | undefined) {
+  const grade = gradeForMark(markah);
+  return officialGradeScale.find((item) => item.name === grade)?.point ?? null;
+}
+
 export function gradePointForGrade(grade: string) {
   return officialGradeScale.find((item) => item.name === grade)?.point ?? 0;
+}
+
+export function formatGradePoint(markah: number | null | undefined) {
+  const point = gradePointForMark(markah);
+  return point === null ? '-' : point.toFixed(2);
+}
+
+export function formatGradePointValue(point: number | null | undefined) {
+  if (point === null || point === undefined || Number.isNaN(point)) return '-';
+  return point.toFixed(2);
 }

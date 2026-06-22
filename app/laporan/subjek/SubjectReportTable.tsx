@@ -7,7 +7,7 @@ import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses } from '../../ui/scopedData';
 import type { ClassRecord, School, SubjectSummaryRecord } from '@/lib/data';
 import { isStandardExamCode } from '@/lib/examOrdering';
-import { gradeForMark } from '@/lib/subjects';
+import { formatGradePoint, gradeForMark } from '@/lib/subjects';
 
 export default function SubjectReportTable({
   schools,
@@ -48,6 +48,7 @@ export default function SubjectReportTable({
                 <th>Bil Markah</th>
                 <th>Purata</th>
                 <th>Gred</th>
+                <th>GPMP</th>
                 <th>Bil Lulus</th>
                 <th>Bil Gagal</th>
               </tr>
@@ -68,6 +69,7 @@ export default function SubjectReportTable({
                     <td>{item.bil_markah}</td>
                     <td>{item.purata_subjek ?? '-'}</td>
                     <td>{gradeForMark(item.purata_subjek)}</td>
+                    <td>{formatGradePoint(item.purata_subjek)}</td>
                     <td>{item.bil_lulus}</td>
                     <td>{item.bil_gagal}</td>
                   </tr>

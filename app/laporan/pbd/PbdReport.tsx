@@ -15,7 +15,15 @@ import type {
   TeacherClassAssignment,
 } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
-import { allowedSubjectForTahun, gradeForMark, gradePointForGrade, gradeShortForMark, officialGradeRows } from '@/lib/subjects';
+import {
+  allowedSubjectForTahun,
+  formatGradePoint,
+  formatGradePointValue,
+  gradeForMark,
+  gradePointForGrade,
+  gradeShortForMark,
+  officialGradeRows,
+} from '@/lib/subjects';
 
 type PbdColumn = {
   key: string;
@@ -494,13 +502,14 @@ export default function PbdReport({
                     <th>Jumlah</th>
                     <th>%</th>
                     <th>Pangkat</th>
+                    <th>GPM</th>
                     <th>Kedudukan Kelas</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportRows.length === 0 ? (
                     <tr>
-                      <td colSpan={pbdColumns.length * 2 + 6}>Tiada murid aktif dalam kelas ini.</td>
+                      <td colSpan={pbdColumns.length * 2 + 7}>Tiada murid aktif dalam kelas ini.</td>
                     </tr>
                   ) : (
                     reportRows.map((row, index) => (
@@ -524,6 +533,7 @@ export default function PbdReport({
                         <td className="score-total">{formatNumber(row.total)}</td>
                         <td>{formatNumber(row.percent)}</td>
                         <td>{row.grade}</td>
+                        <td>{formatGradePoint(row.percent)}</td>
                         <td className="score-total">{row.rank ?? '-'}</td>
                       </tr>
                     ))
@@ -630,9 +640,9 @@ export default function PbdReport({
             <div className="panel-head compact-head">
               <div>
                 <h3>Gred Purata Kelas</h3>
-                <p className="table-note">Kiraan GPS menggunakan skala Mumtaz 1 hingga Musaadah 5.</p>
+                <p className="table-note">Kiraan GPK dan GPMP menggunakan skala Mumtaz 1 hingga Musaadah 5.</p>
               </div>
-              <span>Skor PKSR {pksrScore(overallGps)}</span>
+              <span>GPK {formatGradePointValue(overallGps)} | Skor PKSR {pksrScore(overallGps)}</span>
             </div>
             <div className="table-scroll pbd-gps-scroll">
               <table className="pbd-gps-table">
@@ -644,7 +654,7 @@ export default function PbdReport({
                     ))}
                     <th>TH</th>
                     <th>Jumlah Calon</th>
-                    <th>GPS</th>
+                    <th>GPMP</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -656,12 +666,12 @@ export default function PbdReport({
                       ))}
                       <td>{item.th}</td>
                       <td>{item.total}</td>
-                      <td>{formatNumber(item.gps, 2)}</td>
+                      <td>{formatGradePointValue(item.gps)}</td>
                     </tr>
                   ))}
                   <tr className="pbd-total-row">
-                    <th>GPS Keseluruhan</th>
-                    <td colSpan={gradeRows.length + 3}>{formatNumber(overallGps, 2)}</td>
+                    <th>GPK Keseluruhan</th>
+                    <td colSpan={gradeRows.length + 3}>{formatGradePointValue(overallGps)}</td>
                     <td>{pksrScore(overallGps)}</td>
                   </tr>
                 </tbody>

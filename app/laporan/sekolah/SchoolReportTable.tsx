@@ -7,7 +7,7 @@ import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeSchools } from '../../ui/scopedData';
 import type { School, SchoolSummaryRecord } from '@/lib/data';
 import { isStandardExamCode } from '@/lib/examOrdering';
-import { gradeForMark } from '@/lib/subjects';
+import { formatGradePoint, gradeForMark } from '@/lib/subjects';
 
 export default function SchoolReportTable({
   schools,
@@ -45,6 +45,7 @@ export default function SchoolReportTable({
                 <th>Jumlah Murid</th>
                 <th>Purata</th>
                 <th>Gred</th>
+                <th>GPS</th>
                 <th>Bil Mumtaz</th>
                 <th>% Mumtaz</th>
                 <th>% Lulus</th>
@@ -62,6 +63,7 @@ export default function SchoolReportTable({
                   <td>{item.jumlah_murid}</td>
                   <td>{item.purata_sekolah ?? '-'}</td>
                   <td>{gradeForMark(item.purata_sekolah)}</td>
+                  <td>{formatGradePoint(item.purata_sekolah)}</td>
                   <td>{item.bil_mumtaz}</td>
                   <td>{item.peratus_mumtaz ?? 0}%</td>
                   <td>{item.peratus_lulus ?? 0}%</td>

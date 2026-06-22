@@ -4,7 +4,7 @@ import PrintButton from '../../../ui/PrintButton';
 import ReportSignatureBlock from '../../../ui/ReportSignatureBlock';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
-import { fallbackSubjectForCode, gradeForMark, normalizeSubjectRecord } from '@/lib/subjects';
+import { fallbackSubjectForCode, formatGradePoint, gradeForMark, normalizeSubjectRecord } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -95,9 +95,9 @@ export default async function CetakLaporanIndividuPage({
                 </strong>
               </div>
               <div>
-                <span>Purata / Gred</span>
+                <span>Purata / Gred / GPM</span>
                 <strong>
-                  {summary.purata ?? '-'} - {gradeForMark(summary.purata)}
+                  {summary.purata ?? '-'} - {gradeForMark(summary.purata)} - {formatGradePoint(summary.purata)}
                 </strong>
               </div>
             </div>
@@ -146,6 +146,10 @@ export default async function CetakLaporanIndividuPage({
               <div>
                 <span>Gred</span>
                 <strong>{gradeForMark(summary.purata)}</strong>
+              </div>
+              <div>
+                <span>GPM</span>
+                <strong>{formatGradePoint(summary.purata)}</strong>
               </div>
             </div>
 

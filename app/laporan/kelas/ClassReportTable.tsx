@@ -19,7 +19,10 @@ import { cleanMykid } from '@/lib/mykid';
 import {
   allowedSubjectForTahun,
   fallbackSubjectForCode,
+  formatGradePoint,
+  formatGradePointValue,
   gradeForMark,
+  gradePointForMark,
   gradeShortForMark,
   normalizeSubjectRecord,
   subjectAliasCodes,
@@ -337,6 +340,10 @@ export default function ClassReportTable({
         compareText(a.student.nama_murid, b.student.nama_murid, 'asc')
       );
     });
+  const gpkValues = reportRows
+    .map((row) => gradePointForMark(row.average))
+    .filter((value): value is number => value !== null);
+  const gpk = gpkValues.length > 0 ? gpkValues.reduce((total, value) => total + value, 0) / gpkValues.length : null;
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
@@ -508,6 +515,10 @@ export default function ClassReportTable({
               <span>Guru Kelas</span>
               <strong>{classTeacher?.nama ?? '-'}</strong>
             </div>
+            <div>
+              <span>GPK</span>
+              <strong>{formatGradePointValue(gpk)}</strong>
+            </div>
           </div>
 
           <div className="table-scroll class-mark-report">
@@ -532,12 +543,13 @@ export default function ClassReportTable({
                   <th>{renderSortButton('Jumlah', 'total')}</th>
                   <th>{renderSortButton('%', 'average')}</th>
                   <th>{renderSortButton('Gred', 'grade')}</th>
+                  <th>GPM</th>
                 </tr>
               </thead>
               <tbody>
                 {reportRows.length === 0 ? (
                   <tr>
-                    <td colSpan={reportSubjects.length + 5}>Tiada murid aktif dalam kelas ini.</td>
+                    <td colSpan={reportSubjects.length + 6}>Tiada murid aktif dalam kelas ini.</td>
                   </tr>
                 ) : (
                   reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average }, index) => {
@@ -562,6 +574,7 @@ export default function ClassReportTable({
                         <td className="score-total">{totalMarks ?? '-'}</td>
                         <td>{average ?? '-'}</td>
                         <td>{gradeForMark(average) || '-'}</td>
+                        <td>{formatGradePoint(average)}</td>
                       </tr>
                     );
                   })

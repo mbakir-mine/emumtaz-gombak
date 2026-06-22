@@ -1,11 +1,11 @@
 import AppFrame from '../ui/AppFrame';
 import { getSchoolSummaries, getStudentSummaries } from '@/lib/data';
-import { gradeForMark } from '@/lib/subjects';
+import { formatGradePoint, gradeForMark } from '@/lib/subjects';
 
 const reports = [
   ['Laporan Individu', 'Slip prestasi murid, purata, gred dan perbandingan UPSA/UASA.', '/laporan/individu'],
   ['Laporan Kelas', 'Ranking murid, purata kelas, taburan gred dan subjek lemah.', '/laporan/kelas'],
-  ['Pelaporan PBD', 'Rekod PBD JAIS, analisa pencapaian dan GPS kelas.', '/laporan/pbd'],
+  ['Pelaporan PBD', 'Rekod PBD JAIS, analisa pencapaian, GPM, GPMP dan GPK.', '/laporan/pbd'],
   ['Laporan Sekolah', 'Prestasi keseluruhan sekolah, peratus lulus dan bilangan cemerlang.', '/laporan/sekolah'],
   ['Laporan Subjek', 'Analisis setiap subjek mengikut kelas, sekolah dan daerah.', '/laporan/subjek'],
   ['UPSA vs UASA', 'Perbandingan peperiksaan tahun semasa.', '/perbandingan'],
@@ -51,6 +51,7 @@ export default async function LaporanPage() {
                 <th>Murid</th>
                 <th>Purata</th>
                 <th>Gred</th>
+                <th>GPS</th>
                 <th>% Lulus</th>
               </tr>
             </thead>
@@ -64,6 +65,7 @@ export default async function LaporanPage() {
                   <td>{item.jumlah_murid}</td>
                   <td>{item.purata_sekolah ?? '-'}</td>
                   <td>{gradeForMark(item.purata_sekolah)}</td>
+                  <td>{formatGradePoint(item.purata_sekolah)}</td>
                   <td>{item.peratus_lulus ?? 0}%</td>
                 </tr>
               ))}
@@ -90,6 +92,7 @@ export default async function LaporanPage() {
                 <th>Bil Subjek</th>
                 <th>Purata</th>
                 <th>Gred</th>
+                <th>GPM</th>
               </tr>
             </thead>
             <tbody>
@@ -102,6 +105,7 @@ export default async function LaporanPage() {
                   <td>{item.bil_subjek_dikira}</td>
                   <td>{item.purata ?? '-'}</td>
                   <td>{gradeForMark(item.purata)}</td>
+                  <td>{formatGradePoint(item.purata)}</td>
                 </tr>
               ))}
             </tbody>
