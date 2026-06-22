@@ -33,7 +33,7 @@ import {
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = 'gender' | 'mykid' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
+type SortKey = 'gender' | 'mykid' | 'name' | 'total' | 'average' | 'grade' | 'gpm' | `subject:${string}`;
 type SavedReportFilters = {
   tahunAkademik?: number;
   kodPeperiksaan?: string;
@@ -112,7 +112,7 @@ function gradeSortValue(markah: number | null | undefined) {
 
 function isValidSortKey(value: string | null | undefined): value is SortKey {
   if (!value) return false;
-  return ['gender', 'mykid', 'name', 'total', 'average', 'grade'].includes(value) || value.startsWith('subject:');
+  return ['gender', 'mykid', 'name', 'total', 'average', 'grade', 'gpm'].includes(value) || value.startsWith('subject:');
 }
 
 export default function ClassReportTable({
@@ -334,6 +334,7 @@ export default function ClassReportTable({
       if (sortKey === 'total') return compareNullableNumber(a.totalMarks, b.totalMarks, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
       if (sortKey === 'average') return compareNullableNumber(a.average, b.average, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
       if (sortKey === 'grade') return compareNullableNumber(gradeSortValue(a.average), gradeSortValue(b.average), sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
+      if (sortKey === 'gpm') return compareNullableNumber(a.gpm, b.gpm, sortDirection) || compareText(a.student.nama_murid, b.student.nama_murid, 'asc');
       const kodSubjek = sortKey.replace('subject:', '');
       return (
         compareNullableNumber(a.subjectMarks.get(kodSubjek), b.subjectMarks.get(kodSubjek), sortDirection) ||
@@ -373,17 +374,21 @@ export default function ClassReportTable({
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
-  const renderSortButton = (label: string, key: SortKey, title?: string) => (
-    <button
-      type="button"
-      className={sortKey === key ? 'sort-header-button active' : 'sort-header-button'}
-      onClick={() => toggleSort(key)}
-      title={title ?? `Susun ${label}`}
-    >
-      <span>{label}</span>
-      {sortLabel(key) && <small>{sortLabel(key)}</small>}
-    </button>
-  );
+  const renderSortButton = (label: string, key: SortKey, title?: string) => {
+    const indicator = sortKey === key ? (sortDirection === 'asc' ? '\u2191' : '\u2193') : '';
+
+    return (
+      <button
+        type="button"
+        className={sortKey === key ? 'sort-header-button active' : 'sort-header-button'}
+        onClick={() => toggleSort(key)}
+        title={title ?? `Susun ${label}`}
+      >
+        <span>{label}</span>
+        {indicator && <small>{indicator}</small>}
+      </button>
+    );
+  };
 
   const classReportReturnPath = useMemo(() => {
     const params = new URLSearchParams();
@@ -565,7 +570,7 @@ export default function ClassReportTable({
                   <th>{renderSortButton('Jumlah', 'total')}</th>
                   <th>{renderSortButton('%', 'average')}</th>
                   <th>{renderSortButton('Gred', 'grade')}</th>
-                  <th>GPM</th>
+                  <th>{renderSortButton('GPM', 'gpm')}</th>
                 </tr>
               </thead>
               <tbody>

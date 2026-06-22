@@ -6,13 +6,37 @@ import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
 import { compareExamCode, isStandardExamCode } from '@/lib/examOrdering';
-import { formatGradePoint, gradeForMark } from '@/lib/subjects';
+import { formatGradePoint, gradeForMark, gradePointForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
+type SortDirection = 'asc' | 'desc';
+type IndividualSortKey = 'name' | 'total' | 'average' | 'grade' | 'gpm';
 
 function zoneLabel(zon: string) {
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
+}
+
+function isMissingNumber(value: number | null | undefined) {
+  return value === null || value === undefined || Number.isNaN(value);
+}
+
+function compareNullableNumber(a: number | null | undefined, b: number | null | undefined, direction: SortDirection) {
+  const aMissing = isMissingNumber(a);
+  const bMissing = isMissingNumber(b);
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  return direction === 'asc' ? Number(a) - Number(b) : Number(b) - Number(a);
+}
+
+function compareText(a: string, b: string, direction: SortDirection) {
+  const result = a.localeCompare(b, 'ms', { sensitivity: 'base' });
+  return direction === 'asc' ? result : -result;
+}
+
+function defaultDirectionForSort(key: IndividualSortKey): SortDirection {
+  return key === 'name' || key === 'grade' || key === 'gpm' ? 'asc' : 'desc';
 }
 
 export default function IndividualReportTable({
@@ -35,6 +59,8 @@ export default function IndividualReportTable({
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedExam, setSelectedExam] = useState('');
+  const [sortKey, setSortKey] = useState<IndividualSortKey>('average');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);

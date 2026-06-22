@@ -2861,6 +2861,13 @@ textarea {
   vertical-align: middle;
 }
 
+.class-mark-report tbody td,
+.class-mark-report tbody strong,
+.class-mark-report tbody small,
+.class-mark-report tbody .text-link {
+  font-weight: 400;
+}
+
 .sort-header-button {
   display: inline-flex;
   gap: 6px;
@@ -2937,6 +2944,7 @@ textarea {
   color: #005f38;
   font-size: 13px;
   line-height: 1.25;
+  font-weight: 400;
 }
 
 .class-mark-report .student-name-col small {
@@ -2948,7 +2956,7 @@ textarea {
 
 .score-cell {
   min-width: 64px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.15;
 }
 
@@ -2956,7 +2964,7 @@ textarea {
   display: block;
   margin-top: 2px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 400;
 }
 
 .score-excellent {
@@ -2971,12 +2979,12 @@ textarea {
 
 .score-empty {
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .score-total {
   color: #006b3b;
-  font-weight: 800;
+  font-weight: 400;
 }
 
 .pbd-report-page {
