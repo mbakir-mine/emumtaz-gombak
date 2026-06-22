@@ -19,7 +19,6 @@ import { cleanMykid } from '@/lib/mykid';
 import {
   allowedSubjectForTahun,
   fallbackSubjectForCode,
-  formatGradePoint,
   formatGradePointValue,
   gradeForMark,
   gradePointForMark,
@@ -72,6 +71,10 @@ function scoreClass(markah: number | null | undefined) {
   if (markah >= 90) return 'score-cell score-excellent';
   if (markah < 40) return 'score-cell score-danger';
   return 'score-cell';
+}
+
+function isCountedSubject(subject: SubjectRecord) {
+  return subject.dikira_purata !== false && !isGradeOnlySubject(subject);
 }
 
 function formatExam(exam: ExamRecord | undefined, kodPeperiksaan: string) {
@@ -301,11 +304,17 @@ export default function ClassReportTable({
       reportSubjects.forEach((subject) => {
         subjectMarks.set(subject.kod_subjek, markMap.get(`${student.id}|${subject.kod_subjek}`));
       });
-      const validMarks = [...subjectMarks.values()].filter(
-        (markah): markah is number => markah !== null && markah !== undefined && Number.isFinite(markah),
-      );
-      const totalMarks = validMarks.length > 0 ? validMarks.reduce((total, markah) => total + markah, 0) : null;
-      const average = validMarks.length > 0 && totalMarks !== null ? Number((totalMarks / validMarks.length).toFixed(2)) : null;
+      const countedMarks = reportSubjects
+        .filter(isCountedSubject)
+        .map((subject) => subjectMarks.get(subject.kod_subjek))
+        .filter((markah): markah is number => markah !== null && markah !== undefined && Number.isFinite(markah));
+      const totalMarks = countedMarks.length > 0 ? countedMarks.reduce((total, markah) => total + markah, 0) : null;
+      const average =
+        countedMarks.length > 0 && totalMarks !== null ? Number((totalMarks / countedMarks.length).toFixed(2)) : null;
+      const gpmValues = countedMarks
+        .map((markah) => gradePointForMark(markah))
+        .filter((value): value is number => value !== null);
+      const gpm = gpmValues.length > 0 ? gpmValues.reduce((total, value) => total + value, 0) / gpmValues.length : null;
 
       return {
         student,
@@ -314,6 +323,7 @@ export default function ClassReportTable({
         subjectMarks,
         totalMarks,
         average,
+        gpm,
       };
     })
     .sort((a, b) => {
@@ -330,7 +340,7 @@ export default function ClassReportTable({
       );
     });
   const gpkValues = reportRows
-    .map((row) => gradePointForMark(row.average))
+    .map((row) => row.gpm)
     .filter((value): value is number => value !== null);
   const gpk = gpkValues.length > 0 ? gpkValues.reduce((total, value) => total + value, 0) / gpkValues.length : null;
 
@@ -541,7 +551,7 @@ export default function ClassReportTable({
                     <td colSpan={reportSubjects.length + 6}>Tiada murid aktif dalam kelas ini.</td>
                   </tr>
                 ) : (
-                  reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average }, index) => {
+                  reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average, gpm }, index) => {
                     return (
                       <tr key={student.id}>
                         <td>{index + 1}</td>
@@ -565,7 +575,7 @@ export default function ClassReportTable({
                         <td className="score-total">{totalMarks ?? '-'}</td>
                         <td>{average ?? '-'}</td>
                         <td>{gradeForMark(average) || '-'}</td>
-                        <td>{formatGradePoint(average)}</td>
+                        <td>{formatGradePointValue(gpm)}</td>
                       </tr>
                     );
                   })
