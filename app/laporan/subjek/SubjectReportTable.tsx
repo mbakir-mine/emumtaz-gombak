@@ -63,9 +63,7 @@ export default function SubjectReportTable({
                     <td>{item.kod_peperiksaan}</td>
                     <td>{item.kod_sekolah}</td>
                     <td>{classRecord ? `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}` : '-'}</td>
-                    <td>
-                      {item.kod_subjek} - {item.nama_subjek}
-                    </td>
+                    <td>{item.nama_subjek}</td>
                     <td>{item.bil_markah}</td>
                     <td>{item.purata_subjek ?? '-'}</td>
                     <td>{gradeForMark(item.purata_subjek)}</td>

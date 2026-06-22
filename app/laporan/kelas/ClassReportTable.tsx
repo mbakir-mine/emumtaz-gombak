@@ -24,24 +24,13 @@ import {
   gradeForMark,
   gradePointForMark,
   gradeShortForMark,
+  isGradeOnlySubject,
   normalizeSubjectRecord,
   subjectAliasCodes,
+  subjectDisplayName,
 } from '@/lib/subjects';
 
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
-const subjectCodeLabels: Record<string, string> = {
-  AKHLAK: 'AKH',
-  SIRAH: 'SRH',
-  BAHASA_ARAB: 'BA',
-  JAWI: 'JW',
-  IMLAK_KHAT: 'IMK',
-  TAUHID: 'THD',
-  FEQAH: 'FKH',
-  FEKAH: 'FKH',
-  TAJWID: 'TJW',
-  TILAWAH: 'TQ',
-  HAFAZAN: 'HF',
-};
 
 type SortDirection = 'asc' | 'desc';
 type SortKey = 'gender' | 'mykid' | 'name' | 'total' | 'average' | 'grade' | `subject:${string}`;
@@ -63,7 +52,7 @@ function zoneLabel(zon: string) {
 }
 
 function subjectLabel(subject: SubjectRecord) {
-  return subjectCodeLabels[subject.kod_subjek] ?? subject.kod_subjek;
+  return subjectDisplayName(subject, subject.kod_subjek);
 }
 
 function genderShort(jantina: string | null | undefined) {
@@ -564,10 +553,12 @@ export default function ClassReportTable({
                         </td>
                         {reportSubjects.map((subject) => {
                           const markah = subjectMarks.get(subject.kod_subjek);
+                          const hasMark = markah !== null && markah !== undefined && !Number.isNaN(Number(markah));
+                          const gradeOnly = isGradeOnlySubject(subject);
                           return (
                             <td key={subject.kod_subjek} className={scoreClass(markah)}>
-                              {markah ?? '-'}
-                              {markah !== null && markah !== undefined && <small>{gradeShort(markah)}</small>}
+                              {gradeOnly ? (hasMark ? gradeShort(markah) || '-' : '-') : markah ?? '-'}
+                              {!gradeOnly && hasMark && <small>{gradeShort(markah)}</small>}
                             </td>
                           );
                         })}

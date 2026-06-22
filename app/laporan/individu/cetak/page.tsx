@@ -4,7 +4,14 @@ import PrintButton from '../../../ui/PrintButton';
 import ReportSignatureBlock from '../../../ui/ReportSignatureBlock';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
-import { fallbackSubjectForCode, formatGradePoint, gradeForMark, normalizeSubjectRecord } from '@/lib/subjects';
+import {
+  fallbackSubjectForCode,
+  formatGradePoint,
+  gradeForMark,
+  isGradeOnlySubject,
+  normalizeSubjectRecord,
+  subjectDisplayName,
+} from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -118,10 +125,11 @@ export default async function CetakLaporanIndividuPage({
                 ) : (
                   studentMarks.map((mark) => {
                     const subject = subjectForMark(mark);
+                    const gradeOnly = isGradeOnlySubject(subject ?? mark.kod_subjek);
                     return (
                       <tr key={mark.id}>
-                        <td>{subject ? `${subject.kod_subjek} - ${subject.nama_subjek}` : mark.kod_subjek}</td>
-                        <td>{mark.markah ?? '-'}</td>
+                        <td>{subjectDisplayName(subject, mark.kod_subjek)}</td>
+                        <td>{gradeOnly ? '-' : mark.markah ?? '-'}</td>
                         <td>{gradeForMark(mark.markah)}</td>
                       </tr>
                     );

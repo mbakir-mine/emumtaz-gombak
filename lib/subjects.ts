@@ -94,6 +94,17 @@ export function normalizeSubjectRecord(subject: SubjectRecord): SubjectRecord {
   };
 }
 
+export function subjectDisplayName(subject: SubjectRecord | null | undefined, fallback = '-') {
+  return subject?.nama_subjek?.trim() || fallback;
+}
+
+export function isGradeOnlySubject(subjectOrCode: SubjectRecord | string | null | undefined) {
+  const kodSubjek =
+    typeof subjectOrCode === 'string' ? subjectOrCode : subjectOrCode?.kod_subjek ?? '';
+  const canonical = canonicalSubjectCode(kodSubjek);
+  return canonical === 'TILAWAH' || canonical === 'HAFAZAN';
+}
+
 export function allowedSubjectForTahun(subject: SubjectRecord, tahun: number) {
   const kodSubjek = canonicalSubjectCode(subject.kod_subjek);
   if ([1, 2].includes(tahun)) {
