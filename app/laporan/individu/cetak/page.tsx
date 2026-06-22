@@ -4,7 +4,7 @@ import PrintButton from '../../../ui/PrintButton';
 import ReportSignatureBlock from '../../../ui/ReportSignatureBlock';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
-import { gradeForMark } from '@/lib/subjects';
+import { fallbackSubjectForCode, gradeForMark, normalizeSubjectRecord } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -32,6 +32,8 @@ export default async function CetakLaporanIndividuPage({
   );
   const school = summary ? schools.find((item) => item.kod_sekolah === summary.kod_sekolah) : null;
   const classRecord = summary ? classes.find((item) => item.id === summary.class_id) : null;
+  const subjectForMark = (mark: (typeof marks)[number]) =>
+    mark.subjects ? normalizeSubjectRecord(mark.subjects) : fallbackSubjectForCode(mark.kod_subjek);
   const studentMarks = marks
     .filter(
       (mark) =>
@@ -39,7 +41,7 @@ export default async function CetakLaporanIndividuPage({
         mark.exams?.tahun_akademik === tahunAkademik &&
         mark.exams?.kod_peperiksaan === kodPeperiksaan,
     )
-    .sort((a, b) => (a.subjects?.susunan ?? 999) - (b.subjects?.susunan ?? 999));
+    .sort((a, b) => (subjectForMark(a)?.susunan ?? 999) - (subjectForMark(b)?.susunan ?? 999));
 
   return (
     <AppFrame title="Cetak Laporan Individu" subtitle="Slip prestasi murid." active="reports">
@@ -114,13 +116,16 @@ export default async function CetakLaporanIndividuPage({
                     <td colSpan={3}>Tiada markah subjek ditemui.</td>
                   </tr>
                 ) : (
-                  studentMarks.map((mark) => (
-                    <tr key={mark.id}>
-                      <td>{mark.subjects ? `${mark.kod_subjek} - ${mark.subjects.nama_subjek}` : mark.kod_subjek}</td>
-                      <td>{mark.markah ?? '-'}</td>
-                      <td>{gradeForMark(mark.markah)}</td>
-                    </tr>
-                  ))
+                  studentMarks.map((mark) => {
+                    const subject = subjectForMark(mark);
+                    return (
+                      <tr key={mark.id}>
+                        <td>{subject ? `${subject.kod_subjek} - ${subject.nama_subjek}` : mark.kod_subjek}</td>
+                        <td>{mark.markah ?? '-'}</td>
+                        <td>{gradeForMark(mark.markah)}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

@@ -16,7 +16,13 @@ import type {
 } from '@/lib/data';
 import { compareExamRecords, isStandardExamCode } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
-import { allowedSubjectForTahun, gradeForMark } from '@/lib/subjects';
+import {
+  allowedSubjectForTahun,
+  fallbackSubjectForCode,
+  gradeForMark,
+  normalizeSubjectRecord,
+  subjectAliasCodes,
+} from '@/lib/subjects';
 
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
 const subjectCodeLabels: Record<string, string> = {
@@ -26,6 +32,7 @@ const subjectCodeLabels: Record<string, string> = {
   JAWI: 'JW',
   IMLAK_KHAT: 'IMK',
   TAUHID: 'THD',
+  FEQAH: 'FKH',
   FEKAH: 'FKH',
   TAJWID: 'TJW',
   TILAWAH: 'TQ',
@@ -257,18 +264,41 @@ export default function ClassReportTable({
     .filter((student) => student.class_id === selectedClassRecord?.id && student.status === 'AKTIF')
     .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid));
   const selectedMarks = marks.filter((mark) => mark.exam_id === selectedExam && mark.class_id === selectedClassRecord?.id);
-  const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject]));
+  const subjectMap = useMemo(() => {
+    const map = new Map<string, SubjectRecord>();
+    subjects.forEach((subject) => {
+      const normalized = normalizeSubjectRecord(subject);
+      map.set(subject.kod_subjek, normalized);
+      map.set(normalized.kod_subjek, normalized);
+    });
+    return map;
+  }, [subjects]);
   const reportSubjects = useMemo(() => {
     if (!selectedClassRecord) return [];
-    const allowed = subjects.filter((subject) => allowedSubjectForTahun(subject, selectedClassRecord.tahun));
+    const allowed = subjects
+      .filter((subject) => allowedSubjectForTahun(subject, selectedClassRecord.tahun))
+      .map((subject) => normalizeSubjectRecord(subject));
     const fromMarks = selectedMarks
-      .map((mark) => subjectMap.get(mark.kod_subjek) ?? mark.subjects)
+      .map((mark) =>
+        subjectMap.get(mark.kod_subjek) ??
+        (mark.subjects ? normalizeSubjectRecord(mark.subjects) : fallbackSubjectForCode(mark.kod_subjek)),
+      )
       .filter((subject): subject is SubjectRecord => Boolean(subject));
     const merged = new Map<string, SubjectRecord>();
     [...allowed, ...fromMarks].forEach((subject) => merged.set(subject.kod_subjek, subject));
     return [...merged.values()].sort((a, b) => (a.susunan ?? 999) - (b.susunan ?? 999) || a.kod_subjek.localeCompare(b.kod_subjek));
   }, [selectedClassRecord, selectedMarks, subjectMap, subjects]);
-  const markMap = new Map(selectedMarks.map((mark) => [`${mark.student_id}|${mark.kod_subjek}`, mark.markah]));
+  const markMap = useMemo(() => {
+    const map = new Map<string, number | null>();
+    selectedMarks.forEach((mark) => {
+      map.set(`${mark.student_id}|${mark.kod_subjek}`, mark.markah);
+      subjectAliasCodes(mark.kod_subjek).forEach((kodSubjek) => {
+        const key = `${mark.student_id}|${kodSubjek}`;
+        if (!map.has(key)) map.set(key, mark.markah);
+      });
+    });
+    return map;
+  }, [selectedMarks]);
 
   const reportRows = classStudents
     .map((student) => {
