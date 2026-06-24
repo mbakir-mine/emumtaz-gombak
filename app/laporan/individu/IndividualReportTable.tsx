@@ -77,6 +77,7 @@ export default function IndividualReportTable({
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedExam, setSelectedExam] = useState('');
+  const [showResults, setShowResults] = useState(false);
   const [sortKey, setSortKey] = useState<IndividualSortKey>('average');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -204,7 +205,7 @@ export default function IndividualReportTable({
             <h2>Carian Laporan Individu Murid</h2>
             <p className="table-note">Pilih tahun akademik dan jenis peperiksaan untuk melihat senarai kelas anda.</p>
           </div>
-          <span>{teacherFilteredSummaries.length} rekod</span>
+          <span>{showResults ? `${teacherFilteredSummaries.length} rekod` : 'Pilih tapisan'}</span>
         </div>
 
         <div className="report-filter-grid teacher-report-filter no-print">
@@ -215,6 +216,7 @@ export default function IndividualReportTable({
               onChange={(event) => {
                 setSelectedYear(Number(event.target.value));
                 setSelectedExam('');
+                setShowResults(false);
               }}
             >
               {yearOptions.map((year) => (
@@ -227,7 +229,13 @@ export default function IndividualReportTable({
 
           <label>
             Jenis Peperiksaan
-            <select value={selectedExam} onChange={(event) => setSelectedExam(event.target.value)}>
+            <select
+              value={selectedExam}
+              onChange={(event) => {
+                setSelectedExam(event.target.value);
+                setShowResults(false);
+              }}
+            >
               <option value="">Pilih peperiksaan</option>
               {teacherExamOptions.map((exam) => (
                 <option key={exam} value={exam}>
@@ -236,12 +244,20 @@ export default function IndividualReportTable({
               ))}
             </select>
           </label>
+
+          <div className="report-filter-action">
+            <button type="button" className="button" onClick={() => setShowResults(true)} disabled={!selectedExam}>
+              Cari
+            </button>
+          </div>
         </div>
 
         {teacherClassIds.size === 0 ? (
           <p className="empty">Kelas belum ditetapkan kepada akaun guru kelas ini.</p>
         ) : !selectedExam ? (
           <p className="empty">Pilih jenis peperiksaan untuk memaparkan senarai murid.</p>
+        ) : !showResults ? (
+          <p className="empty">Tekan butang Cari untuk memaparkan senarai laporan individu murid.</p>
         ) : teacherFilteredSummaries.length === 0 ? (
           <p className="empty">Tiada laporan murid untuk pilihan ini.</p>
         ) : (
@@ -306,7 +322,7 @@ export default function IndividualReportTable({
           <h2>Carian Laporan Individu Murid</h2>
           <p className="table-note">Pilih tapisan, kemudian buka laporan individu murid yang diperlukan.</p>
         </div>
-        <span>{sortedSummaries.length} rekod</span>
+        <span>{showResults ? `${sortedSummaries.length} rekod` : 'Pilih tapisan'}</span>
       </div>
 
       <div className="report-filter-grid no-print">
@@ -318,6 +334,7 @@ export default function IndividualReportTable({
               setSelectedYear(Number(event.target.value));
               setSelectedExam('');
               setSelectedClass('');
+              setShowResults(false);
             }}
           >
             {yearOptions.map((year) => (
@@ -330,7 +347,13 @@ export default function IndividualReportTable({
 
         <label>
           Peperiksaan
-          <select value={selectedExam} onChange={(event) => setSelectedExam(event.target.value)}>
+          <select
+            value={selectedExam}
+            onChange={(event) => {
+              setSelectedExam(event.target.value);
+              setShowResults(false);
+            }}
+          >
             <option value="">Semua peperiksaan</option>
             {examOptions.map((exam) => (
               <option key={exam} value={exam}>
@@ -349,6 +372,7 @@ export default function IndividualReportTable({
                 setSelectedZone(event.target.value);
                 setSelectedSchool('');
                 setSelectedClass('');
+                setShowResults(false);
               }}
               disabled={profile?.role === 'ADMIN_ZON'}
             >
@@ -370,6 +394,7 @@ export default function IndividualReportTable({
               onChange={(event) => {
                 setSelectedSchool(event.target.value);
                 setSelectedClass('');
+                setShowResults(false);
               }}
             >
               <option value="">Semua sekolah</option>
@@ -389,6 +414,7 @@ export default function IndividualReportTable({
             onChange={(event) => {
               setSelectedTahun(event.target.value);
               setSelectedClass('');
+              setShowResults(false);
             }}
           >
             <option value="">Semua tahun</option>
@@ -402,7 +428,13 @@ export default function IndividualReportTable({
 
         <label>
           Kelas
-          <select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)}>
+          <select
+            value={selectedClass}
+            onChange={(event) => {
+              setSelectedClass(event.target.value);
+              setShowResults(false);
+            }}
+          >
             <option value="">Semua kelas</option>
             {classOptions.map((item) => (
               <option key={item.id} value={item.id}>
@@ -411,9 +443,17 @@ export default function IndividualReportTable({
             ))}
           </select>
         </label>
+
+        <div className="report-filter-action">
+          <button type="button" className="button" onClick={() => setShowResults(true)}>
+            Cari
+          </button>
+        </div>
       </div>
 
-      {sortedSummaries.length === 0 ? (
+      {!showResults ? (
+        <p className="empty">Pilih tapisan dan tekan butang Cari untuk memaparkan senarai laporan individu murid.</p>
+      ) : sortedSummaries.length === 0 ? (
         <p className="empty">Tiada murid sepadan dengan pilihan laporan.</p>
       ) : (
         <div className="table-scroll individual-report-list">

@@ -2813,8 +2813,18 @@ textarea {
   background: #fbfdf9;
 }
 
+.report-filter-action {
+  display: flex;
+  align-items: end;
+}
+
+.report-filter-action .button {
+  width: 100%;
+  min-height: 46px;
+}
+
 .teacher-report-filter {
-  grid-template-columns: repeat(2, minmax(180px, 320px));
+  grid-template-columns: repeat(3, minmax(180px, 320px));
   justify-content: start;
 }
 
