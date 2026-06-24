@@ -2983,6 +2983,26 @@ textarea {
   min-width: 300px;
 }
 
+.individual-report-list .student-name-col .text-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #005f38;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.individual-report-list .student-name-col .text-link:hover,
+.individual-report-list .student-name-col .text-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: 0;
+}
+
 .individual-report-list .student-name-col span,
 .individual-report-list .school-class-cell span {
   display: block;
