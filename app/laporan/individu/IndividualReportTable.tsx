@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
@@ -16,6 +16,19 @@ const profileExamOrder = ['UPSA', 'UASA', 'PBD'];
 
 type SortDirection = 'asc' | 'desc';
 type StudentSearchSortKey = 'name' | 'yearCount' | 'examCount' | 'latestAverage' | 'latestGpm';
+type SavedIndividualReportState = {
+  selectedYear?: number;
+  selectedZone?: string;
+  selectedSchool?: string;
+  selectedTahun?: string;
+  selectedClass?: string;
+  searchTerm?: string;
+  submittedSearchTerm?: string;
+  showResults?: boolean;
+  selectedStudentKey?: string;
+  sortKey?: StudentSearchSortKey;
+  sortDirection?: SortDirection;
+};
 
 type StudentProfileRecord = {
   key: string;
@@ -25,6 +38,8 @@ type StudentProfileRecord = {
   records: StudentSummaryRecord[];
   latest: StudentSummaryRecord;
 };
+
+const individualReportStorageKey = 'emumtaz:laporan-individu:state';
 
 function zoneLabel(zon: string) {
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
@@ -54,6 +69,10 @@ function compareText(a: string, b: string, direction: SortDirection) {
 
 function defaultDirectionForSort(key: StudentSearchSortKey): SortDirection {
   return key === 'name' ? 'asc' : 'desc';
+}
+
+function isValidStudentSearchSortKey(value: string | null | undefined): value is StudentSearchSortKey {
+  return Boolean(value && ['name', 'yearCount', 'examCount', 'latestAverage', 'latestGpm'].includes(value));
 }
 
 function isIndividualReportExam(code: string | null | undefined) {
@@ -154,6 +173,102 @@ export default function IndividualReportTable({
   const [selectedStudentKey, setSelectedStudentKey] = useState('');
   const [sortKey, setSortKey] = useState<StudentSearchSortKey>('latestAverage');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [stateReady, setStateReady] = useState(false);
+  const didRestoreState = useRef(false);
+
+  useEffect(() => {
+    if (didRestoreState.current) return;
+    didRestoreState.current = true;
+
+    let savedState: SavedIndividualReportState = {};
+    try {
+      const savedValue = window.localStorage.getItem(individualReportStorageKey);
+      if (savedValue) savedState = JSON.parse(savedValue) as SavedIndividualReportState;
+    } catch {
+      savedState = {};
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const yearValue = params.get('tahun') ?? (savedState.selectedYear ? String(savedState.selectedYear) : '');
+    const nextYear = Number(yearValue);
+    if (Number.isFinite(nextYear) && yearOptions.includes(nextYear)) setSelectedYear(nextYear);
+
+    const nextZone = params.get('zon') ?? savedState.selectedZone ?? '';
+    const nextSchool = params.get('sekolah') ?? savedState.selectedSchool ?? '';
+    const nextTahun = params.get('tahun_murid') ?? savedState.selectedTahun ?? '';
+    const nextClass = params.get('kelas') ?? savedState.selectedClass ?? '';
+    const nextSearch = params.get('cari') ?? savedState.searchTerm ?? '';
+    const nextSubmittedSearch = params.get('carian') ?? savedState.submittedSearchTerm ?? nextSearch;
+    const nextShowResults = params.get('papar') ?? (savedState.showResults ? '1' : '');
+    const nextStudentKey = params.get('murid') ?? savedState.selectedStudentKey ?? '';
+    const nextSortKey = params.get('sort') ?? savedState.sortKey;
+    const nextSortDirection = params.get('arah') ?? savedState.sortDirection;
+
+    if (nextZone) setSelectedZone(nextZone);
+    if (nextSchool) setSelectedSchool(nextSchool);
+    if (nextTahun) setSelectedTahun(nextTahun);
+    if (nextClass) setSelectedClass(nextClass);
+    if (nextSearch) setSearchTerm(nextSearch);
+    if (nextSubmittedSearch) setSubmittedSearchTerm(nextSubmittedSearch);
+    if (nextShowResults === '1') setShowResults(true);
+    if (nextStudentKey) setSelectedStudentKey(nextStudentKey);
+    if (isValidStudentSearchSortKey(nextSortKey)) setSortKey(nextSortKey);
+    if (nextSortDirection === 'asc' || nextSortDirection === 'desc') setSortDirection(nextSortDirection);
+
+    setStateReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!stateReady) return;
+
+    const savedState: SavedIndividualReportState = {
+      selectedYear,
+      selectedZone,
+      selectedSchool,
+      selectedTahun,
+      selectedClass,
+      searchTerm,
+      submittedSearchTerm,
+      showResults,
+      selectedStudentKey,
+      sortKey,
+      sortDirection,
+    };
+
+    try {
+      window.localStorage.setItem(individualReportStorageKey, JSON.stringify(savedState));
+    } catch {
+      // Kegagalan localStorage bukan ralat kritikal; URL masih jadi sandaran refresh.
+    }
+
+    const params = new URLSearchParams();
+    params.set('tahun', String(selectedYear));
+    if (selectedZone) params.set('zon', selectedZone);
+    if (selectedSchool) params.set('sekolah', selectedSchool);
+    if (selectedTahun) params.set('tahun_murid', selectedTahun);
+    if (selectedClass) params.set('kelas', selectedClass);
+    if (searchTerm) params.set('cari', searchTerm);
+    if (submittedSearchTerm) params.set('carian', submittedSearchTerm);
+    if (showResults) params.set('papar', '1');
+    if (selectedStudentKey) params.set('murid', selectedStudentKey);
+    params.set('sort', sortKey);
+    params.set('arah', sortDirection);
+
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, [
+    searchTerm,
+    selectedClass,
+    selectedSchool,
+    selectedStudentKey,
+    selectedTahun,
+    selectedYear,
+    selectedZone,
+    showResults,
+    sortDirection,
+    sortKey,
+    stateReady,
+    submittedSearchTerm,
+  ]);
 
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
