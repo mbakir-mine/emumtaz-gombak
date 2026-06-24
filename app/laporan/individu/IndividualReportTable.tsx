@@ -5,17 +5,33 @@ import { useMemo, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
 import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
-import { compareExamCode, isStandardExamCode } from '@/lib/examOrdering';
+import { compareExamCode, normalizeExamCode } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
 import { formatGradePoint, gradeForMark, gradePointForMark } from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
+const studentYears = [1, 2, 3, 4, 5, 6];
+const profileExamOrder = ['UPSA', 'UASA', 'PBD'];
+
 type SortDirection = 'asc' | 'desc';
-type IndividualSortKey = 'name' | 'total' | 'average' | 'grade' | 'gpm';
+type StudentSearchSortKey = 'name' | 'yearCount' | 'examCount' | 'latestAverage' | 'latestGpm';
+
+type StudentProfileRecord = {
+  key: string;
+  student_id: string;
+  mykid: string;
+  nama_murid: string;
+  records: StudentSummaryRecord[];
+  latest: StudentSummaryRecord;
+};
 
 function zoneLabel(zon: string) {
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
+}
+
+function normalizeText(value: string | number | null | undefined) {
+  return String(value ?? '').trim().toLowerCase();
 }
 
 function isMissingNumber(value: number | null | undefined) {
@@ -36,25 +52,81 @@ function compareText(a: string, b: string, direction: SortDirection) {
   return direction === 'asc' ? result : -result;
 }
 
-function defaultDirectionForSort(key: IndividualSortKey): SortDirection {
-  return key === 'name' || key === 'grade' || key === 'gpm' ? 'asc' : 'desc';
+function defaultDirectionForSort(key: StudentSearchSortKey): SortDirection {
+  return key === 'name' ? 'asc' : 'desc';
 }
 
-function summaryKey(item: StudentSummaryRecord) {
-  return `${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`;
+function isIndividualReportExam(code: string | null | undefined) {
+  const normalized = normalizeExamCode(code);
+  return normalized === 'UPSA' || normalized === 'UASA' || normalized === 'PBD';
 }
 
-function compareSummaryRows(
+function studentProfileKey(item: StudentSummaryRecord) {
+  return cleanMykid(item.mykid) || item.student_id;
+}
+
+function classLabel(classRecord: ClassRecord | undefined) {
+  if (!classRecord) return '-';
+  return `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}`;
+}
+
+function schoolLabel(schoolRecord: School | undefined, kodSekolah: string) {
+  return schoolRecord ? `${schoolRecord.kod_sekolah} - ${schoolRecord.nama_sekolah}` : kodSekolah;
+}
+
+function uniqueValues(values: Array<string | number | null | undefined>) {
+  return [...new Set(values.map((value) => String(value ?? '').trim()).filter(Boolean))];
+}
+
+function compareRecordsNewest(
   a: StudentSummaryRecord,
   b: StudentSummaryRecord,
-  key: IndividualSortKey,
+  classById: Map<string, ClassRecord>,
+) {
+  const academicDiff = b.tahun_akademik - a.tahun_akademik;
+  if (academicDiff !== 0) return academicDiff;
+
+  const classYearDiff = (classById.get(b.class_id)?.tahun ?? 0) - (classById.get(a.class_id)?.tahun ?? 0);
+  if (classYearDiff !== 0) return classYearDiff;
+
+  return compareExamCode(b.kod_peperiksaan, a.kod_peperiksaan);
+}
+
+function compareStudentProfiles(
+  a: StudentProfileRecord,
+  b: StudentProfileRecord,
+  key: StudentSearchSortKey,
   direction: SortDirection,
 ) {
   if (key === 'name') return compareText(a.nama_murid, b.nama_murid, direction);
-  if (key === 'total') return compareNullableNumber(a.jumlah_markah, b.jumlah_markah, direction);
-  if (key === 'average') return compareNullableNumber(a.purata, b.purata, direction);
-  if (key === 'grade') return compareText(gradeForMark(a.purata), gradeForMark(b.purata), direction);
-  return compareNullableNumber(gradePointForMark(a.purata), gradePointForMark(b.purata), direction);
+  if (key === 'yearCount') {
+    const aYears = new Set(a.records.map((item) => item.tahun_akademik)).size;
+    const bYears = new Set(b.records.map((item) => item.tahun_akademik)).size;
+    return compareNullableNumber(aYears, bYears, direction) || compareText(a.nama_murid, b.nama_murid, 'asc');
+  }
+  if (key === 'examCount') {
+    return (
+      compareNullableNumber(a.records.length, b.records.length, direction) ||
+      compareText(a.nama_murid, b.nama_murid, 'asc')
+    );
+  }
+  if (key === 'latestAverage') {
+    return (
+      compareNullableNumber(a.latest.purata, b.latest.purata, direction) ||
+      compareText(a.nama_murid, b.nama_murid, 'asc')
+    );
+  }
+  return (
+    compareNullableNumber(gradePointForMark(a.latest.purata), gradePointForMark(b.latest.purata), direction) ||
+    compareText(a.nama_murid, b.nama_murid, 'asc')
+  );
+}
+
+function formatExamCell(item: StudentSummaryRecord | undefined) {
+  if (!item) return '-';
+  const average = item.purata ?? '-';
+  const grade = gradeForMark(item.purata) || '-';
+  return `${average} | ${grade} | GPM ${formatGradePoint(item.purata)}`;
 }
 
 export default function IndividualReportTable({
@@ -76,9 +148,11 @@ export default function IndividualReportTable({
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedTahun, setSelectedTahun] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
-  const [selectedExam, setSelectedExam] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [submittedSearchTerm, setSubmittedSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
-  const [sortKey, setSortKey] = useState<IndividualSortKey>('average');
+  const [selectedStudentKey, setSelectedStudentKey] = useState('');
+  const [sortKey, setSortKey] = useState<StudentSearchSortKey>('latestAverage');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
@@ -87,6 +161,8 @@ export default function IndividualReportTable({
   const schoolByCode = useMemo(() => new Map(scopedSchools.map((item) => [item.kod_sekolah, item])), [scopedSchools]);
   const isClassTeacher = profile?.role === 'GURU_KELAS';
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
+  const hideSchoolScopeFilters = isClassTeacher || isSchoolAdmin;
+
   const teacherClassIds = useMemo(() => {
     if (!isClassTeacher || !profile) return new Set<string>();
     return new Set(
@@ -95,74 +171,112 @@ export default function IndividualReportTable({
         .map((assignment) => assignment.class_id),
     );
   }, [isClassTeacher, profile, teacherClassAssignments]);
-  const teacherSummaries = useMemo(() => {
-    return summaries.filter((item) => teacherClassIds.has(item.class_id));
-  }, [summaries, teacherClassIds]);
-  const teacherExamOptions = useMemo(() => {
-    return [...new Set(teacherSummaries
-      .filter((item) => item.tahun_akademik === selectedYear && isStandardExamCode(item.kod_peperiksaan))
-      .map((item) => item.kod_peperiksaan))]
-      .sort(compareExamCode);
-  }, [selectedYear, teacherSummaries]);
+
   const effectiveZone = profile?.role === 'ADMIN_ZON' ? profile.zon ?? '' : selectedZone;
-  const effectiveSchool = profile?.role === 'ADMIN_SEKOLAH' ? profile.kod_sekolah ?? '' : selectedSchool;
+  const effectiveSchool = hideSchoolScopeFilters ? profile?.kod_sekolah ?? '' : selectedSchool;
   const schoolOptions = scopedSchools.filter((school) => !effectiveZone || school.zon === effectiveZone);
+
   const classOptions = scopedClasses.filter((item) => {
     if (item.tahun_akademik !== selectedYear) return false;
+    if (isClassTeacher && !teacherClassIds.has(item.id)) return false;
     if (effectiveSchool && item.kod_sekolah !== effectiveSchool) return false;
     if (selectedTahun && item.tahun !== Number(selectedTahun)) return false;
     return true;
   });
+
   const allowedSchools = new Set(schoolOptions.map((school) => school.kod_sekolah));
-  const examOptions = [...new Set(summaries
-    .filter((item) => {
-      if (item.tahun_akademik !== selectedYear) return false;
-      if (!isStandardExamCode(item.kod_peperiksaan)) return false;
+
+  const resetResults = () => {
+    setShowResults(false);
+    setSelectedStudentKey('');
+  };
+
+  const allScopedSummaries = useMemo(() => {
+    return summaries.filter((item) => {
+      if (!isIndividualReportExam(item.kod_peperiksaan)) return false;
+      if (isClassTeacher && !teacherClassIds.has(item.class_id)) return false;
+      if (!classById.has(item.class_id)) return false;
       if (!allowedSchools.has(item.kod_sekolah)) return false;
       if (effectiveSchool && item.kod_sekolah !== effectiveSchool) return false;
       return true;
-    })
-    .map((item) => item.kod_peperiksaan))]
-    .sort(compareExamCode);
+    });
+  }, [allowedSchools, classById, effectiveSchool, isClassTeacher, summaries, teacherClassIds]);
 
-  const filteredSummaries = summaries.filter((item) => {
-    if (item.tahun_akademik !== selectedYear) return false;
-    if (!isStandardExamCode(item.kod_peperiksaan)) return false;
-    if (selectedExam && item.kod_peperiksaan !== selectedExam) return false;
-    if (!allowedSchools.has(item.kod_sekolah)) return false;
-    if (effectiveSchool && item.kod_sekolah !== effectiveSchool) return false;
+  const allStudentProfiles = useMemo(() => {
+    const grouped = new Map<string, StudentSummaryRecord[]>();
 
-    const classRecord = classById.get(item.class_id);
-    if (selectedTahun && classRecord?.tahun !== Number(selectedTahun)) return false;
-    if (selectedClass && item.class_id !== selectedClass) return false;
-    return true;
-  });
-  const sortedSummaries = useMemo(() => {
-    return [...filteredSummaries].sort((a, b) => compareSummaryRows(a, b, sortKey, sortDirection));
-  }, [filteredSummaries, sortDirection, sortKey]);
-  const teacherPerformanceSummaries = useMemo(() => {
-    if (!selectedExam) return [];
-    return teacherSummaries
-      .filter((item) => item.tahun_akademik === selectedYear && item.kod_peperiksaan === selectedExam)
-      .sort((a, b) => (b.purata ?? -1) - (a.purata ?? -1) || (b.jumlah_markah ?? -1) - (a.jumlah_markah ?? -1));
-  }, [selectedExam, selectedYear, teacherSummaries]);
-  const teacherFilteredSummaries = useMemo(() => {
-    if (!selectedExam) return [];
-    return teacherSummaries
-      .filter((item) => item.tahun_akademik === selectedYear && item.kod_peperiksaan === selectedExam)
-      .sort((a, b) => compareSummaryRows(a, b, sortKey, sortDirection));
-  }, [selectedExam, selectedYear, sortDirection, sortKey, teacherSummaries]);
-  const teacherRankMap = new Map<string, number>();
-  teacherPerformanceSummaries.forEach((item, index, rows) => {
-    const previous = rows[index - 1];
-    const rank =
-      previous && previous.purata === item.purata && previous.jumlah_markah === item.jumlah_markah
-        ? rows.findIndex((row) => row.purata === item.purata && row.jumlah_markah === item.jumlah_markah) + 1
-        : index + 1;
+    allScopedSummaries.forEach((item) => {
+      const key = studentProfileKey(item);
+      const rows = grouped.get(key) ?? [];
+      rows.push(item);
+      grouped.set(key, rows);
+    });
 
-    teacherRankMap.set(summaryKey(item), rank);
-  });
-  const toggleSort = (nextSortKey: IndividualSortKey) => {
+    return [...grouped.entries()].map(([key, records]) => {
+      const orderedRecords = [...records].sort((a, b) => compareRecordsNewest(a, b, classById));
+      const latest = orderedRecords[0];
+
+      return {
+        key,
+        student_id: latest.student_id,
+        mykid: cleanMykid(latest.mykid),
+        nama_murid: latest.nama_murid,
+        records: orderedRecords,
+        latest,
+      };
+    });
+  }, [allScopedSummaries, classById]);
+
+  const allStudentProfileMap = useMemo(() => {
+    return new Map(allStudentProfiles.map((item) => [item.key, item]));
+  }, [allStudentProfiles]);
+
+  const searchMatchedProfiles = useMemo(() => {
+    const submitted = normalizeText(submittedSearchTerm);
+    const matchedKeys = new Set<string>();
+
+    allScopedSummaries.forEach((item) => {
+      if (item.tahun_akademik !== selectedYear) return;
+      const classRecord = classById.get(item.class_id);
+      if (selectedTahun && classRecord?.tahun !== Number(selectedTahun)) return;
+      if (selectedClass && item.class_id !== selectedClass) return;
+
+      const schoolRecord = schoolByCode.get(item.kod_sekolah);
+      const haystack = normalizeText(
+        [
+          item.nama_murid,
+          cleanMykid(item.mykid),
+          item.kod_sekolah,
+          schoolRecord?.nama_sekolah,
+          classRecord?.nama_kelas,
+          classRecord?.tahun,
+        ].join(' '),
+      );
+
+      if (submitted && !haystack.includes(submitted)) return;
+      matchedKeys.add(studentProfileKey(item));
+    });
+
+    return [...matchedKeys]
+      .map((key) => allStudentProfileMap.get(key))
+      .filter((item): item is StudentProfileRecord => Boolean(item))
+      .sort((a, b) => compareStudentProfiles(a, b, sortKey, sortDirection));
+  }, [
+    allScopedSummaries,
+    allStudentProfileMap,
+    classById,
+    schoolByCode,
+    selectedClass,
+    selectedTahun,
+    selectedYear,
+    sortDirection,
+    sortKey,
+    submittedSearchTerm,
+  ]);
+
+  const selectedStudentProfile = selectedStudentKey ? allStudentProfileMap.get(selectedStudentKey) : undefined;
+
+  const toggleSort = (nextSortKey: StudentSearchSortKey) => {
     if (sortKey === nextSortKey) {
       setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
       return;
@@ -171,7 +285,8 @@ export default function IndividualReportTable({
     setSortKey(nextSortKey);
     setSortDirection(defaultDirectionForSort(nextSortKey));
   };
-  const renderSortButton = (label: string, key: IndividualSortKey) => {
+
+  const renderSortButton = (label: string, key: StudentSearchSortKey) => {
     const indicator = sortKey === key ? (sortDirection === 'asc' ? '\u2191' : '\u2193') : '';
 
     return (
@@ -186,6 +301,7 @@ export default function IndividualReportTable({
       </button>
     );
   };
+
   const individualReportHref = (item: StudentSummaryRecord) => {
     const params = new URLSearchParams({
       student_id: item.student_id,
@@ -197,26 +313,208 @@ export default function IndividualReportTable({
     return `/laporan/individu/cetak?${params.toString()}`;
   };
 
-  if (isClassTeacher) {
+  const renderProfilePanel = (studentProfile: StudentProfileRecord) => {
+    const latestClass = classById.get(studentProfile.latest.class_id);
+    const latestSchool = schoolByCode.get(studentProfile.latest.kod_sekolah);
+    const yearRows = studentYears.map((tahun) => {
+      const records = studentProfile.records
+        .filter((item) => classById.get(item.class_id)?.tahun === tahun)
+        .sort((a, b) => a.tahun_akademik - b.tahun_akademik || compareExamCode(a.kod_peperiksaan, b.kod_peperiksaan));
+      const academicYears = uniqueValues(records.map((item) => item.tahun_akademik)).join(', ');
+      const schoolsText = uniqueValues(
+        records.map((item) => schoolLabel(schoolByCode.get(item.kod_sekolah), item.kod_sekolah)),
+      ).join(' / ');
+      const classesText = uniqueValues(records.map((item) => classLabel(classById.get(item.class_id)))).join(' / ');
+      const examsText = uniqueValues(records.map((item) => normalizeExamCode(item.kod_peperiksaan)))
+        .sort(compareExamCode)
+        .join(', ');
+
+      return {
+        tahun,
+        records,
+        academicYears,
+        schoolsText,
+        classesText,
+        examsText,
+      };
+    });
+    const matrixRows = studentYears.map((tahun) => {
+      const records = studentProfile.records.filter((item) => classById.get(item.class_id)?.tahun === tahun);
+      const newestRecord = [...records].sort((a, b) => compareRecordsNewest(a, b, classById))[0];
+      const examMap = new Map<string, StudentSummaryRecord>();
+
+      records.forEach((item) => {
+        const examCode = normalizeExamCode(item.kod_peperiksaan);
+        const current = examMap.get(examCode);
+        if (!current || compareRecordsNewest(item, current, classById) < 0) {
+          examMap.set(examCode, item);
+        }
+      });
+
+      return {
+        tahun,
+        newestRecord,
+        exams: examMap,
+      };
+    });
+
     return (
-      <>
-        <div className="panel-head">
+      <div className="student-progress-panel">
+        <div className="student-progress-heading">
           <div>
-            <h2>Carian Laporan Individu Murid</h2>
-            <p className="table-note">Pilih tahun akademik dan jenis peperiksaan untuk melihat senarai kelas anda.</p>
+            <h3>Profil Perkembangan Murid</h3>
+            <p className="table-note">Rekod pembelajaran dan prestasi murid dari Tahun 1 hingga Tahun 6.</p>
           </div>
-          <span>{showResults ? `${teacherFilteredSummaries.length} rekod` : 'Pilih tapisan'}</span>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() => {
+              setSelectedStudentKey('');
+            }}
+          >
+            Tukar Murid
+          </button>
         </div>
 
-        <div className="report-filter-grid teacher-report-filter no-print">
+        <div className="student-profile-summary">
+          <div className="student-profile-card wide">
+            <span>Nama Murid</span>
+            <strong>{studentProfile.nama_murid}</strong>
+            <small>{studentProfile.mykid || '-'}</small>
+          </div>
+          <div className="student-profile-card">
+            <span>Sekolah Terkini</span>
+            <strong>{schoolLabel(latestSchool, studentProfile.latest.kod_sekolah)}</strong>
+          </div>
+          <div className="student-profile-card">
+            <span>Kelas Terkini</span>
+            <strong>{classLabel(latestClass)}</strong>
+          </div>
+          <div className="student-profile-card">
+            <span>Rekod Direkodkan</span>
+            <strong>{studentProfile.records.length} ujian</strong>
+            <small>{new Set(studentProfile.records.map((item) => classById.get(item.class_id)?.tahun).filter(Boolean)).size} tahun murid</small>
+          </div>
+        </div>
+
+        <div className="student-profile-section">
+          <div className="section-title-row">
+            <h3>Sejarah Pembelajaran Tahun 1-6</h3>
+          </div>
+          <div className="table-scroll">
+            <table className="compact-table">
+              <thead>
+                <tr>
+                  <th>Tahun Murid</th>
+                  <th>Tahun Akademik</th>
+                  <th>Sekolah</th>
+                  <th>Kelas</th>
+                  <th>Ujian Direkodkan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearRows.map((row) => (
+                  <tr key={row.tahun} className={row.records.length === 0 ? 'muted-row' : undefined}>
+                    <td>Tahun {row.tahun}</td>
+                    <td>{row.academicYears || '-'}</td>
+                    <td>{row.schoolsText || 'Belum ada rekod'}</td>
+                    <td>{row.classesText || '-'}</td>
+                    <td>{row.examsText || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="student-profile-section">
+          <div className="section-title-row">
+            <h3>Prestasi Setiap Ujian</h3>
+          </div>
+          <div className="table-scroll">
+            <table className="compact-table performance-matrix">
+              <thead>
+                <tr>
+                  <th>Tahun Murid</th>
+                  <th>Sekolah / Kelas</th>
+                  {profileExamOrder.map((exam) => (
+                    <th key={exam}>{exam}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {matrixRows.map((row) => {
+                  const schoolRecord = row.newestRecord ? schoolByCode.get(row.newestRecord.kod_sekolah) : undefined;
+                  const classRecord = row.newestRecord ? classById.get(row.newestRecord.class_id) : undefined;
+
+                  return (
+                    <tr key={row.tahun} className={!row.newestRecord ? 'muted-row' : undefined}>
+                      <td>Tahun {row.tahun}</td>
+                      <td className="school-class-cell">
+                        {row.newestRecord ? (
+                          <>
+                            <span>{schoolLabel(schoolRecord, row.newestRecord.kod_sekolah)}</span>
+                            <small>{classLabel(classRecord)}</small>
+                          </>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      {profileExamOrder.map((exam) => {
+                        const examRecord = row.exams.get(exam);
+
+                        return (
+                          <td key={exam}>
+                            {examRecord ? (
+                              <Link className="exam-profile-cell" href={individualReportHref(examRecord)}>
+                                <span>{formatExamCell(examRecord)}</span>
+                                <small>Buka slip</small>
+                              </Link>
+                            ) : (
+                              <span className="muted-dash">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="panel-head">
+        <div>
+          <h2>Carian Profil Individu Murid</h2>
+          <p className="table-note">
+            Cari murid untuk melihat sejarah sekolah, kelas dan prestasi ujian dari Tahun 1 hingga Tahun 6.
+          </p>
+        </div>
+        <span>
+          {selectedStudentProfile
+            ? 'Profil murid'
+            : showResults
+              ? `${searchMatchedProfiles.length} murid`
+              : 'Pilih tapisan'}
+        </span>
+      </div>
+
+      {!selectedStudentProfile && (
+        <div className="report-filter-grid individual-profile-filter no-print">
           <label>
-            Tahun Akademik
+            Tahun Akademik Rujukan
             <select
               value={selectedYear}
               onChange={(event) => {
                 setSelectedYear(Number(event.target.value));
-                setSelectedExam('');
-                setShowResults(false);
+                setSelectedClass('');
+                resetResults();
               }}
             >
               {yearOptions.map((year) => (
@@ -227,234 +525,123 @@ export default function IndividualReportTable({
             </select>
           </label>
 
+          {!hideSchoolScopeFilters && (
+            <label>
+              Zon
+              <select
+                value={effectiveZone}
+                onChange={(event) => {
+                  setSelectedZone(event.target.value);
+                  setSelectedSchool('');
+                  setSelectedClass('');
+                  resetResults();
+                }}
+                disabled={profile?.role === 'ADMIN_ZON'}
+              >
+                <option value="">Semua zon</option>
+                {zoneOptions.map((zon) => (
+                  <option key={zon} value={zon}>
+                    {zoneLabel(zon)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {!hideSchoolScopeFilters && (
+            <label>
+              Sekolah
+              <select
+                value={effectiveSchool}
+                onChange={(event) => {
+                  setSelectedSchool(event.target.value);
+                  setSelectedClass('');
+                  resetResults();
+                }}
+              >
+                <option value="">Semua sekolah</option>
+                {schoolOptions.map((school) => (
+                  <option key={school.kod_sekolah} value={school.kod_sekolah}>
+                    {school.kod_sekolah} - {school.nama_sekolah}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
           <label>
-            Jenis Peperiksaan
+            Tahun Murid
             <select
-              value={selectedExam}
+              value={selectedTahun}
               onChange={(event) => {
-                setSelectedExam(event.target.value);
-                setShowResults(false);
+                setSelectedTahun(event.target.value);
+                setSelectedClass('');
+                resetResults();
               }}
             >
-              <option value="">Pilih peperiksaan</option>
-              {teacherExamOptions.map((exam) => (
-                <option key={exam} value={exam}>
-                  {exam}
+              <option value="">Semua tahun</option>
+              {studentYears.map((tahun) => (
+                <option key={tahun} value={tahun}>
+                  Tahun {tahun}
                 </option>
               ))}
             </select>
           </label>
 
+          <label>
+            Kelas
+            <select
+              value={selectedClass}
+              onChange={(event) => {
+                setSelectedClass(event.target.value);
+                resetResults();
+              }}
+            >
+              <option value="">Semua kelas</option>
+              {classOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  Tahun {item.tahun} - {item.nama_kelas}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Nama / MyKid
+            <input
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setShowResults(false);
+              }}
+              placeholder="Cari nama murid atau MyKid"
+            />
+          </label>
+
           <div className="report-filter-action">
-            <button type="button" className="button" onClick={() => setShowResults(true)} disabled={!selectedExam}>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setSubmittedSearchTerm(searchTerm);
+                setSelectedStudentKey('');
+                setShowResults(true);
+              }}
+            >
               Cari
             </button>
           </div>
         </div>
+      )}
 
-        {teacherClassIds.size === 0 ? (
-          <p className="empty">Kelas belum ditetapkan kepada akaun guru kelas ini.</p>
-        ) : !selectedExam ? (
-          <p className="empty">Pilih jenis peperiksaan untuk memaparkan senarai murid.</p>
-        ) : !showResults ? (
-          <p className="empty">Tekan butang Cari untuk memaparkan senarai laporan individu murid.</p>
-        ) : teacherFilteredSummaries.length === 0 ? (
-          <p className="empty">Tiada laporan murid untuk pilihan ini.</p>
-        ) : (
-          <div className="table-scroll individual-report-list">
-            <table>
-              <thead>
-                <tr>
-                  <th>Bil</th>
-                  <th>{renderSortButton('Nama Murid / MyKid', 'name')}</th>
-                  <th>Kelas</th>
-                  <th>Peperiksaan</th>
-                  <th>Bil Subjek</th>
-                  <th>{renderSortButton('Jumlah Markah', 'total')}</th>
-                  <th>{renderSortButton('Purata', 'average')}</th>
-                  <th>{renderSortButton('Gred', 'grade')}</th>
-                  <th>{renderSortButton('GPM', 'gpm')}</th>
-                  <th>Kedudukan</th>
-                  <th>Tindakan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teacherFilteredSummaries.map((item, index) => {
-                  const href = individualReportHref(item);
-                  const classRecord = classById.get(item.class_id);
-                  const rank = teacherRankMap.get(summaryKey(item)) ?? index + 1;
-
-                  return (
-                    <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
-                      <td>{index + 1}</td>
-                      <td className="student-name-col">
-                        <span>{item.nama_murid}</span>
-                        <small>{cleanMykid(item.mykid)}</small>
-                      </td>
-                      <td>{classRecord ? `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}` : '-'}</td>
-                      <td>{item.kod_peperiksaan}</td>
-                      <td>{item.bil_subjek_dikira}</td>
-                      <td>{item.jumlah_markah ?? '-'}</td>
-                      <td>{item.purata ?? '-'}</td>
-                      <td>{gradeForMark(item.purata) || '-'}</td>
-                      <td>{formatGradePoint(item.purata)}</td>
-                      <td>{rank} / {teacherPerformanceSummaries.length}</td>
-                      <td>
-                        <Link className="table-action" href={href}>
-                          Lihat Laporan
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div className="panel-head">
-        <div>
-          <h2>Carian Laporan Individu Murid</h2>
-          <p className="table-note">Pilih tapisan, kemudian buka laporan individu murid yang diperlukan.</p>
-        </div>
-        <span>{showResults ? `${sortedSummaries.length} rekod` : 'Pilih tapisan'}</span>
-      </div>
-
-      <div className="report-filter-grid no-print">
-        <label>
-          Tahun Akademik
-          <select
-            value={selectedYear}
-            onChange={(event) => {
-              setSelectedYear(Number(event.target.value));
-              setSelectedExam('');
-              setSelectedClass('');
-              setShowResults(false);
-            }}
-          >
-            {yearOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Peperiksaan
-          <select
-            value={selectedExam}
-            onChange={(event) => {
-              setSelectedExam(event.target.value);
-              setShowResults(false);
-            }}
-          >
-            <option value="">Semua peperiksaan</option>
-            {examOptions.map((exam) => (
-              <option key={exam} value={exam}>
-                {exam}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {!isSchoolAdmin && (
-          <label>
-            Zon
-            <select
-              value={effectiveZone}
-              onChange={(event) => {
-                setSelectedZone(event.target.value);
-                setSelectedSchool('');
-                setSelectedClass('');
-                setShowResults(false);
-              }}
-              disabled={profile?.role === 'ADMIN_ZON'}
-            >
-              <option value="">Semua zon</option>
-              {zoneOptions.map((zon) => (
-                <option key={zon} value={zon}>
-                  {zoneLabel(zon)}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {!isSchoolAdmin && (
-          <label>
-            Sekolah
-            <select
-              value={effectiveSchool}
-              onChange={(event) => {
-                setSelectedSchool(event.target.value);
-                setSelectedClass('');
-                setShowResults(false);
-              }}
-            >
-              <option value="">Semua sekolah</option>
-              {schoolOptions.map((school) => (
-                <option key={school.kod_sekolah} value={school.kod_sekolah}>
-                  {school.kod_sekolah} - {school.nama_sekolah}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <label>
-          Tahun Murid
-          <select
-            value={selectedTahun}
-            onChange={(event) => {
-              setSelectedTahun(event.target.value);
-              setSelectedClass('');
-              setShowResults(false);
-            }}
-          >
-            <option value="">Semua tahun</option>
-            {[1, 2, 3, 4, 5, 6].map((tahun) => (
-              <option key={tahun} value={tahun}>
-                Tahun {tahun}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Kelas
-          <select
-            value={selectedClass}
-            onChange={(event) => {
-              setSelectedClass(event.target.value);
-              setShowResults(false);
-            }}
-          >
-            <option value="">Semua kelas</option>
-            {classOptions.map((item) => (
-              <option key={item.id} value={item.id}>
-                Tahun {item.tahun} - {item.nama_kelas}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="report-filter-action">
-          <button type="button" className="button" onClick={() => setShowResults(true)}>
-            Cari
-          </button>
-        </div>
-      </div>
-
-      {!showResults ? (
-        <p className="empty">Pilih tapisan dan tekan butang Cari untuk memaparkan senarai laporan individu murid.</p>
-      ) : sortedSummaries.length === 0 ? (
-        <p className="empty">Tiada murid sepadan dengan pilihan laporan.</p>
+      {selectedStudentProfile ? (
+        renderProfilePanel(selectedStudentProfile)
+      ) : !showResults ? (
+        <p className="empty">
+          Pilih tapisan dan tekan butang Cari. Senarai panjang murid disembunyikan sehingga carian dibuat.
+        </p>
+      ) : searchMatchedProfiles.length === 0 ? (
+        <p className="empty">Tiada murid sepadan dengan pilihan carian.</p>
       ) : (
         <div className="table-scroll individual-report-list">
           <table>
@@ -462,45 +649,55 @@ export default function IndividualReportTable({
               <tr>
                 <th>Bil</th>
                 <th>{renderSortButton('Nama Murid / MyKid', 'name')}</th>
-                <th>{isSchoolAdmin ? 'Kelas' : 'Sekolah / Kelas'}</th>
-                <th>Peperiksaan</th>
-                <th>Bil Subjek</th>
-                <th>{renderSortButton('Jumlah Markah', 'total')}</th>
-                <th>{renderSortButton('Purata', 'average')}</th>
-                <th>{renderSortButton('Gred', 'grade')}</th>
-                <th>{renderSortButton('GPM', 'gpm')}</th>
+                <th>{isSchoolAdmin || isClassTeacher ? 'Kelas Terkini' : 'Sekolah / Kelas Terkini'}</th>
+                <th>{renderSortButton('Tahun Direkodkan', 'yearCount')}</th>
+                <th>{renderSortButton('Ujian Direkodkan', 'examCount')}</th>
+                <th>{renderSortButton('Purata Terkini', 'latestAverage')}</th>
+                <th>Gred Terkini</th>
+                <th>{renderSortButton('GPM Terkini', 'latestGpm')}</th>
                 <th>Tindakan</th>
               </tr>
             </thead>
             <tbody>
-              {sortedSummaries.map((item, index) => {
-                const classRecord = classById.get(item.class_id);
-                const schoolRecord = schoolByCode.get(item.kod_sekolah);
-                const href = individualReportHref(item);
+              {searchMatchedProfiles.map((item, index) => {
+                const classRecord = classById.get(item.latest.class_id);
+                const schoolRecord = schoolByCode.get(item.latest.kod_sekolah);
+                const recordedStudentYears = new Set(
+                  item.records.map((record) => classById.get(record.class_id)?.tahun).filter(Boolean),
+                ).size;
 
                 return (
-                  <tr key={`${item.tahun_akademik}-${item.kod_peperiksaan}-${item.student_id}`}>
+                  <tr key={item.key}>
                     <td>{index + 1}</td>
                     <td className="student-name-col">
-                      <span>{item.nama_murid}</span>
-                      <small>{cleanMykid(item.mykid)}</small>
+                      <button
+                        type="button"
+                        className="text-link"
+                        onClick={() => setSelectedStudentKey(item.key)}
+                      >
+                        {item.nama_murid}
+                      </button>
+                      <small>{item.mykid || '-'}</small>
                     </td>
                     <td className="school-class-cell">
-                      {!isSchoolAdmin && (
-                        <span>{schoolRecord ? `${schoolRecord.kod_sekolah} - ${schoolRecord.nama_sekolah}` : item.kod_sekolah}</span>
+                      {!isSchoolAdmin && !isClassTeacher && (
+                        <span>{schoolLabel(schoolRecord, item.latest.kod_sekolah)}</span>
                       )}
-                      <small>{classRecord ? `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}` : '-'}</small>
+                      <small>{classLabel(classRecord)}</small>
                     </td>
-                    <td>{item.kod_peperiksaan}</td>
-                    <td>{item.bil_subjek_dikira}</td>
-                    <td>{item.jumlah_markah ?? '-'}</td>
-                    <td>{item.purata ?? '-'}</td>
-                    <td>{gradeForMark(item.purata) || '-'}</td>
-                    <td>{formatGradePoint(item.purata)}</td>
+                    <td>{recordedStudentYears} / 6</td>
+                    <td>{item.records.length}</td>
+                    <td>{item.latest.purata ?? '-'}</td>
+                    <td>{gradeForMark(item.latest.purata) || '-'}</td>
+                    <td>{formatGradePoint(item.latest.purata)}</td>
                     <td>
-                      <Link className="table-action" href={href}>
-                        Lihat Laporan
-                      </Link>
+                      <button
+                        type="button"
+                        className="table-action"
+                        onClick={() => setSelectedStudentKey(item.key)}
+                      >
+                        Lihat Profil
+                      </button>
                     </td>
                   </tr>
                 );
