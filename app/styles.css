@@ -2954,6 +2954,50 @@ textarea {
   font-size: 11px;
 }
 
+.individual-report-list table {
+  min-width: 980px;
+}
+
+.individual-report-list th,
+.individual-report-list td {
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.individual-report-list .student-name-col,
+.individual-report-list .school-class-cell {
+  text-align: left;
+}
+
+.individual-report-list .student-name-col {
+  min-width: 300px;
+}
+
+.individual-report-list .student-name-col span,
+.individual-report-list .school-class-cell span {
+  display: block;
+  color: #005f38;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.individual-report-list .student-name-col small,
+.individual-report-list .school-class-cell small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.individual-report-list .table-action {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .score-cell {
   min-width: 64px;
   font-weight: 400;
