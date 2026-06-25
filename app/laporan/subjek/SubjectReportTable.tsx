@@ -71,8 +71,8 @@ function compactNumber(value: number | null | undefined) {
 }
 
 function percentText(value: number, total: number) {
-  if (!total) return '0%';
-  return `${compactNumber((value / total) * 100)}%`;
+  if (!total) return '0';
+  return compactNumber((value / total) * 100);
 }
 
 function classLabel(item: ClassRecord | null | undefined) {
@@ -494,7 +494,6 @@ export default function SubjectReportTable({
               <thead>
                 <tr>
                   <th rowSpan={2}>Bil</th>
-                  <th rowSpan={2}>Kod</th>
                   <th rowSpan={2} className="subject-name">
                     Mata Pelajaran
                   </th>
@@ -527,7 +526,6 @@ export default function SubjectReportTable({
                 {analysisRows.map((row, index) => (
                   <tr key={row.key}>
                     <td>{index + 1}</td>
-                    <td>{row.kodSubjek}</td>
                     <td className="subject-name">{row.namaSubjek}</td>
                     <td>{row.pelajarBerdaftar}</td>
                     <td>{row.tidakHadir}</td>
@@ -561,7 +559,7 @@ export default function SubjectReportTable({
             </div>
             <div>
               <span>Peratus Kelulusan</span>
-              <strong>{totals.peratusLulus === null ? '-' : `${compactNumber(totals.peratusLulus)}%`}</strong>
+              <strong>{totals.peratusLulus === null ? '-' : compactNumber(totals.peratusLulus)}</strong>
             </div>
             <div>
               <span>Jumlah Markah Dianalisis</span>
