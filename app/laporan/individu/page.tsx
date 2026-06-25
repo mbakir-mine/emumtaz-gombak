@@ -1,13 +1,20 @@
 import AppFrame from '../../ui/AppFrame';
-import { getClasses, getSchools, getStudentSummaries, getTeacherClassAssignments } from '@/lib/data';
+import {
+  getClasses,
+  getMarkDetails,
+  getSchools,
+  getStudentSummaries,
+  getTeacherClassAssignments,
+} from '@/lib/data';
 import IndividualReportTable from './IndividualReportTable';
 
 export default async function LaporanIndividuPage() {
-  const [schools, classes, summaries, teacherClassAssignments] = await Promise.all([
+  const [schools, classes, summaries, teacherClassAssignments, marks] = await Promise.all([
     getSchools(),
     getClasses(),
     getStudentSummaries(),
     getTeacherClassAssignments(),
+    getMarkDetails(),
   ]);
 
   return (
@@ -18,6 +25,7 @@ export default async function LaporanIndividuPage() {
           classes={classes}
           summaries={summaries}
           teacherClassAssignments={teacherClassAssignments}
+          marks={marks}
         />
       </section>
     </AppFrame>

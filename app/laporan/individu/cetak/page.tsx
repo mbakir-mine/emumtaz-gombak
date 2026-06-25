@@ -6,8 +6,9 @@ import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/l
 import { cleanMykid } from '@/lib/mykid';
 import {
   fallbackSubjectForCode,
-  formatGradePoint,
+  formatGradePointValue,
   gradeForMark,
+  gradePointForMark,
   isGradeOnlySubject,
   normalizeSubjectRecord,
   subjectDisplayName,
@@ -52,6 +53,19 @@ export default async function CetakLaporanIndividuPage({
         mark.exams?.kod_peperiksaan === kodPeperiksaan,
     )
     .sort((a, b) => (subjectForMark(a)?.susunan ?? 999) - (subjectForMark(b)?.susunan ?? 999));
+
+  const countedGradePoints = studentMarks
+    .filter((mark) => {
+      const subject = subjectForMark(mark);
+      if (isGradeOnlySubject(subject ?? mark.kod_subjek)) return false;
+      return mark.markah !== null && mark.markah !== undefined && Number.isFinite(Number(mark.markah));
+    })
+    .map((mark) => gradePointForMark(Number(mark.markah)))
+    .filter((point): point is number => point !== null && Number.isFinite(point));
+  const studentGpm =
+    countedGradePoints.length > 0
+      ? countedGradePoints.reduce((total, point) => total + point, 0) / countedGradePoints.length
+      : null;
 
   return (
     <AppFrame title="Cetak Laporan Individu" subtitle="Slip prestasi murid." active="reports">
@@ -107,7 +121,7 @@ export default async function CetakLaporanIndividuPage({
               <div>
                 <span>Purata / Gred / GPM</span>
                 <strong>
-                  {summary.purata ?? '-'} - {gradeForMark(summary.purata)} - {formatGradePoint(summary.purata)}
+                  {summary.purata ?? '-'} - {gradeForMark(summary.purata)} - {formatGradePointValue(studentGpm)}
                 </strong>
               </div>
             </div>
@@ -160,7 +174,7 @@ export default async function CetakLaporanIndividuPage({
               </div>
               <div>
                 <span>GPM</span>
-                <strong>{formatGradePoint(summary.purata)}</strong>
+                <strong>{formatGradePointValue(studentGpm)}</strong>
               </div>
             </div>
 
