@@ -48,7 +48,9 @@ export default async function CetakLaporanIndividuPage({
   const studentMarks = marks
     .filter(
       (mark) =>
+        summary &&
         mark.student_id === studentId &&
+        mark.class_id === summary.class_id &&
         mark.exams?.tahun_akademik === tahunAkademik &&
         mark.exams?.kod_peperiksaan === kodPeperiksaan,
     )

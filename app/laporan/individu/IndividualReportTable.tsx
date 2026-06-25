@@ -4,10 +4,17 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
-import type { ClassRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
+import type { ClassRecord, MarkDetailRecord, School, StudentSummaryRecord, TeacherClassAssignment } from '@/lib/data';
 import { compareExamCode, normalizeExamCode } from '@/lib/examOrdering';
 import { cleanMykid } from '@/lib/mykid';
-import { formatGradePoint, gradeForMark, gradePointForMark } from '@/lib/subjects';
+import {
+  fallbackSubjectForCode,
+  formatGradePointValue,
+  gradeForMark,
+  gradePointForMark,
+  isGradeOnlySubject,
+  normalizeSubjectRecord,
+} from '@/lib/subjects';
 
 const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
@@ -38,6 +45,31 @@ type StudentProfileRecord = {
   records: StudentSummaryRecord[];
   latest: StudentSummaryRecord;
 };
+
+function summaryRecordKey(
+  item: Pick<StudentSummaryRecord, 'student_id' | 'tahun_akademik' | 'kod_peperiksaan' | 'class_id'>,
+) {
+  return `${item.student_id}|${item.tahun_akademik}|${normalizeExamCode(item.kod_peperiksaan)}|${item.class_id}`;
+}
+
+function markDetailSummaryKey(mark: MarkDetailRecord) {
+  if (!mark.exams) return '';
+  return `${mark.student_id}|${mark.exams.tahun_akademik}|${normalizeExamCode(mark.exams.kod_peperiksaan)}|${mark.class_id}`;
+}
+
+function gpmFromMarks(marks: MarkDetailRecord[]) {
+  const gradePoints = marks
+    .filter((mark) => {
+      const subject = mark.subjects ? normalizeSubjectRecord(mark.subjects) : fallbackSubjectForCode(mark.kod_subjek);
+      if (isGradeOnlySubject(subject ?? mark.kod_subjek)) return false;
+      return mark.markah !== null && mark.markah !== undefined && Number.isFinite(Number(mark.markah));
+    })
+    .map((mark) => gradePointForMark(Number(mark.markah)))
+    .filter((point): point is number => point !== null && Number.isFinite(point));
+
+  if (gradePoints.length === 0) return null;
+  return gradePoints.reduce((total, point) => total + point, 0) / gradePoints.length;
+}
 
 const individualReportStorageKey = 'emumtaz:laporan-individu:state';
 
@@ -116,6 +148,7 @@ function compareStudentProfiles(
   b: StudentProfileRecord,
   key: StudentSearchSortKey,
   direction: SortDirection,
+  getGpm: (record: StudentSummaryRecord) => number | null,
 ) {
   if (key === 'name') return compareText(a.nama_murid, b.nama_murid, direction);
   if (key === 'yearCount') {
@@ -136,16 +169,16 @@ function compareStudentProfiles(
     );
   }
   return (
-    compareNullableNumber(gradePointForMark(a.latest.purata), gradePointForMark(b.latest.purata), direction) ||
+    compareNullableNumber(getGpm(a.latest), getGpm(b.latest), direction) ||
     compareText(a.nama_murid, b.nama_murid, 'asc')
   );
 }
 
-function formatExamCell(item: StudentSummaryRecord | undefined) {
+function formatExamCell(item: StudentSummaryRecord | undefined, gpm: number | null | undefined) {
   if (!item) return '-';
   const average = item.purata ?? '-';
   const grade = gradeForMark(item.purata) || '-';
-  return `${average} | ${grade} | GPM ${formatGradePoint(item.purata)}`;
+  return `${average} | ${grade} | GPM ${formatGradePointValue(gpm)}`;
 }
 
 export default function IndividualReportTable({
@@ -153,11 +186,13 @@ export default function IndividualReportTable({
   classes,
   summaries,
   teacherClassAssignments,
+  marks,
 }: {
   schools: School[];
   classes: ClassRecord[];
   summaries: StudentSummaryRecord[];
   teacherClassAssignments: TeacherClassAssignment[];
+  marks: MarkDetailRecord[];
 }) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -274,6 +309,33 @@ export default function IndividualReportTable({
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const classById = useMemo(() => new Map(scopedClasses.map((item) => [item.id, item])), [scopedClasses]);
   const schoolByCode = useMemo(() => new Map(scopedSchools.map((item) => [item.kod_sekolah, item])), [scopedSchools]);
+  const marksBySummaryKey = useMemo(() => {
+    const groups = new Map<string, MarkDetailRecord[]>();
+
+    marks.forEach((mark) => {
+      const key = markDetailSummaryKey(mark);
+      if (!key) return;
+      const rows = groups.get(key) ?? [];
+      rows.push(mark);
+      groups.set(key, rows);
+    });
+
+    return groups;
+  }, [marks]);
+  const gpmBySummaryKey = useMemo(() => {
+    const map = new Map<string, number | null>();
+
+    summaries.forEach((summary) => {
+      const key = summaryRecordKey(summary);
+      map.set(key, gpmFromMarks(marksBySummaryKey.get(key) ?? []));
+    });
+
+    return map;
+  }, [marksBySummaryKey, summaries]);
+  const summaryGpm = (summary: StudentSummaryRecord | undefined) => {
+    if (!summary) return null;
+    return gpmBySummaryKey.get(summaryRecordKey(summary)) ?? null;
+  };
   const isClassTeacher = profile?.role === 'GURU_KELAS';
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const hideSchoolScopeFilters = isClassTeacher || isSchoolAdmin;
@@ -375,11 +437,20 @@ export default function IndividualReportTable({
     return [...matchedKeys]
       .map((key) => allStudentProfileMap.get(key))
       .filter((item): item is StudentProfileRecord => Boolean(item))
-      .sort((a, b) => compareStudentProfiles(a, b, sortKey, sortDirection));
+      .sort((a, b) =>
+        compareStudentProfiles(
+          a,
+          b,
+          sortKey,
+          sortDirection,
+          (record) => gpmBySummaryKey.get(summaryRecordKey(record)) ?? null,
+        ),
+      );
   }, [
     allScopedSummaries,
     allStudentProfileMap,
     classById,
+    gpmBySummaryKey,
     schoolByCode,
     selectedClass,
     selectedTahun,
@@ -582,7 +653,7 @@ export default function IndividualReportTable({
                           <td key={exam}>
                             {examRecord ? (
                               <Link className="exam-profile-cell" href={individualReportHref(examRecord)}>
-                                <span>{formatExamCell(examRecord)}</span>
+                                <span>{formatExamCell(examRecord, summaryGpm(examRecord))}</span>
                                 <small>Buka slip</small>
                               </Link>
                             ) : (
@@ -804,7 +875,7 @@ export default function IndividualReportTable({
                     <td>{item.records.length}</td>
                     <td>{item.latest.purata ?? '-'}</td>
                     <td>{gradeForMark(item.latest.purata) || '-'}</td>
-                    <td>{formatGradePoint(item.latest.purata)}</td>
+                    <td>{formatGradePointValue(summaryGpm(item.latest))}</td>
                     <td>
                       <button
                         type="button"
