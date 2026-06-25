@@ -3042,13 +3042,11 @@ textarea {
 }
 
 .score-excellent {
-  background: #4f7fdc;
-  color: #06142e;
+  color: #1d4ed8;
 }
 
 .score-danger {
-  background: #ff969b;
-  color: #650b12;
+  color: #dc2626;
 }
 
 .score-empty {
@@ -3130,13 +3128,11 @@ textarea {
 }
 
 .pbd-score-excellent {
-  background: #4f7fdc;
-  color: #06142e;
+  color: #1d4ed8;
 }
 
 .pbd-score-danger {
-  background: #ff969b;
-  color: #650b12;
+  color: #dc2626;
 }
 
 .pbd-score-empty {
