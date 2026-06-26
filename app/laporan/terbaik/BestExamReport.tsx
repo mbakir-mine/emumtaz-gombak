@@ -38,6 +38,8 @@ type Props = {
   marks: MarkDetailRecord[];
 };
 
+type CsvValue = string | number | null | undefined;
+
 const filterGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -48,6 +50,30 @@ const filterGridStyle: CSSProperties = {
 const subheadingStyle: CSSProperties = {
   margin: '1.25rem 0 0.75rem',
   fontSize: '1.35rem',
+};
+
+const reportActionsStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.5rem',
+  justifyContent: 'flex-end',
+  marginTop: '0.75rem',
+};
+
+const actionButtonStyle: CSSProperties = {
+  border: 0,
+  borderRadius: '0.55rem',
+  padding: '0.65rem 0.9rem',
+  background: '#edf3ff',
+  color: '#075985',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const actionPrimaryButtonStyle: CSSProperties = {
+  ...actionButtonStyle,
+  background: '#0b7a3b',
+  color: '#fff',
 };
 
 export default function BestExamReport({ schools, classes, exams, summaries, marks }: Props) {
@@ -200,6 +226,94 @@ export default function BestExamReport({ schools, classes, exams, summaries, mar
       }));
   }, [classMap, marks, schoolMap, selectedExam, selectedSchool, selectedZone, tahunAkademik]);
 
+  const selectedExamLabel = selectedExam ? `${selectedExam.kod_peperiksaan} - ${selectedExam.nama_peperiksaan}` : '-';
+
+  const handlePrintReport = () => {
+    window.print();
+  };
+
+  const handleDownloadExcel = () => {
+    const showSchool = selectedSchool === ALL;
+    const selectedSchoolData = schoolMap.get(selectedSchool);
+    const selectedSchoolLabel =
+      selectedSchool === ALL
+        ? 'Semua sekolah'
+        : selectedSchoolData
+          ? `${selectedSchoolData.kod_sekolah} - ${selectedSchoolData.nama_sekolah}`
+          : selectedSchool;
+
+    const rows: CsvValue[][] = [
+      ['Laporan Keputusan Terbaik Peperiksaan'],
+      ['Tahun Akademik', tahunAkademik],
+      ['Peperiksaan', selectedExamLabel],
+      ['Sekolah', selectedSchoolLabel],
+      [],
+      ['Keputusan 5 Terbaik Setiap Tahun'],
+      ['Tahun', 'Kedudukan', 'Nama Murid', 'MyKid', showSchool ? 'Sekolah / Kelas' : 'Kelas', 'Jumlah', 'Purata', 'Gred', 'GPM'],
+    ];
+
+    topByYear.forEach((group) => {
+      group.rows.forEach((row, index) => {
+        rows.push([
+          `Tahun ${group.tahun}`,
+          index + 1,
+          row.nama_murid,
+          cleanText(row.mykid),
+          studentPlacementLabel(row, showSchool),
+          formatNumber(row.jumlah_markah),
+          formatNumber(row.purata),
+          gradeForMark(row.purata),
+          formatNumber(row.gpm),
+        ]);
+      });
+    });
+
+    rows.push(
+      [],
+      ['Keputusan 5 Terbaik Setiap Kelas'],
+      [showSchool ? 'Sekolah / Kelas' : 'Kelas', 'Kedudukan', 'Nama Murid', 'MyKid', 'Jumlah', 'Purata', 'Gred', 'GPM'],
+    );
+
+    topByClass.forEach((group) => {
+      const groupLabel = group.classRecord ? classPlacementLabel(group.rows[0]?.school, group.classRecord, showSchool) : '-';
+      group.rows.forEach((row, index) => {
+        rows.push([
+          groupLabel,
+          index + 1,
+          row.nama_murid,
+          cleanText(row.mykid),
+          formatNumber(row.jumlah_markah),
+          formatNumber(row.purata),
+          gradeForMark(row.purata),
+          formatNumber(row.gpm),
+        ]);
+      });
+    });
+
+    rows.push(
+      [],
+      ['Pelajar Terbaik Mata Pelajaran Mengikut Tahun'],
+      ['Tahun', 'Mata Pelajaran', 'Markah Tertinggi', 'Nama Murid', 'MyKid', showSchool ? 'Sekolah / Kelas' : 'Kelas'],
+    );
+
+    subjectBestByYear.forEach((group) => {
+      group.rows.forEach((subject) => {
+        subject.students.forEach((student) => {
+          rows.push([
+            `Tahun ${group.tahun}`,
+            subject.subjectName,
+            formatNumber(subject.markah),
+            student.nama,
+            cleanText(student.mykid),
+            student.classRecord ? classPlacementLabel(student.school, student.classRecord, showSchool) : '-',
+          ]);
+        });
+      });
+    });
+
+    downloadCsvFile(rows, `laporan-keputusan-terbaik-${tahunAkademik}.csv`);
+  };
+
   return (
     <div>
       <header className="report-header">
@@ -207,7 +321,20 @@ export default function BestExamReport({ schools, classes, exams, summaries, mar
           <h2>Laporan Keputusan Terbaik Peperiksaan</h2>
           <p>5 terbaik setiap tahun, 5 terbaik setiap kelas dan pelajar terbaik bagi setiap mata pelajaran.</p>
         </div>
-        <span>{rankedSummaries.length} rekod</span>
+        <div style={{ textAlign: 'right' }}>
+          <span>{rankedSummaries.length} rekod</span>
+          <div className="no-print" style={reportActionsStyle}>
+            <button type="button" style={actionButtonStyle} onClick={handlePrintReport}>
+              CETAK
+            </button>
+            <button type="button" style={actionButtonStyle} onClick={handlePrintReport}>
+              CETAK PDF
+            </button>
+            <button type="button" style={actionPrimaryButtonStyle} onClick={handleDownloadExcel}>
+              Muat Turun Excel
+            </button>
+          </div>
+        </div>
       </header>
 
       <div style={filterGridStyle}>
@@ -302,7 +429,7 @@ function TopByYearTable({ groups, showSchool }: { groups: { tahun: number; rows:
         <thead>
           <tr>
             <th>Tahun</th>
-            <th>BIL</th>
+            <th>KEDUDUKAN</th>
             <th>Nama Murid / MyKid</th>
             <th>{showSchool ? 'Sekolah / Kelas' : 'Kelas'}</th>
             <th>Jumlah</th>
@@ -349,7 +476,7 @@ function TopByClassTable({
         <thead>
           <tr>
             <th>{showSchool ? 'Sekolah / Kelas' : 'Kelas'}</th>
-            <th>BIL</th>
+            <th>KEDUDUKAN</th>
             <th>Nama Murid / MyKid</th>
             <th>Jumlah</th>
             <th>Purata</th>
@@ -487,4 +614,23 @@ function formatNumber(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   if (Number.isInteger(value)) return String(value);
   return value.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function downloadCsvFile(rows: CsvValue[][], fileName: string) {
+  const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsvCell(value: CsvValue) {
+  const text = value == null ? '' : String(value);
+  const escaped = text.replace(/"/g, '""');
+  return /[",\r\n]/.test(escaped) ? `"${escaped}"` : escaped;
 }
