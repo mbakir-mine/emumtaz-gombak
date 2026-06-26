@@ -45,19 +45,6 @@ const filterGridStyle: CSSProperties = {
   margin: '1rem 0',
 };
 
-const sectionGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-  gap: '1rem',
-};
-
-const cardStyle: CSSProperties = {
-  border: '1px solid #d8e6d9',
-  borderRadius: 8,
-  padding: '1rem',
-  background: '#fff',
-};
-
 const subheadingStyle: CSSProperties = {
   margin: '1.25rem 0 0.75rem',
   fontSize: '1.35rem',
@@ -274,33 +261,13 @@ export default function BestExamReport({ schools, classes, exams, summaries, mar
       </div>
 
       <h3 style={subheadingStyle}>Keputusan 5 Terbaik Setiap Tahun</h3>
-      <div style={sectionGridStyle}>
-        {topByYear.length > 0 ? (
-          topByYear.map((group) => <TopFiveTable key={group.tahun} title={`Tahun ${group.tahun}`} rows={group.rows} />)
-        ) : (
-          <EmptyNote />
-        )}
-      </div>
+      <TopByYearTable groups={topByYear} showSchool={selectedSchool === ALL} />
 
       <h3 style={subheadingStyle}>Keputusan 5 Terbaik Setiap Kelas</h3>
-      <div style={sectionGridStyle}>
-        {topByClass.length > 0 ? (
-          topByClass.map((group) => (
-            <TopFiveTable key={group.classRecord!.id} title={classLabel(group.classRecord!)} rows={group.rows} />
-          ))
-        ) : (
-          <EmptyNote />
-        )}
-      </div>
+      <TopByClassTable groups={topByClass} showSchool={selectedSchool === ALL} />
 
       <h3 style={subheadingStyle}>Pelajar Terbaik Mata Pelajaran Mengikut Tahun</h3>
-      <div style={sectionGridStyle}>
-        {subjectBestByYear.length > 0 ? (
-          subjectBestByYear.map((group) => <SubjectBestTable key={group.tahun} title={`Tahun ${group.tahun}`} rows={group.rows} />)
-        ) : (
-          <EmptyNote />
-        )}
-      </div>
+      <SubjectBestSummaryTable groups={subjectBestByYear} showSchool={selectedSchool === ALL} />
     </div>
   );
 }
@@ -326,91 +293,139 @@ function FilterSelect({
   );
 }
 
-function TopFiveTable({ title, rows }: { title: string; rows: RankedSummary[] }) {
+function TopByYearTable({ groups, showSchool }: { groups: { tahun: number; rows: RankedSummary[] }[]; showSchool: boolean }) {
+  if (!groups.length) return <EmptyNote />;
+
   return (
-    <article style={cardStyle}>
-      <h4 style={{ marginTop: 0 }}>{title}</h4>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="data-table" style={{ minWidth: 720 }}>
-          <thead>
-            <tr>
-              <th>BIL</th>
-              <th>Nama Murid / MyKid</th>
-              <th>Sekolah / Kelas</th>
-              <th>Jumlah</th>
-              <th>Purata</th>
-              <th>Gred</th>
-              <th>GPM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => (
-              <tr key={`${row.student_id}-${row.class_id}-${index}`}>
+    <div className="table-responsive">
+      <table className="data-table compact-table">
+        <thead>
+          <tr>
+            <th>Tahun</th>
+            <th>BIL</th>
+            <th>Nama Murid / MyKid</th>
+            <th>{showSchool ? 'Sekolah / Kelas' : 'Kelas'}</th>
+            <th>Jumlah</th>
+            <th>Purata</th>
+            <th>Gred</th>
+            <th>GPM</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) =>
+            group.rows.map((row, index) => (
+              <tr key={`${group.tahun}-${row.student_id}-${row.class_id}-${index}`}>
+                <td>{`Tahun ${group.tahun}`}</td>
                 <td>{index + 1}</td>
                 <td>
-                  <div>{row.nama_murid}</div>
-                  <small>{cleanText(row.mykid)}</small>
+                  <StudentName name={row.nama_murid} mykid={row.mykid} />
                 </td>
+                <td>{studentPlacementLabel(row, showSchool)}</td>
+                <td>{formatNumber(row.jumlah_markah)}</td>
+                <td>{formatNumber(row.purata)}</td>
+                <td>{gradeForMark(row.purata)}</td>
+                <td>{formatNumber(row.gpm)}</td>
+              </tr>
+            )),
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TopByClassTable({
+  groups,
+  showSchool,
+}: {
+  groups: { classRecord?: ClassRecord; rows: RankedSummary[] }[];
+  showSchool: boolean;
+}) {
+  if (!groups.length) return <EmptyNote />;
+
+  return (
+    <div className="table-responsive">
+      <table className="data-table compact-table">
+        <thead>
+          <tr>
+            <th>{showSchool ? 'Sekolah / Kelas' : 'Kelas'}</th>
+            <th>BIL</th>
+            <th>Nama Murid / MyKid</th>
+            <th>Jumlah</th>
+            <th>Purata</th>
+            <th>Gred</th>
+            <th>GPM</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) => {
+            const groupLabel = group.classRecord ? classPlacementLabel(group.rows[0]?.school, group.classRecord, showSchool) : '-';
+            return group.rows.map((row, index) => (
+              <tr key={`${group.classRecord?.id ?? 'class'}-${row.student_id}-${index}`}>
+                <td>{groupLabel}</td>
+                <td>{index + 1}</td>
                 <td>
-                  <div>{row.school ? `${row.school.kod_sekolah} - ${row.school.nama_sekolah}` : row.kod_sekolah}</div>
-                  <small>{row.classRecord ? classLabel(row.classRecord) : '-'}</small>
+                  <StudentName name={row.nama_murid} mykid={row.mykid} />
                 </td>
                 <td>{formatNumber(row.jumlah_markah)}</td>
                 <td>{formatNumber(row.purata)}</td>
                 <td>{gradeForMark(row.purata)}</td>
                 <td>{formatNumber(row.gpm)}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
+            ));
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function SubjectBestTable({ title, rows }: { title: string; rows: SubjectBest[] }) {
+function SubjectBestSummaryTable({
+  groups,
+  showSchool,
+}: {
+  groups: { tahun: number; rows: SubjectBest[] }[];
+  showSchool: boolean;
+}) {
+  if (!groups.length) return <EmptyNote />;
+
   return (
-    <article style={cardStyle}>
-      <h4 style={{ marginTop: 0 }}>{title}</h4>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="data-table" style={{ minWidth: 720 }}>
-          <thead>
-            <tr>
-              <th>BIL</th>
-              <th>Mata Pelajaran</th>
-              <th>Markah Tertinggi</th>
-              <th>Pelajar</th>
-              <th>Sekolah / Kelas</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => (
+    <div className="table-responsive">
+      <table className="data-table compact-table">
+        <thead>
+          <tr>
+            <th>Tahun</th>
+            <th>Mata Pelajaran</th>
+            <th>Markah Tertinggi</th>
+            <th>Pelajar</th>
+            <th>{showSchool ? 'Sekolah / Kelas' : 'Kelas'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) =>
+            group.rows.map((row) => (
               <tr key={row.key}>
-                <td>{index + 1}</td>
+                <td>{`Tahun ${group.tahun}`}</td>
                 <td>{row.subjectName}</td>
                 <td>{formatNumber(row.markah)}</td>
                 <td>
                   {row.students.map((student) => (
-                    <div key={`${student.mykid}-${student.nama}`}>
-                      {student.nama}
-                      {student.mykid ? <small style={{ display: 'block' }}>{cleanText(student.mykid)}</small> : null}
-                    </div>
+                    <StudentName key={`${student.mykid}-${student.nama}`} name={student.nama} mykid={student.mykid} />
                   ))}
                 </td>
                 <td>
                   {row.students.map((student) => (
                     <div key={`${student.mykid}-${student.classRecord?.id ?? ''}`}>
-                      {student.school ? `${student.school.kod_sekolah} - ${student.school.nama_sekolah}` : '-'}
-                      <small style={{ display: 'block' }}>{student.classRecord ? classLabel(student.classRecord) : '-'}</small>
+                      {student.classRecord ? classPlacementLabel(student.school, student.classRecord, showSchool) : '-'}
                     </div>
                   ))}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
+            )),
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -443,6 +458,25 @@ function compareSummaryRows(a: RankedSummary, b: RankedSummary) {
 
 function classLabel(classRecord: ClassRecord) {
   return `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}`;
+}
+
+function classPlacementLabel(school: School | undefined, classRecord: ClassRecord, showSchool: boolean) {
+  if (!showSchool) return classLabel(classRecord);
+  const schoolLabel = school ? `${school.kod_sekolah} - ${school.nama_sekolah}` : '-';
+  return `${schoolLabel} / ${classLabel(classRecord)}`;
+}
+
+function studentPlacementLabel(row: RankedSummary, showSchool: boolean) {
+  return row.classRecord ? classPlacementLabel(row.school, row.classRecord, showSchool) : '-';
+}
+
+function StudentName({ name, mykid }: { name: string; mykid: string | null | undefined }) {
+  return (
+    <div>
+      <div>{name}</div>
+      <small>{cleanText(mykid)}</small>
+    </div>
+  );
 }
 
 function cleanText(value: string | null | undefined) {
