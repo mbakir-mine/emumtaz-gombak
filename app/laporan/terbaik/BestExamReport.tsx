@@ -1,0 +1,456 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import type { ClassRecord, ExamRecord, MarkDetailRecord, School, StudentSummaryRecord } from '@/lib/data';
+import { fallbackSubjectForCode, gradeForMark, subjectDisplayName } from '@/lib/subjects';
+
+const ALL = 'ALL';
+
+type SummaryWithGpm = StudentSummaryRecord & { gpm?: number | null };
+
+type RankedSummary = SummaryWithGpm & {
+  classRecord?: ClassRecord;
+  school?: School;
+};
+
+type SubjectStudent = {
+  nama: string;
+  mykid: string;
+  classRecord?: ClassRecord;
+  school?: School;
+};
+
+type SubjectBest = {
+  key: string;
+  tahun: number;
+  subjectName: string;
+  subjectOrder: number;
+  markah: number;
+  students: SubjectStudent[];
+};
+
+type Props = {
+  schools: School[];
+  classes: ClassRecord[];
+  exams: ExamRecord[];
+  summaries: StudentSummaryRecord[];
+  marks: MarkDetailRecord[];
+};
+
+const filterGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '0.75rem',
+  margin: '1rem 0',
+};
+
+const sectionGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+  gap: '1rem',
+};
+
+const cardStyle: CSSProperties = {
+  border: '1px solid #d8e6d9',
+  borderRadius: 8,
+  padding: '1rem',
+  background: '#fff',
+};
+
+const subheadingStyle: CSSProperties = {
+  margin: '1.25rem 0 0.75rem',
+  fontSize: '1.35rem',
+};
+
+export default function BestExamReport({ schools, classes, exams, summaries, marks }: Props) {
+  const currentYear = new Date().getFullYear();
+  const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
+  const classMap = useMemo(() => new Map(classes.map((classRecord) => [classRecord.id, classRecord])), [classes]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set<number>();
+    summaries.forEach((row) => years.add(row.tahun_akademik));
+    exams.forEach((exam) => years.add(exam.tahun_akademik));
+    classes.forEach((classRecord) => years.add(classRecord.tahun_akademik));
+    return [...years].sort((a, b) => b - a);
+  }, [classes, exams, summaries]);
+
+  const [tahunAkademik, setTahunAkademik] = useState(
+    yearOptions.includes(currentYear) ? currentYear : yearOptions[0] ?? currentYear,
+  );
+  const [selectedExamId, setSelectedExamId] = useState('');
+  const [selectedZone, setSelectedZone] = useState(ALL);
+  const [selectedSchool, setSelectedSchool] = useState(ALL);
+
+  const examOptions = useMemo(
+    () => exams.filter((exam) => exam.tahun_akademik === tahunAkademik).sort(compareExams),
+    [exams, tahunAkademik],
+  );
+  const selectedExam = examOptions.find((exam) => exam.id === selectedExamId) ?? examOptions[0] ?? null;
+
+  const zoneOptions = useMemo(
+    () => [...new Set(schools.map((school) => school.zon).filter((zone): zone is string => Boolean(zone)))].sort(),
+    [schools],
+  );
+
+  const schoolOptions = useMemo(
+    () =>
+      schools
+        .filter((school) => selectedZone === ALL || school.zon === selectedZone)
+        .sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah)),
+    [schools, selectedZone],
+  );
+
+  const rankedSummaries = useMemo<RankedSummary[]>(() => {
+    if (!selectedExam) return [];
+
+    return summaries
+      .filter((row) => {
+        if (row.tahun_akademik !== tahunAkademik) return false;
+        if (row.kod_peperiksaan !== selectedExam.kod_peperiksaan) return false;
+        if (selectedSchool !== ALL && row.kod_sekolah !== selectedSchool) return false;
+        if (selectedZone !== ALL && schoolMap.get(row.kod_sekolah)?.zon !== selectedZone) return false;
+        return true;
+      })
+      .map((row) => ({
+        ...row,
+        classRecord: classMap.get(row.class_id),
+        school: schoolMap.get(row.kod_sekolah),
+      }))
+      .sort(compareSummaryRows);
+  }, [classMap, schoolMap, selectedExam, selectedSchool, selectedZone, summaries, tahunAkademik]);
+
+  const topByYear = useMemo(() => {
+    const grouped = new Map<number, RankedSummary[]>();
+    rankedSummaries.forEach((row) => {
+      const tahun = row.classRecord?.tahun;
+      if (!tahun) return;
+      if (!grouped.has(tahun)) grouped.set(tahun, []);
+      grouped.get(tahun)!.push(row);
+    });
+
+    return [...grouped.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([tahun, rows]) => ({ tahun, rows: rows.slice(0, 5) }));
+  }, [rankedSummaries]);
+
+  const topByClass = useMemo(() => {
+    const grouped = new Map<string, RankedSummary[]>();
+    rankedSummaries.forEach((row) => {
+      if (!row.class_id) return;
+      if (!grouped.has(row.class_id)) grouped.set(row.class_id, []);
+      grouped.get(row.class_id)!.push(row);
+    });
+
+    return [...grouped.entries()]
+      .map(([classId, rows]) => ({ classRecord: classMap.get(classId), rows: rows.slice(0, 5) }))
+      .filter((group) => group.classRecord)
+      .sort((a, b) => {
+        const classA = a.classRecord!;
+        const classB = b.classRecord!;
+        return (
+          classA.kod_sekolah.localeCompare(classB.kod_sekolah) ||
+          classA.tahun - classB.tahun ||
+          classA.nama_kelas.localeCompare(classB.nama_kelas)
+        );
+      });
+  }, [classMap, rankedSummaries]);
+
+  const subjectBestByYear = useMemo(() => {
+    if (!selectedExam) return [];
+
+    const grouped = new Map<string, SubjectBest>();
+    marks.forEach((mark) => {
+      if (mark.exam_id !== selectedExam.id) return;
+      if (selectedSchool !== ALL && mark.kod_sekolah !== selectedSchool) return;
+      if (selectedZone !== ALL && schoolMap.get(mark.kod_sekolah)?.zon !== selectedZone) return;
+      if (typeof mark.markah !== 'number' || !Number.isFinite(mark.markah)) return;
+
+      const classRecord = mark.classes ?? classMap.get(mark.class_id);
+      if (!classRecord || classRecord.tahun_akademik !== tahunAkademik) return;
+
+      const subject = mark.subjects ?? fallbackSubjectForCode(mark.kod_subjek);
+      const subjectCode = subject?.kod_subjek ?? mark.kod_subjek;
+      const subjectName = subjectDisplayName(subject, subjectCode);
+      const key = `${classRecord.tahun}|${subjectCode}`;
+      const student: SubjectStudent = {
+        nama: mark.students?.nama_murid ?? '-',
+        mykid: mark.students?.mykid ?? '',
+        classRecord,
+        school: schoolMap.get(mark.kod_sekolah),
+      };
+
+      const existing = grouped.get(key);
+      if (!existing || mark.markah > existing.markah) {
+        grouped.set(key, {
+          key,
+          tahun: classRecord.tahun,
+          subjectName,
+          subjectOrder: subject?.susunan ?? 999,
+          markah: mark.markah,
+          students: [student],
+        });
+        return;
+      }
+
+      if (mark.markah === existing.markah) {
+        existing.students.push(student);
+      }
+    });
+
+    const byYear = new Map<number, SubjectBest[]>();
+    [...grouped.values()].forEach((row) => {
+      if (!byYear.has(row.tahun)) byYear.set(row.tahun, []);
+      byYear.get(row.tahun)!.push(row);
+    });
+
+    return [...byYear.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([tahun, rows]) => ({
+        tahun,
+        rows: rows.sort((a, b) => a.subjectOrder - b.subjectOrder || a.subjectName.localeCompare(b.subjectName)),
+      }));
+  }, [classMap, marks, schoolMap, selectedExam, selectedSchool, selectedZone, tahunAkademik]);
+
+  return (
+    <div>
+      <header className="report-header">
+        <div>
+          <h2>Laporan Keputusan Terbaik Peperiksaan</h2>
+          <p>5 terbaik setiap tahun, 5 terbaik setiap kelas dan pelajar terbaik bagi setiap mata pelajaran.</p>
+        </div>
+        <span>{rankedSummaries.length} rekod</span>
+      </header>
+
+      <div style={filterGridStyle}>
+        <FilterSelect
+          label="Tahun Akademik"
+          value={String(tahunAkademik)}
+          onChange={(value) => {
+            setTahunAkademik(Number(value));
+            setSelectedExamId('');
+          }}
+        >
+          {yearOptions.map((year) => (
+            <option value={year} key={year}>
+              {year}
+            </option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect label="Peperiksaan" value={selectedExam?.id ?? ''} onChange={setSelectedExamId}>
+          {examOptions.map((exam) => (
+            <option value={exam.id} key={exam.id}>
+              {exam.kod_peperiksaan} - {exam.nama_peperiksaan}
+            </option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect
+          label="Zon"
+          value={selectedZone}
+          onChange={(value) => {
+            setSelectedZone(value);
+            setSelectedSchool(ALL);
+          }}
+        >
+          <option value={ALL}>Semua zon</option>
+          {zoneOptions.map((zone) => (
+            <option value={zone} key={zone}>
+              {zone}
+            </option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect label="Sekolah" value={selectedSchool} onChange={setSelectedSchool}>
+          <option value={ALL}>Semua sekolah</option>
+          {schoolOptions.map((school) => (
+            <option value={school.kod_sekolah} key={school.kod_sekolah}>
+              {school.kod_sekolah} - {school.nama_sekolah}
+            </option>
+          ))}
+        </FilterSelect>
+      </div>
+
+      <h3 style={subheadingStyle}>Keputusan 5 Terbaik Setiap Tahun</h3>
+      <div style={sectionGridStyle}>
+        {topByYear.length > 0 ? (
+          topByYear.map((group) => <TopFiveTable key={group.tahun} title={`Tahun ${group.tahun}`} rows={group.rows} />)
+        ) : (
+          <EmptyNote />
+        )}
+      </div>
+
+      <h3 style={subheadingStyle}>Keputusan 5 Terbaik Setiap Kelas</h3>
+      <div style={sectionGridStyle}>
+        {topByClass.length > 0 ? (
+          topByClass.map((group) => (
+            <TopFiveTable key={group.classRecord!.id} title={classLabel(group.classRecord!)} rows={group.rows} />
+          ))
+        ) : (
+          <EmptyNote />
+        )}
+      </div>
+
+      <h3 style={subheadingStyle}>Pelajar Terbaik Mata Pelajaran Mengikut Tahun</h3>
+      <div style={sectionGridStyle}>
+        {subjectBestByYear.length > 0 ? (
+          subjectBestByYear.map((group) => <SubjectBestTable key={group.tahun} title={`Tahun ${group.tahun}`} rows={group.rows} />)
+        ) : (
+          <EmptyNote />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <select className="input" value={value} onChange={(event) => onChange(event.target.value)}>
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function TopFiveTable({ title, rows }: { title: string; rows: RankedSummary[] }) {
+  return (
+    <article style={cardStyle}>
+      <h4 style={{ marginTop: 0 }}>{title}</h4>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table" style={{ minWidth: 720 }}>
+          <thead>
+            <tr>
+              <th>BIL</th>
+              <th>Nama Murid / MyKid</th>
+              <th>Sekolah / Kelas</th>
+              <th>Jumlah</th>
+              <th>Purata</th>
+              <th>Gred</th>
+              <th>GPM</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr key={`${row.student_id}-${row.class_id}-${index}`}>
+                <td>{index + 1}</td>
+                <td>
+                  <div>{row.nama_murid}</div>
+                  <small>{cleanText(row.mykid)}</small>
+                </td>
+                <td>
+                  <div>{row.school ? `${row.school.kod_sekolah} - ${row.school.nama_sekolah}` : row.kod_sekolah}</div>
+                  <small>{row.classRecord ? classLabel(row.classRecord) : '-'}</small>
+                </td>
+                <td>{formatNumber(row.jumlah_markah)}</td>
+                <td>{formatNumber(row.purata)}</td>
+                <td>{gradeForMark(row.purata)}</td>
+                <td>{formatNumber(row.gpm)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  );
+}
+
+function SubjectBestTable({ title, rows }: { title: string; rows: SubjectBest[] }) {
+  return (
+    <article style={cardStyle}>
+      <h4 style={{ marginTop: 0 }}>{title}</h4>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table" style={{ minWidth: 720 }}>
+          <thead>
+            <tr>
+              <th>BIL</th>
+              <th>Mata Pelajaran</th>
+              <th>Markah Tertinggi</th>
+              <th>Pelajar</th>
+              <th>Sekolah / Kelas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr key={row.key}>
+                <td>{index + 1}</td>
+                <td>{row.subjectName}</td>
+                <td>{formatNumber(row.markah)}</td>
+                <td>
+                  {row.students.map((student) => (
+                    <div key={`${student.mykid}-${student.nama}`}>
+                      {student.nama}
+                      {student.mykid ? <small style={{ display: 'block' }}>{cleanText(student.mykid)}</small> : null}
+                    </div>
+                  ))}
+                </td>
+                <td>
+                  {row.students.map((student) => (
+                    <div key={`${student.mykid}-${student.classRecord?.id ?? ''}`}>
+                      {student.school ? `${student.school.kod_sekolah} - ${student.school.nama_sekolah}` : '-'}
+                      <small style={{ display: 'block' }}>{student.classRecord ? classLabel(student.classRecord) : '-'}</small>
+                    </div>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  );
+}
+
+function EmptyNote() {
+  return <p style={{ color: '#52647a', margin: 0 }}>Tiada rekod untuk tapisan ini.</p>;
+}
+
+function compareExams(a: ExamRecord, b: ExamRecord) {
+  return (
+    examPriority(a.kod_peperiksaan) - examPriority(b.kod_peperiksaan) ||
+    a.nama_peperiksaan.localeCompare(b.nama_peperiksaan)
+  );
+}
+
+function examPriority(code: string) {
+  const value = code.toUpperCase();
+  if (value.includes('UPSA')) return 1;
+  if (value.includes('UASA')) return 2;
+  if (value.includes('PBD')) return 3;
+  return 99;
+}
+
+function compareSummaryRows(a: RankedSummary, b: RankedSummary) {
+  const purataDiff = (b.purata ?? -1) - (a.purata ?? -1);
+  if (purataDiff !== 0) return purataDiff;
+  const jumlahDiff = (b.jumlah_markah ?? -1) - (a.jumlah_markah ?? -1);
+  if (jumlahDiff !== 0) return jumlahDiff;
+  return a.nama_murid.localeCompare(b.nama_murid);
+}
+
+function classLabel(classRecord: ClassRecord) {
+  return `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}`;
+}
+
+function cleanText(value: string | null | undefined) {
+  return (value ?? '').replace(/[^\dA-Za-z/@._ -]/g, '').trim();
+}
+
+function formatNumber(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(2).replace(/\.?0+$/, '');
+}

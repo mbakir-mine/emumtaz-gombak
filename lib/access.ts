@@ -88,6 +88,7 @@ export const navItems: NavItem[] = [
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
   { key: 'reportIndividual', label: 'Laporan Individu', href: '/laporan/individu', roles: allRoles },
   { key: 'reportClass', label: 'Laporan Kelas', href: '/laporan/kelas', roles: allRoles },
+  { key: 'reportBest', label: 'Laporan Terbaik', href: '/laporan/terbaik', roles: allRoles },
   { key: 'reportSchool', label: 'Laporan Sekolah', href: '/laporan/sekolah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'reportSubject', label: 'Laporan Subjek', href: '/laporan/subjek', roles: allRoles },
   {
