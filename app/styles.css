@@ -4052,6 +4052,115 @@ textarea {
   line-height: 1.45;
 }
 
+.upkk-print-only {
+  display: none;
+}
+
+.upkk-print-sheet {
+  color: #000;
+  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.upkk-print-code {
+  margin-bottom: 8px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.upkk-print-title {
+  margin-bottom: 12px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.upkk-print-title h2,
+.upkk-print-title h3 {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.upkk-print-title h2 {
+  font-size: 14px;
+}
+
+.upkk-print-title h3 {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.upkk-print-meta,
+.upkk-print-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.upkk-print-meta {
+  margin-bottom: 14px;
+}
+
+.upkk-print-meta th,
+.upkk-print-meta td,
+.upkk-print-table th,
+.upkk-print-table td {
+  border: 1px solid #111;
+  padding: 5px 7px;
+  color: #000;
+  font-size: 11px;
+  line-height: 1.25;
+  vertical-align: top;
+}
+
+.upkk-print-meta th,
+.upkk-print-table th {
+  background: #e8e8e8;
+  font-weight: 700;
+}
+
+.upkk-print-meta th {
+  width: 16%;
+  text-align: left;
+}
+
+.upkk-print-table th:nth-child(1),
+.upkk-print-table th:nth-child(4),
+.upkk-print-table th:nth-child(5),
+.upkk-print-table td:nth-child(1),
+.upkk-print-table td:nth-child(4),
+.upkk-print-table td:nth-child(5) {
+  text-align: center;
+}
+
+.upkk-print-section-row td {
+  background: #f4f4f4;
+  font-weight: 700;
+}
+
+.upkk-print-total-row td {
+  background: #eeeeee;
+  font-weight: 700;
+}
+
+.upkk-print-signatures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 42px;
+  margin-top: 38px;
+  text-align: center;
+}
+
+.upkk-print-signatures span {
+  display: block;
+  margin-bottom: 46px;
+  font-size: 12px;
+}
+
+.upkk-print-signatures i {
+  display: block;
+  border-bottom: 1px dotted #111;
+}
+
 @media (max-width: 900px) {
   .upkk-mode-tabs,
   .upkk-summary-grid {
@@ -4064,6 +4173,42 @@ textarea {
 
   .upkk-question-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .upkk-print-only {
+    display: block !important;
+  }
+
+  .upkk-print-sheet {
+    padding: 0;
+    page-break-inside: auto;
+  }
+
+  .upkk-print-title h2 {
+    font-size: 13px;
+  }
+
+  .upkk-print-title h3 {
+    font-size: 12px;
+  }
+
+  .upkk-print-meta th,
+  .upkk-print-meta td,
+  .upkk-print-table th,
+  .upkk-print-table td {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .upkk-print-section-row,
+  .upkk-print-total-row {
+    break-inside: avoid;
+  }
+
+  .upkk-print-signatures {
+    break-inside: avoid;
   }
 }
 

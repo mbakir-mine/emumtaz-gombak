@@ -11,11 +11,14 @@ import type {
   UpkkJakimMarkRecord,
 } from '@/lib/data';
 import {
+  upkkAssessmentFormCode,
   upkkAssessmentLabel,
+  upkkAssessmentOfficialTitle,
   upkkComponentsByType,
   upkkJakimAssessmentOptions,
   upkkTotalMaxMark,
   type UpkkJakimAssessmentType,
+  type UpkkJakimComponent,
 } from '@/lib/upkkJakim';
 import { upkkScorableQuestionsByType, type UpkkScorableQuestion } from '@/lib/upkkJakimQuestions';
 import { useAccessProfile } from '../../../ui/AuthGate';
@@ -62,6 +65,8 @@ export default function UpkkJakimStudentForm({
   const components = useMemo(() => upkkComponentsByType(assessmentType), [assessmentType]);
   const questions = useMemo(() => upkkScorableQuestionsByType(assessmentType), [assessmentType]);
   const maxTotal = upkkTotalMaxMark(assessmentType);
+  const officialFormCode = upkkAssessmentFormCode(assessmentType);
+  const officialTitle = upkkAssessmentOfficialTitle(assessmentType);
   const assessmentShortLabel =
     upkkJakimAssessmentOptions.find((item) => item.value === assessmentType)?.shortLabel ?? assessmentType;
 
@@ -135,7 +140,8 @@ export default function UpkkJakimStudentForm({
   }
 
   return (
-    <section className="panel optional-module-panel upkk-panel upkk-student-page">
+    <>
+      <section className="panel optional-module-panel upkk-panel upkk-student-page no-print">
       <form action={action} className="upkk-student-detail-form">
         <input type="hidden" name="kod_sekolah" value={school.kod_sekolah} />
         <input type="hidden" name="tahun_akademik" value={year} />
@@ -158,6 +164,9 @@ export default function UpkkJakimStudentForm({
             <span>
               {formatNumber(studentTotal)} / {formatNumber(maxTotal)}
             </span>
+            <button className="button secondary" type="button" onClick={() => window.print()}>
+              Cetak Borang
+            </button>
             <Link className="button secondary" href={backHref}>
               Kembali
             </Link>
@@ -222,6 +231,174 @@ export default function UpkkJakimStudentForm({
           {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
         </div>
       </form>
+      </section>
+
+      <OfficialUpkkPrintSheet
+        assessmentShortLabel={assessmentShortLabel}
+        components={components}
+        componentTotal={componentTotal}
+        formCode={officialFormCode}
+        maxTotal={maxTotal}
+        officialTitle={officialTitle}
+        questionsForComponent={questionsForComponent}
+        school={school}
+        selectedClass={selectedClass}
+        student={student}
+        studentTotal={studentTotal}
+        itemMarkMap={itemMarkMap}
+        year={year}
+      />
+    </>
+  );
+}
+
+function OfficialUpkkPrintSheet({
+  assessmentShortLabel,
+  components,
+  componentTotal,
+  formCode,
+  maxTotal,
+  officialTitle,
+  questionsForComponent,
+  school,
+  selectedClass,
+  student,
+  studentTotal,
+  itemMarkMap,
+  year,
+}: {
+  assessmentShortLabel: string;
+  components: UpkkJakimComponent[];
+  componentTotal: (componentKey: string) => number;
+  formCode: string;
+  maxTotal: number;
+  officialTitle: string;
+  questionsForComponent: (componentKey: string) => UpkkScorableQuestion[];
+  school: School;
+  selectedClass: ClassRecord;
+  student: StudentRecord;
+  studentTotal: number;
+  itemMarkMap: Map<string, UpkkJakimItemMarkRecord>;
+  year: number;
+}) {
+  return (
+    <section className="upkk-print-sheet upkk-print-only">
+      <div className="upkk-print-code">{formCode}</div>
+      <div className="upkk-print-title">
+        <h2>Ujian Penilaian Kelas Al-Quran Dan Fardu Ain (UPKK)</h2>
+        <h3>{officialTitle}</h3>
+      </div>
+
+      <table className="upkk-print-meta">
+        <tbody>
+          <tr>
+            <th>Tahun</th>
+            <td>{year}</td>
+            <th>Nama Calon</th>
+            <td>{student.nama_murid}</td>
+          </tr>
+          <tr>
+            <th>Nama Sekolah</th>
+            <td>{school.nama_sekolah}</td>
+            <th>No. Kad Pengenalan</th>
+            <td>{student.mykid}</td>
+          </tr>
+          <tr>
+            <th>Kod Sekolah</th>
+            <td>{school.kod_sekolah}</td>
+            <th>Angka Giliran</th>
+            <td>-</td>
+          </tr>
+          <tr>
+            <th>Kelas</th>
+            <td>{classLabel(selectedClass)}</td>
+            <th>Penilaian</th>
+            <td>{assessmentShortLabel}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table className="upkk-print-table">
+        <thead>
+          <tr>
+            <th>Bil</th>
+            <th>Bahagian</th>
+            <th>Item Penilaian</th>
+            <th>Markah Penuh</th>
+            <th>Markah</th>
+          </tr>
+        </thead>
+        <tbody>
+          {components.map((component) => (
+            <FragmentRows
+              component={component}
+              componentTotal={componentTotal(component.key)}
+              itemMarkMap={itemMarkMap}
+              key={component.key}
+              questions={questionsForComponent(component.key)}
+            />
+          ))}
+          <tr className="upkk-print-total-row">
+            <td colSpan={3}>Jumlah Keseluruhan</td>
+            <td>{formatNumber(maxTotal)}</td>
+            <td>{formatNumber(studentTotal)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="upkk-print-signatures">
+        <div>
+          <span>Disediakan oleh,</span>
+          <i />
+        </div>
+        <div>
+          <span>Disemak oleh,</span>
+          <i />
+        </div>
+        <div>
+          <span>Disahkan oleh,</span>
+          <i />
+        </div>
+      </div>
     </section>
+  );
+}
+
+function FragmentRows({
+  component,
+  componentTotal,
+  itemMarkMap,
+  questions,
+}: {
+  component: UpkkJakimComponent;
+  componentTotal: number;
+  itemMarkMap: Map<string, UpkkJakimItemMarkRecord>;
+  questions: UpkkScorableQuestion[];
+}) {
+  return (
+    <>
+      <tr className="upkk-print-section-row">
+        <td />
+        <td colSpan={2}>
+          {component.section}: {component.title}
+        </td>
+        <td>{formatNumber(component.maxMark)}</td>
+        <td>{formatNumber(componentTotal)}</td>
+      </tr>
+      {questions.map((question, index) => {
+        const saved = itemMarkMap.get(question.key);
+        return (
+          <tr key={question.key}>
+            <td>{index + 1}</td>
+            <td>{question.section}</td>
+            <td>
+              {question.number} {question.title}
+            </td>
+            <td>{formatNumber(question.maxMark)}</td>
+            <td>{saved?.markah == null ? '' : formatNumber(saved.markah)}</td>
+          </tr>
+        );
+      })}
+    </>
   );
 }

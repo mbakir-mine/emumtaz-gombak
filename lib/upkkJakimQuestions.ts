@@ -46,19 +46,24 @@ export function upkkScorableQuestionsByComponent(componentKey: string): UpkkScor
   const component = upkkJakimComponents.find((item) => item.key === componentKey);
   if (!component) return [];
 
-  return upkkQuestionGroupsByComponent(componentKey).map((group) => ({
-    key: upkkQuestionItemKey(component.key, group.number),
-    componentKey: component.key,
-    componentTitle: `${component.section}: ${component.title}`,
-    assessmentType: component.assessmentType,
-    section: component.section,
-    number: group.number,
-    title: group.title,
-    maxMark: group.maxMark,
-    helper: group.items
+  return upkkQuestionGroupsByComponent(componentKey).map((group) => {
+    const helper = group.items
+      .filter((item) => item.number !== group.number || item.title !== group.title)
       .map((item) => `${item.number} ${item.title} (${formatQuestionMark(item.maxMark)})`)
-      .join('; '),
-  }));
+      .join('; ');
+
+    return {
+      key: upkkQuestionItemKey(component.key, group.number),
+      componentKey: component.key,
+      componentTitle: `${component.section}: ${component.title}`,
+      assessmentType: component.assessmentType,
+      section: component.section,
+      number: group.number,
+      title: group.title,
+      maxMark: group.maxMark,
+      helper,
+    };
+  });
 }
 
 export function upkkScorableQuestionsByType(type: UpkkJakimAssessmentType): UpkkScorableQuestion[] {
