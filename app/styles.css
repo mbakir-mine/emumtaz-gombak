@@ -15,6 +15,226 @@
   --press-shadow: 0 4px 10px rgba(2, 46, 25, 0.1);
 }
 
+.upkk-official-page {
+  background: #fff;
+  color: #000;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.upkk-official-border {
+  position: relative;
+  min-height: 920px;
+  border: 1.5px solid #111;
+  padding: 10px 8px 16px;
+}
+
+.upkk-official-code {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.upkk-official-agency {
+  text-align: center;
+  font-size: 6px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.upkk-official-agency img {
+  display: block;
+  width: 42px;
+  height: 34px;
+  object-fit: contain;
+  margin: 0 auto 1px;
+}
+
+.upkk-official-agency span {
+  display: block;
+}
+
+.upkk-official-title {
+  margin-top: 2px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.upkk-official-title h2,
+.upkk-official-title h3 {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.15;
+}
+
+.upkk-official-title strong {
+  font-size: 8px;
+}
+
+.upkk-official-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 34px;
+  row-gap: 2px;
+  margin: 7px 0 5px;
+}
+
+.upkk-official-field {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  align-items: end;
+  gap: 4px;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.upkk-official-field b {
+  min-height: 12px;
+  border-bottom: 2px solid #111;
+  padding: 0 3px 1px;
+  font-size: 7px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.upkk-official-sections {
+  display: grid;
+  gap: 6px;
+  align-items: start;
+}
+
+.upkk-official-sections-pchi {
+  grid-template-columns: 1.25fr 1fr 0.95fr;
+}
+
+.upkk-official-sections-amali {
+  grid-template-columns: 1fr 1fr;
+}
+
+.upkk-official-component-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 6px;
+  line-height: 1.05;
+}
+
+.upkk-official-component-table th,
+.upkk-official-component-table td {
+  border: 1px solid #111;
+  padding: 2px 3px;
+  color: #000;
+  vertical-align: middle;
+}
+
+.upkk-official-component-table th {
+  background: #fff;
+  text-align: center;
+  font-weight: 700;
+}
+
+.upkk-official-component-table th:nth-child(1) {
+  width: 22px;
+}
+
+.upkk-official-component-table th:nth-child(2) {
+  width: 72px;
+}
+
+.upkk-official-component-table th:nth-child(3) {
+  width: 38px;
+}
+
+.upkk-official-component-table th:nth-child(4) {
+  width: 34px;
+}
+
+.upkk-official-component-table th:nth-child(5) {
+  width: 42px;
+}
+
+.upkk-official-component-table td:nth-child(1),
+.upkk-official-component-table td:nth-child(3),
+.upkk-official-component-table td:nth-child(4),
+.upkk-official-component-table td:nth-child(5) {
+  text-align: center;
+}
+
+.upkk-official-component-total td {
+  font-weight: 700;
+}
+
+.upkk-official-grand-total {
+  width: 190px;
+  margin: 8px auto 0;
+  border-collapse: collapse;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.upkk-official-grand-total th,
+.upkk-official-grand-total td {
+  border: 1px solid #111;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.upkk-official-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 55px;
+  width: 58%;
+  margin: 18px auto 0;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.upkk-official-signatures i {
+  display: block;
+  height: 24px;
+  border-bottom: 1px solid #111;
+  margin: 8px 0 3px;
+}
+
+.upkk-official-signatures span,
+.upkk-official-signatures small {
+  display: block;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  .upkk-official-page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .upkk-official-border {
+    min-height: 266mm;
+    padding: 7mm 5mm 6mm;
+  }
+
+  .upkk-official-title h2,
+  .upkk-official-title h3,
+  .upkk-official-title strong {
+    font-size: 7.2px;
+  }
+
+  .upkk-official-component-table th,
+  .upkk-official-component-table td {
+    padding: 1.5px 2px;
+    font-size: 5.6px;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
