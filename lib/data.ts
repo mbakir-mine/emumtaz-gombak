@@ -3,7 +3,6 @@ import { compareExamCode, isStandardExamCode } from './examOrdering';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 import { gradePointForMark } from './subjects';
-import type { UpkkJakimAssessmentType } from './upkkJakim';
 
 export type SetupCounts = {
   schools: number;
@@ -441,41 +440,6 @@ export type PbdMarkDetailRecord = {
   catatan: string | null;
   students?: StudentRecord;
   pbd_assessments?: PbdAssessmentRecord;
-};
-
-export type UpkkJakimMarkRecord = {
-  id: string;
-  tahun_akademik: number;
-  kod_sekolah: string;
-  class_id: string;
-  student_id: string;
-  assessment_type: UpkkJakimAssessmentType;
-  component_key: string;
-  component_title: string;
-  max_mark: number;
-  markah: number | null;
-  teacher_id: string | null;
-  catatan: string | null;
-  students?: StudentRecord;
-};
-
-export type UpkkJakimItemMarkRecord = {
-  id: string;
-  tahun_akademik: number;
-  kod_sekolah: string;
-  class_id: string;
-  student_id: string;
-  assessment_type: UpkkJakimAssessmentType;
-  component_key: string;
-  component_title: string;
-  item_key: string;
-  item_number: string;
-  item_title: string;
-  max_mark: number;
-  markah: number | null;
-  teacher_id: string | null;
-  catatan: string | null;
-  students?: StudentRecord;
 };
 
 export type TeacherClassAssignment = {
@@ -1672,99 +1636,6 @@ export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
         }
       : undefined,
   })) as PbdMarkDetailRecord[];
-}
-
-export async function getUpkkJakimMarks(): Promise<UpkkJakimMarkRecord[]> {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from('upkk_jakim_marks')
-    .select(
-      `
-      id,
-      tahun_akademik,
-      kod_sekolah,
-      class_id,
-      student_id,
-      assessment_type,
-      component_key,
-      component_title,
-      max_mark,
-      markah,
-      teacher_id,
-      catatan,
-      students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status)
-    `,
-    )
-    .order('student_id')
-    .order('component_key');
-
-  if (error) return [];
-  return (data ?? []).map((item: any) => ({
-    id: item.id,
-    tahun_akademik: item.tahun_akademik,
-    kod_sekolah: item.kod_sekolah,
-    class_id: item.class_id,
-    student_id: item.student_id,
-    assessment_type: item.assessment_type,
-    component_key: item.component_key,
-    component_title: item.component_title,
-    max_mark: item.max_mark,
-    markah: item.markah,
-    teacher_id: item.teacher_id,
-    catatan: item.catatan,
-    students: Array.isArray(item.students) ? item.students[0] : item.students,
-  })) as UpkkJakimMarkRecord[];
-}
-
-export async function getUpkkJakimItemMarks(): Promise<UpkkJakimItemMarkRecord[]> {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from('upkk_jakim_item_marks')
-    .select(
-      `
-      id,
-      tahun_akademik,
-      kod_sekolah,
-      class_id,
-      student_id,
-      assessment_type,
-      component_key,
-      component_title,
-      item_key,
-      item_number,
-      item_title,
-      max_mark,
-      markah,
-      teacher_id,
-      catatan,
-      students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status)
-    `,
-    )
-    .order('student_id')
-    .order('component_key')
-    .order('item_number');
-
-  if (error) return [];
-  return (data ?? []).map((item: any) => ({
-    id: item.id,
-    tahun_akademik: item.tahun_akademik,
-    kod_sekolah: item.kod_sekolah,
-    class_id: item.class_id,
-    student_id: item.student_id,
-    assessment_type: item.assessment_type,
-    component_key: item.component_key,
-    component_title: item.component_title,
-    item_key: item.item_key,
-    item_number: item.item_number,
-    item_title: item.item_title,
-    max_mark: Number(item.max_mark),
-    markah: item.markah === null || item.markah === undefined ? null : Number(item.markah),
-    teacher_id: item.teacher_id,
-    catatan: item.catatan,
-    students: Array.isArray(item.students) ? item.students[0] : item.students,
-  })) as UpkkJakimItemMarkRecord[];
 }
 
 export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssignment[]> {

@@ -12,7 +12,7 @@ create table if not exists public.school_module_access (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint school_module_access_module_key_check check (
-    module_key in ('TAKWIM', 'KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI', 'AKSES_IBU_BAPA', 'PELAPORAN_PBD', 'UPKK_JAKIM')
+    module_key in ('TAKWIM', 'KEHADIRAN_HARIAN', 'AMAL_KHAIR', 'JADUAL_WAKTU', 'RPH_AI', 'AKSES_IBU_BAPA', 'PELAPORAN_PBD')
   ),
   unique (kod_sekolah, module_key)
 );
