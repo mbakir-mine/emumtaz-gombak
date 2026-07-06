@@ -9,6 +9,7 @@ import {
   getTeacherClassAssignments,
   getTeacherSubjectComponentAssignments,
   getTeacherSubjectAssignments,
+  getTimetableRequirements,
 } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export default async function GuruSubjekKelasPage({
     subjectAssignments,
     subjectComponents,
     componentAssignments,
+    timetableRequirements,
   ] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -38,6 +40,7 @@ export default async function GuruSubjekKelasPage({
     getTeacherSubjectAssignments(),
     getSubjectComponents(),
     getTeacherSubjectComponentAssignments(),
+    getTimetableRequirements(),
   ]);
   const selectedClass = classes.find((item) => item.id === classId);
 
@@ -57,6 +60,7 @@ export default async function GuruSubjekKelasPage({
         subjectAssignments={subjectAssignments}
         subjectComponents={subjectComponents}
         componentAssignments={componentAssignments}
+        timetableRequirements={timetableRequirements}
       />
     </AppFrame>
   );

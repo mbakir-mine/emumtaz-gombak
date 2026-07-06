@@ -14,6 +14,7 @@ import type {
   TeacherClassAssignment,
   TeacherSubjectComponentAssignment,
   TeacherSubjectAssignment,
+  TimetableRequirement,
   UserRecord,
 } from '@/lib/data';
 
@@ -32,6 +33,7 @@ export default function TeacherSubjectDetailForm({
   subjectAssignments,
   subjectComponents,
   componentAssignments,
+  timetableRequirements,
 }: {
   classId: string;
   schools: School[];
@@ -42,10 +44,12 @@ export default function TeacherSubjectDetailForm({
   subjectAssignments: TeacherSubjectAssignment[];
   subjectComponents: SubjectComponentRecord[];
   componentAssignments: TeacherSubjectComponentAssignment[];
+  timetableRequirements: TimetableRequirement[];
 }) {
   const profile = useAccessProfile();
   const [subjectSelections, setSubjectSelections] = useState<Record<string, string>>({});
   const [componentSelections, setComponentSelections] = useState<Record<string, string>>({});
+  const [slotSelections, setSlotSelections] = useState<Record<string, string>>({});
   const [applyAllTeacher, setApplyAllTeacher] = useState('');
   const [state, action, pending] = useActionState(bulkAssignTeacherSubjects, initialState);
 
@@ -86,6 +90,16 @@ export default function TeacherSubjectDetailForm({
     return map;
   }, [componentAssignments]);
 
+  const timetableRequirementMap = useMemo(() => {
+    const map = new Map<string, TimetableRequirement>();
+    timetableRequirements.forEach((requirement) => {
+      if (requirement.class_id === classId) {
+        map.set(`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`, requirement);
+      }
+    });
+    return map;
+  }, [classId, timetableRequirements]);
+
   const componentsBySubject = useMemo(() => {
     const map = new Map<string, SubjectComponentRecord[]>();
     subjectComponents
@@ -115,24 +129,31 @@ export default function TeacherSubjectDetailForm({
     if (!selectedClass) {
       setSubjectSelections({});
       setComponentSelections({});
+      setSlotSelections({});
       setApplyAllTeacher('');
       return;
     }
 
     const nextSelections: Record<string, string> = {};
     const nextComponentSelections: Record<string, string> = {};
+    const nextSlotSelections: Record<string, string> = {};
     filteredSubjects.forEach((subject) => {
       nextSelections[subject.kod_subjek] = subjectTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}`) ?? '';
+      const subjectKey = `${subject.kod_subjek}|`;
+      nextSlotSelections[subjectKey] =
+        timetableRequirementMap.get(subjectKey)?.bil_slot_seminggu?.toString() ?? '';
       (componentsBySubject.get(subject.kod_subjek) ?? []).forEach((component) => {
         const key = `${subject.kod_subjek}|${component.kod_komponen}`;
         nextComponentSelections[key] =
           componentTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}|${component.kod_komponen}`) ?? '';
+        nextSlotSelections[key] = timetableRequirementMap.get(key)?.bil_slot_seminggu?.toString() ?? '';
       });
     });
     setSubjectSelections(nextSelections);
     setComponentSelections(nextComponentSelections);
+    setSlotSelections(nextSlotSelections);
     setApplyAllTeacher('');
-  }, [componentTeacherMap, componentsBySubject, filteredSubjects, selectedClass, subjectTeacherMap]);
+  }, [componentTeacherMap, componentsBySubject, filteredSubjects, selectedClass, subjectTeacherMap, timetableRequirementMap]);
 
   function applyTeacherToAllSubjects() {
     if (!applyAllTeacher) return;
@@ -184,6 +205,7 @@ export default function TeacherSubjectDetailForm({
       ) : (
         <form action={action}>
           <input name="subject_class_id" type="hidden" value={selectedClass.id} />
+          <input name="subject_kod_sekolah" type="hidden" value={selectedClass.kod_sekolah} />
           <div className="subject-bulk-toolbar">
             <label>
               Tetapkan semua subjek kepada
@@ -208,6 +230,7 @@ export default function TeacherSubjectDetailForm({
                   <th>Bil</th>
                   <th>Kod</th>
                   <th>Mata Pelajaran</th>
+                  <th className="slot-column">Bil. Masa</th>
                   <th>Guru Subjek</th>
                 </tr>
               </thead>
@@ -219,6 +242,69 @@ export default function TeacherSubjectDetailForm({
                       <td>{index + 1}</td>
                       <td>{displaySubjectCode(subject, selectedClass.tahun)}</td>
                       <td>{subject.nama_subjek}</td>
+                      <td className="slot-column">
+                        {components.length === 0 ? (
+                          <>
+                            <input name="timetable_kod_subjek" type="hidden" value={subject.kod_subjek} />
+                            <input name="timetable_kod_komponen" type="hidden" value="" />
+                            <input name="timetable_nama_paparan" type="hidden" value={subject.nama_subjek} />
+                            <input
+                              name="timetable_teacher_id"
+                              type="hidden"
+                              value={subjectSelections[subject.kod_subjek] ?? ''}
+                            />
+                            <input
+                              className="subject-slot-input"
+                              name="timetable_bil_slot"
+                              type="number"
+                              min="0"
+                              max="40"
+                              value={slotSelections[`${subject.kod_subjek}|`] ?? ''}
+                              onChange={(event) =>
+                                setSlotSelections((current) => ({
+                                  ...current,
+                                  [`${subject.kod_subjek}|`]: event.target.value,
+                                }))
+                              }
+                              placeholder="0"
+                            />
+                          </>
+                        ) : (
+                          <div className="subject-slot-stack">
+                            {components.map((component) => {
+                              const componentKey = `${subject.kod_subjek}|${component.kod_komponen}`;
+                              return (
+                                <label key={componentKey} className="subject-slot-label">
+                                  <span>{component.nama_komponen}</span>
+                                  <input name="timetable_kod_subjek" type="hidden" value={subject.kod_subjek} />
+                                  <input name="timetable_kod_komponen" type="hidden" value={component.kod_komponen} />
+                                  <input name="timetable_nama_paparan" type="hidden" value={component.nama_komponen} />
+                                  <input
+                                    name="timetable_teacher_id"
+                                    type="hidden"
+                                    value={componentSelections[componentKey] ?? ''}
+                                  />
+                                  <input
+                                    className="subject-slot-input"
+                                    name="timetable_bil_slot"
+                                    type="number"
+                                    min="0"
+                                    max="40"
+                                    value={slotSelections[componentKey] ?? ''}
+                                    onChange={(event) =>
+                                      setSlotSelections((current) => ({
+                                        ...current,
+                                        [componentKey]: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="0"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
                       <td>
                         <div className="subject-teacher-stack">
                           {components.length === 0 && (

@@ -105,6 +105,7 @@ export async function bulkAssignTeacherSubjects(
   }
 
   const classId = String(formData.get('subject_class_id') ?? '').trim();
+  const kodSekolah = String(formData.get('subject_kod_sekolah') ?? '').trim();
   const subjectCodes = stringList(formData, 'kod_subjek').filter(Boolean);
   const userIds = stringList(formData, 'subject_teacher_id');
   const componentParentSubjectCodes = [
@@ -113,9 +114,35 @@ export async function bulkAssignTeacherSubjects(
   const componentSubjectCodes = stringList(formData, 'component_kod_subjek');
   const componentCodes = stringList(formData, 'component_kod_komponen');
   const componentUserIds = stringList(formData, 'component_teacher_id');
+  const timetableSubjectCodes = stringList(formData, 'timetable_kod_subjek');
+  const timetableComponentCodes = stringList(formData, 'timetable_kod_komponen');
+  const timetableDisplayNames = stringList(formData, 'timetable_nama_paparan');
+  const timetableTeacherIds = stringList(formData, 'timetable_teacher_id');
+  const timetableSlotCounts = stringList(formData, 'timetable_bil_slot');
+
+  const timetableRows = timetableSubjectCodes
+    .map((kodSubjek, index) => {
+      const rawSlot = timetableSlotCounts[index] ?? '';
+      const bilSlot = rawSlot === '' ? 0 : Number(rawSlot);
+      return {
+        kodSubjek,
+        kodKomponen: timetableComponentCodes[index] ?? '',
+        namaPaparan: timetableDisplayNames[index] ?? '',
+        teacherId: timetableTeacherIds[index] ?? '',
+        bilSlot,
+      };
+    })
+    .filter((row) => row.kodSubjek);
 
   if (!classId || subjectCodes.length + componentSubjectCodes.length === 0) {
     return { ok: false, message: 'Pilih kelas dan subjek untuk dikemaskini.' };
+  }
+
+  const invalidRequirement = timetableRows.find(
+    (row) => !Number.isFinite(row.bilSlot) || row.bilSlot < 0 || row.bilSlot > 40,
+  );
+  if (invalidRequirement) {
+    return { ok: false, message: 'Bil. Masa mesti antara 0 hingga 40.' };
   }
 
   let updated = 0;
@@ -200,10 +227,84 @@ export async function bulkAssignTeacherSubjects(
     componentUpdated += 1;
   }
 
+  let requirementUpdated = 0;
+  let requirementWarning = '';
+  if (kodSekolah && timetableRows.length > 0) {
+    const { data: existingRequirements, error: existingRequirementError } = await supabase
+      .from('timetable_requirements')
+      .select('kod_subjek,kod_komponen,boleh_gabung')
+      .eq('class_id', classId);
+
+    if (existingRequirementError) {
+      requirementWarning =
+        'Bil. Masa belum disimpan kerana jadual automatik belum tersedia. Jalankan SQL 025_timetable_auto_requirements.sql dahulu.';
+    } else {
+      const existingRequirementMap = new Map<string, boolean>();
+      (existingRequirements ?? []).forEach((requirement) => {
+        existingRequirementMap.set(
+          `${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`,
+          Boolean(requirement.boleh_gabung),
+        );
+      });
+
+      for (const row of timetableRows) {
+        let deleteQuery = supabase
+          .from('timetable_requirements')
+          .delete()
+          .eq('class_id', classId)
+          .eq('kod_subjek', row.kodSubjek);
+
+        deleteQuery = row.kodKomponen ? deleteQuery.eq('kod_komponen', row.kodKomponen) : deleteQuery.is('kod_komponen', null);
+
+        const { error: deleteRequirementError } = await deleteQuery;
+        if (deleteRequirementError) {
+          return {
+            ok: false,
+            message: `Guru subjek disimpan, tetapi Bil. Masa gagal dikemaskini: ${deleteRequirementError.message}`,
+          };
+        }
+
+        const teacherId = row.teacherId && row.teacherId !== clearTeacherValue ? row.teacherId : '';
+        if (!teacherId || row.bilSlot <= 0) {
+          continue;
+        }
+
+        const requirementKey = `${row.kodSubjek}|${row.kodKomponen}`;
+        const { error: insertRequirementError } = await supabase.from('timetable_requirements').insert({
+          kod_sekolah: kodSekolah,
+          class_id: classId,
+          kod_subjek: row.kodSubjek,
+          kod_komponen: row.kodKomponen || null,
+          nama_paparan: row.namaPaparan || null,
+          teacher_id: teacherId,
+          bil_slot_seminggu: row.bilSlot,
+          boleh_gabung: existingRequirementMap.get(requirementKey) ?? false,
+          status: 'AKTIF',
+        });
+
+        if (insertRequirementError) {
+          return {
+            ok: false,
+            message: `Guru subjek disimpan, tetapi Bil. Masa gagal disimpan: ${insertRequirementError.message}`,
+          };
+        }
+
+        requirementUpdated += 1;
+      }
+    }
+  }
+
   revalidatePath('/guru-subjek');
   revalidatePath(`/guru-subjek/${classId}`);
   revalidatePath('/jadual-waktu');
   revalidatePath('/');
   const totalUpdated = updated + componentUpdated;
-  return { ok: true, message: `${totalUpdated} tetapan guru subjek berjaya dikemaskini.` };
+  const requirementMessage =
+    timetableRows.length > 0 && !requirementWarning ? ` ${requirementUpdated} Bil. Masa berjaya dikemaskini.` : '';
+  return {
+    ok: true,
+    message: `${totalUpdated} tetapan guru subjek berjaya dikemaskini.${requirementMessage}${
+      requirementWarning ? ` ${requirementWarning}` : ''
+    }`,
+  };
 }

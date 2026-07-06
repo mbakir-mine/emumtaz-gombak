@@ -107,8 +107,20 @@ a {
 }
 
 .nav-menu-trigger.nav-group-link::after {
-  content: 'â€º';
-  color: rgba(255, 255, 255, 0.6);
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-left: 12px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.62;
+  transform: rotate(-45deg);
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.nav-group-open > .nav-menu-trigger.nav-group-link::after {
+  opacity: 0.86;
+  transform: rotate(45deg);
 }
 
 .nav a:hover,
@@ -1550,6 +1562,40 @@ th {
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
+}
+
+.teacher-assignment-table .slot-column {
+  width: 128px;
+  text-align: center;
+}
+
+.subject-slot-input {
+  width: 82px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+  text-align: center;
+}
+
+.subject-slot-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.subject-slot-label {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+}
+
+.subject-slot-label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .teacher-assignment-table th,
