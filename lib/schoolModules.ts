@@ -48,6 +48,13 @@ export const optionalSchoolModules = [
     shortLabel: 'PBD',
     description: 'Kemasukan dan pelaporan PBD rasmi untuk sekolah yang diluluskan.',
   },
+  {
+    key: 'PENILAIAN_UPKK',
+    navKey: 'upkkAssessment',
+    label: 'Penilaian UPKK',
+    shortLabel: 'UPKK',
+    description: 'Borang UPKK Amali Solat untuk murid Tahun 5.',
+  },
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];

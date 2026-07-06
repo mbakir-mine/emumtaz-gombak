@@ -64,6 +64,18 @@ export type StudentRecord = {
   status: string;
 };
 
+export type UpkkAmaliSolatRecord = {
+  id: string;
+  kod_sekolah: string;
+  tahun_akademik: number;
+  class_id: string;
+  student_id: string;
+  scores: Record<string, number>;
+  jumlah: number;
+  status: string;
+  catatan: string | null;
+};
+
 export type StudentSchoolSummary = {
   kod_sekolah: string;
   nama_sekolah: string;
@@ -901,6 +913,23 @@ export async function getClasses(): Promise<ClassRecord[]> {
 
 export async function getStudents(): Promise<StudentRecord[]> {
   return fetchStudentsInBatches();
+}
+
+export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('upkk_amali_solat_marks')
+    .select('id,kod_sekolah,tahun_akademik,class_id,student_id,scores,jumlah,status,catatan')
+    .order('updated_at', { ascending: false });
+
+  if (error) return [];
+
+  return (data ?? []).map((row: any) => ({
+    ...row,
+    scores: row.scores && typeof row.scores === 'object' ? row.scores : {},
+    jumlah: Number(row.jumlah ?? 0),
+  }));
 }
 
 export async function getStudentsPage(options: StudentPageOptions = {}): Promise<StudentPageResult> {

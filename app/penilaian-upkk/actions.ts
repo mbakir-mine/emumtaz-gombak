@@ -1,0 +1,114 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { supabase } from '@/lib/supabase';
+import { calculateUpkkAmaliTotal, UPKK_AMALI_SOLAT_ITEMS } from '@/lib/upkkAmaliSolat';
+
+export type UpkkActionState = {
+  ok: boolean;
+  message: string;
+};
+
+export const initialUpkkActionState: UpkkActionState = {
+  ok: false,
+  message: '',
+};
+
+function readText(formData: FormData, key: string) {
+  return String(formData.get(key) ?? '').trim();
+}
+
+function readScore(value: FormDataEntryValue | null, max: number) {
+  const text = String(value ?? '').trim();
+  if (!text) return 0;
+
+  const score = Number(text);
+  if (!Number.isFinite(score)) return null;
+
+  return Math.min(max, Math.max(0, score));
+}
+
+export async function saveUpkkAmaliSolat(
+  _previousState: UpkkActionState,
+  formData: FormData,
+): Promise<UpkkActionState> {
+  if (!supabase) {
+    return { ok: false, message: 'Supabase belum disambungkan.' };
+  }
+
+  const kodSekolah = readText(formData, 'kod_sekolah');
+  const tahunAkademik = Number(readText(formData, 'tahun_akademik'));
+  const classId = readText(formData, 'class_id');
+  const studentId = readText(formData, 'student_id');
+
+  if (!kodSekolah || !tahunAkademik || !classId || !studentId) {
+    return { ok: false, message: 'Lengkapkan sekolah, tahun, kelas dan murid.' };
+  }
+
+  const { data: classRow, error: classError } = await supabase
+    .from('classes')
+    .select('id,kod_sekolah,tahun_akademik,tahun')
+    .eq('id', classId)
+    .maybeSingle();
+
+  if (classError || !classRow) {
+    return { ok: false, message: 'Kelas tidak dijumpai.' };
+  }
+
+  if (classRow.kod_sekolah !== kodSekolah || Number(classRow.tahun_akademik) !== tahunAkademik) {
+    return { ok: false, message: 'Maklumat kelas tidak sepadan dengan pilihan.' };
+  }
+
+  if (Number(classRow.tahun) !== 5) {
+    return { ok: false, message: 'Penilaian UPKK hanya untuk murid Tahun 5.' };
+  }
+
+  const { data: studentRow, error: studentError } = await supabase
+    .from('students')
+    .select('mykid,kod_sekolah,class_id,status')
+    .eq('mykid', studentId)
+    .maybeSingle();
+
+  if (studentError || !studentRow) {
+    return { ok: false, message: 'Murid tidak dijumpai.' };
+  }
+
+  if (studentRow.kod_sekolah !== kodSekolah || studentRow.class_id !== classId) {
+    return { ok: false, message: 'Murid tidak berada dalam kelas pilihan.' };
+  }
+
+  const scores: Record<string, number> = {};
+
+  for (const item of UPKK_AMALI_SOLAT_ITEMS) {
+    const score = readScore(formData.get(`score_${item.code}`), item.max);
+    if (score === null) {
+      return { ok: false, message: `Markah ${item.code} tidak sah.` };
+    }
+    scores[item.code] = score;
+  }
+
+  const jumlah = calculateUpkkAmaliTotal(scores);
+  const { error } = await supabase.from('upkk_amali_solat_marks').upsert(
+    {
+      kod_sekolah: kodSekolah,
+      tahun_akademik: tahunAkademik,
+      class_id: classId,
+      student_id: studentId,
+      scores,
+      jumlah,
+      status: jumlah > 0 ? 'LENGKAP' : 'DRAF',
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'tahun_akademik,student_id' },
+  );
+
+  if (error) {
+    return {
+      ok: false,
+      message: `Gagal simpan markah UPKK. Jalankan SQL 035_penilaian_upkk_amali_solat.sql dahulu. Ralat: ${error.message}`,
+    };
+  }
+
+  revalidatePath('/penilaian-upkk');
+  return { ok: true, message: 'Markah UPKK Amali Solat berjaya disimpan.' };
+}

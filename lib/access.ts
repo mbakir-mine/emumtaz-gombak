@@ -62,6 +62,13 @@ export const navItems: NavItem[] = [
     moduleKey: 'PELAPORAN_PBD',
   },
   {
+    key: 'upkkAssessment',
+    label: 'Penilaian UPKK',
+    href: '/penilaian-upkk',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'PENILAIAN_UPKK',
+  },
+  {
     key: 'timetable',
     label: 'Jadual Waktu',
     href: '/jadual-waktu',
