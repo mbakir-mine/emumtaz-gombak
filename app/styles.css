@@ -181,7 +181,7 @@ a {
 }
 
 .upkk-student-list {
-  padding: 16px;
+  padding: 12px;
 }
 
 .upkk-card-head,
@@ -194,7 +194,7 @@ a {
 }
 
 .upkk-card-head {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .upkk-card-head h3,
@@ -211,6 +211,8 @@ a {
 
 .upkk-student-table th,
 .upkk-student-table td {
+  padding: 6px 10px;
+  line-height: 1.22;
   white-space: nowrap;
 }
 
@@ -220,6 +222,7 @@ a {
   color: var(--green);
   font: inherit;
   font-weight: 700;
+  line-height: 1.2;
   text-align: left;
   cursor: pointer;
 }
@@ -234,11 +237,11 @@ a {
 }
 
 .upkk-form-card {
-  padding: 18px;
+  padding: 14px;
 }
 
 .upkk-form-head {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .upkk-form-head p {
@@ -263,13 +266,13 @@ a {
 
 .upkk-section-card {
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   border: 1px solid #d5e2d7;
   border-radius: 8px;
 }
 
 .upkk-section-head {
-  padding: 12px 14px;
+  padding: 9px 12px;
   background: #e9f5ec;
   color: var(--green);
 }
@@ -283,26 +286,27 @@ a {
 }
 
 .upkk-section-head strong {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .upkk-group {
-  padding: 12px 14px;
+  padding: 8px 12px;
   border-top: 1px solid #e3ece5;
 }
 
 .upkk-group-title {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   color: var(--muted);
   font-weight: 700;
 }
 
 .upkk-item-row {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 112px;
-  gap: 12px;
+  grid-template-columns: 64px minmax(0, 1fr) 112px;
+  gap: 10px;
   align-items: center;
-  padding: 8px 0;
+  min-height: 42px;
+  padding: 4px 0;
   border-top: 1px solid #eef4ef;
 }
 
@@ -317,7 +321,7 @@ a {
 
 .upkk-score-input {
   width: 100%;
-  min-height: 40px;
+  min-height: 34px;
   text-align: center;
 }
 
