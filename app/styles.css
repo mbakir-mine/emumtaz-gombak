@@ -198,8 +198,7 @@ a {
 }
 
 .upkk-card-head h3,
-.upkk-form-head h3,
-.upkk-group-title {
+.upkk-form-head h3 {
   margin: 0;
 }
 
@@ -290,38 +289,61 @@ a {
 }
 
 .upkk-group {
-  padding: 8px 12px;
+  padding: 0 12px;
   border-top: 1px solid #e3ece5;
 }
 
-.upkk-group-title {
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-weight: 700;
+.upkk-group-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.upkk-item-row {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 112px;
-  gap: 10px;
-  align-items: center;
-  min-height: 42px;
-  padding: 4px 0;
+.upkk-group-table td {
+  padding: 4px 8px;
   border-top: 1px solid #eef4ef;
+  line-height: 1.18;
+  vertical-align: middle;
 }
 
-.upkk-item-row:first-of-type {
+.upkk-group-table tr:first-child td {
   border-top: 0;
 }
 
-.upkk-item-code {
+.upkk-group-code-cell {
+  width: 52px;
+  color: var(--green);
+  font-weight: 700;
+  text-align: center;
+}
+
+.upkk-group-title-cell {
+  width: 160px;
+  color: var(--muted);
+  font-weight: 700;
+  border-right: 1px solid #e3ece5;
+}
+
+.upkk-item-code-cell {
+  width: 72px;
   color: var(--green);
   font-weight: 700;
 }
 
+.upkk-item-label-cell {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.upkk-score-cell {
+  width: 112px;
+}
+
 .upkk-score-input {
   width: 100%;
-  min-height: 34px;
+  min-height: 30px;
+  padding: 5px 8px;
   text-align: center;
 }
 
@@ -351,8 +373,12 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .upkk-item-row {
-    grid-template-columns: 1fr;
+  .upkk-group-table {
+    table-layout: auto;
+  }
+
+  .upkk-group-title-cell {
+    width: 120px;
   }
 }
 

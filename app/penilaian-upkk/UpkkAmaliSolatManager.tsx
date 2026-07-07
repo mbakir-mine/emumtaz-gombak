@@ -335,27 +335,41 @@ export default function UpkkAmaliSolatManager({
 
                       {section.groups.map((group) => (
                         <div key={group.code} className="upkk-group">
-                          <p className="upkk-group-title">
-                            {group.code} {group.title}
-                          </p>
-                          {group.items.map((item) => (
-                            <label key={item.code} className="upkk-item-row">
-                              <span className="upkk-item-code">{item.code}</span>
-                              <span>{item.label}</span>
-                              <input
-                                className="upkk-score-input"
-                                type="number"
-                                name={`score_${item.code}`}
-                                min="0"
-                                max={item.max}
-                                step="0.5"
-                                defaultValue={
-                                  selectedScores[item.code] === undefined ? '' : formatNumber(Number(selectedScores[item.code]))
-                                }
-                                placeholder={`/${item.max}`}
-                              />
-                            </label>
-                          ))}
+                          <table className="upkk-group-table">
+                            <tbody>
+                              {group.items.map((item, index) => (
+                                <tr key={item.code}>
+                                  {index === 0 && (
+                                    <>
+                                      <td className="upkk-group-code-cell" rowSpan={group.items.length}>
+                                        {group.code}
+                                      </td>
+                                      <td className="upkk-group-title-cell" rowSpan={group.items.length}>
+                                        {group.title}
+                                      </td>
+                                    </>
+                                  )}
+                                  <td className="upkk-item-code-cell">{item.code}</td>
+                                  <td className="upkk-item-label-cell">{item.label}</td>
+                                  <td className="upkk-score-cell">
+                                    <input
+                                      className="upkk-score-input"
+                                      type="number"
+                                      name={`score_${item.code}`}
+                                      min="0"
+                                      max={item.max}
+                                      step="0.5"
+                                      defaultValue={
+                                        selectedScores[item.code] === undefined ? '' : formatNumber(Number(selectedScores[item.code]))
+                                      }
+                                      placeholder={`/${item.max}`}
+                                      aria-label={`${item.code} ${item.label}`}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       ))}
                     </section>
