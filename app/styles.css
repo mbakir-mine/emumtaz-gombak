@@ -208,6 +208,20 @@ a {
   color: var(--muted);
 }
 
+.upkk-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.upkk-export-button {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
 .upkk-student-table th,
 .upkk-student-table td {
   padding: 6px 10px;

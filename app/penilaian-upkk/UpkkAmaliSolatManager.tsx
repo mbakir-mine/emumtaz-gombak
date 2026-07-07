@@ -44,6 +44,23 @@ function sectionScore(section: UpkkAmaliSection, scores: Record<string, number>)
   );
 }
 
+function escapeExcelCell(value: string | number | null | undefined) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function sanitizeFilePart(value: string | number | null | undefined) {
+  const clean = String(value ?? 'data')
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+  return clean.slice(0, 80) || 'data';
+}
+
 export default function UpkkAmaliSolatManager({
   schools,
   moduleAccesses,
@@ -163,6 +180,106 @@ export default function UpkkAmaliSolatManager({
     ? recordsForClass.reduce((total, record) => total + Number(record.jumlah ?? 0), 0) / completedCount
     : 0;
 
+  function handleDownloadExcel() {
+    if (!selectedSchoolRecord || !selectedClass || studentsInClass.length === 0) return;
+
+    const exportItems = UPKK_AMALI_SOLAT_SECTIONS.flatMap((section) =>
+      section.groups.flatMap((group) =>
+        group.items.map((item) => ({
+          ...item,
+          sectionTitle: section.fullTitle,
+          groupTitle: group.title,
+        })),
+      ),
+    );
+
+    const headers = [
+      'BIL',
+      'NAMA MURID',
+      'MYKID',
+      'JANTINA',
+      ...exportItems.map((item) => `${item.code} ${item.label} /${item.max}`),
+      ...UPKK_AMALI_SOLAT_SECTIONS.map((section) => `${section.title} ${section.fullTitle} /${section.total}`),
+      `JUMLAH /${UPKK_AMALI_SOLAT_TOTAL}`,
+      'STATUS',
+    ];
+
+    const headerRow = `<tr>${headers.map((header) => `<th>${escapeExcelCell(header)}</th>`).join('')}</tr>`;
+    const bodyRows = studentsInClass
+      .map((student, index) => {
+        const record = recordByStudent.get(student.mykid);
+        const scores = record?.scores ?? {};
+        const hasRecord = Boolean(record);
+        const row = [
+          index + 1,
+          student.nama_murid,
+          student.mykid,
+          genderLabel(student.jantina),
+          ...exportItems.map((item) => (hasRecord ? formatNumber(Number(scores[item.code] ?? 0)) : '')),
+          ...UPKK_AMALI_SOLAT_SECTIONS.map((section) => (hasRecord ? formatNumber(sectionScore(section, scores)) : '')),
+          hasRecord ? formatNumber(calculateUpkkAmaliTotal(scores)) : '',
+          Number(record?.jumlah ?? 0) > 0 ? 'Dinilai' : 'Belum dinilai',
+        ];
+
+        return `<tr>${row
+          .map((cell, cellIndex) => `<td${cellIndex === 2 ? ' class="text-cell"' : ''}>${escapeExcelCell(cell)}</td>`)
+          .join('')}</tr>`;
+      })
+      .join('');
+
+    const title = `UPKK - Amali Solat ${selectedYear}`;
+    const metaRows = [
+      ['Sekolah', `${selectedSchoolRecord.kod_sekolah} - ${selectedSchoolRecord.nama_sekolah}`],
+      ['Kelas', selectedClass.nama_kelas],
+      ['Tahun Akademik', selectedYear],
+      ['Jumlah Murid', studentsInClass.length],
+      ['Murid Telah Dinilai', completedCount],
+      ['Purata Kelas', `${formatNumber(classAverage)} / ${UPKK_AMALI_SOLAT_TOTAL}`],
+    ]
+      .map(
+        ([label, value]) =>
+          `<tr><td class="meta-label">${escapeExcelCell(label)}</td><td colspan="${headers.length - 1}">${escapeExcelCell(value)}</td></tr>`,
+      )
+      .join('');
+
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { border-collapse: collapse; }
+            th, td { border: 1px solid #9ca3af; padding: 4px 6px; font-size: 11px; vertical-align: top; }
+            th { background: #e6f3ea; font-weight: 700; }
+            .title-cell { border: 0; font-size: 16px; font-weight: 700; padding: 8px 0; }
+            .meta-label { background: #f5faf6; font-weight: 700; }
+            .text-cell { mso-number-format: "\\@"; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <tr><td class="title-cell" colspan="${headers.length}">${escapeExcelCell(title)}</td></tr>
+            ${metaRows}
+            <tr><td colspan="${headers.length}"></td></tr>
+            ${headerRow}
+            ${bodyRows}
+          </table>
+        </body>
+      </html>`;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `UPKK-Amali-Solat-${sanitizeFilePart(selectedSchoolRecord.kod_sekolah)}-${sanitizeFilePart(
+      selectedClass.nama_kelas,
+    )}-${selectedYear}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
   return (
     <section className="panel upkk-panel">
       <div className="module-head">
@@ -252,7 +369,17 @@ export default function UpkkAmaliSolatManager({
             <div className="upkk-student-list">
               <div className="upkk-card-head">
                 <h3>Senarai Murid Tahun 5</h3>
-                <span>{studentsInClass.length} murid</span>
+                <div className="upkk-card-actions">
+                  <span>{studentsInClass.length} murid</span>
+                  <button
+                    type="button"
+                    className="button secondary upkk-export-button"
+                    onClick={handleDownloadExcel}
+                    disabled={studentsInClass.length === 0}
+                  >
+                    Muat Turun Excel
+                  </button>
+                </div>
               </div>
 
               {studentsInClass.length === 0 ? (
