@@ -346,7 +346,6 @@ export default function UpkkPchiManager({
                           <button className="upkk-student-button" type="button" onClick={() => setSelectedStudentId(student.mykid)}>
                             {student.nama_murid}
                           </button>
-                          <small>{genderLabel(student.jantina)}</small>
                         </td>
                         <td>{formatNumber(total)}</td>
                       </tr>
