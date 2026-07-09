@@ -20,7 +20,7 @@ function readText(formData: FormData, key: string) {
 }
 
 function readScore(value: FormDataEntryValue | null, max: number) {
-  const text = String(value ?? '').trim();
+  const text = String(value ?? '').trim().replace(',', '.');
   if (!text) return 0;
 
   const score = Number(text);
@@ -29,10 +29,34 @@ function readScore(value: FormDataEntryValue | null, max: number) {
   return Math.min(max, Math.max(0, score));
 }
 
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : 'Ralat tidak dijangka.';
+}
+
+function refreshUpkkPage() {
+  try {
+    revalidatePath('/penilaian-upkk');
+  } catch (error) {
+    console.error('Gagal refresh halaman Penilaian UPKK selepas simpan.', error);
+  }
+}
+
 export async function saveUpkkAmaliSolat(
   _previousState: UpkkActionState,
   formData: FormData,
 ): Promise<UpkkActionState> {
+  try {
+    return await saveUpkkAmaliSolatRecord(formData);
+  } catch (error) {
+    console.error('Gagal simpan UPKK Amali Solat.', error);
+    return {
+      ok: false,
+      message: `Gagal simpan markah UPKK Amali Solat. Ralat: ${errorText(error)}`,
+    };
+  }
+}
+
+async function saveUpkkAmaliSolatRecord(formData: FormData): Promise<UpkkActionState> {
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -110,7 +134,7 @@ export async function saveUpkkAmaliSolat(
     };
   }
 
-  revalidatePath('/penilaian-upkk');
+  refreshUpkkPage();
   return { ok: true, message: 'Markah UPKK Amali Solat berjaya disimpan.' };
 }
 
@@ -118,6 +142,18 @@ export async function saveUpkkPchi(
   _previousState: UpkkActionState,
   formData: FormData,
 ): Promise<UpkkActionState> {
+  try {
+    return await saveUpkkPchiRecord(formData);
+  } catch (error) {
+    console.error('Gagal simpan UPKK PCHI.', error);
+    return {
+      ok: false,
+      message: `Gagal simpan markah UPKK PCHI. Ralat: ${errorText(error)}`,
+    };
+  }
+}
+
+async function saveUpkkPchiRecord(formData: FormData): Promise<UpkkActionState> {
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -195,6 +231,6 @@ export async function saveUpkkPchi(
     };
   }
 
-  revalidatePath('/penilaian-upkk');
+  refreshUpkkPage();
   return { ok: true, message: 'Markah UPKK PCHI berjaya disimpan.' };
 }
