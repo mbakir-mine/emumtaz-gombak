@@ -118,6 +118,51 @@ a {
   transition: transform 0.16s ease, opacity 0.16s ease;
 }
 
+.upkk-assessment-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.upkk-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upkk-tab-button {
+  min-height: 38px;
+  border: 1px solid #d5e2d7;
+  border-radius: 8px;
+  background: #f6faf7;
+  color: var(--green);
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.upkk-tab-button:hover,
+.upkk-tab-button:focus-visible {
+  border-color: var(--green);
+  transform: translateY(-1px);
+}
+
+.upkk-tab-button.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 109, 63, 0.14);
+}
+
+.upkk-placeholder {
+  padding: 24px;
+}
+
 .upkk-panel {
   display: grid;
   gap: 18px;

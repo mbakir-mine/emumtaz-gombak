@@ -76,6 +76,8 @@ export type UpkkAmaliSolatRecord = {
   catatan: string | null;
 };
 
+export type UpkkPchiRecord = UpkkAmaliSolatRecord;
+
 export type StudentSchoolSummary = {
   kod_sekolah: string;
   nama_sekolah: string;
@@ -920,6 +922,23 @@ export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> 
 
   const { data, error } = await supabase
     .from('upkk_amali_solat_marks')
+    .select('id,kod_sekolah,tahun_akademik,class_id,student_id,scores,jumlah,status,catatan')
+    .order('updated_at', { ascending: false });
+
+  if (error) return [];
+
+  return (data ?? []).map((row: any) => ({
+    ...row,
+    scores: row.scores && typeof row.scores === 'object' ? row.scores : {},
+    jumlah: Number(row.jumlah ?? 0),
+  }));
+}
+
+export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('upkk_pchi_marks')
     .select('id,kod_sekolah,tahun_akademik,class_id,student_id,scores,jumlah,status,catatan')
     .order('updated_at', { ascending: false });
 

@@ -53,7 +53,7 @@ export const optionalSchoolModules = [
     navKey: 'upkkAssessment',
     label: 'Penilaian UPKK',
     shortLabel: 'UPKK',
-    description: 'Borang UPKK Amali Solat untuk murid Tahun 5.',
+    description: 'Borang UPKK Amali Solat, PCHI dan Al-Quran untuk murid Tahun 5.',
   },
 ] as const;
 

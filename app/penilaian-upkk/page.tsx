@@ -5,29 +5,36 @@ import {
   getSchools,
   getStudents,
   getUpkkAmaliSolatMarks,
+  getUpkkPchiMarks,
 } from '@/lib/data';
-import UpkkAmaliSolatManager from './UpkkAmaliSolatManager';
+import UpkkAssessmentTabs from './UpkkAssessmentTabs';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PenilaianUpkkPage() {
-  const [schools, moduleAccesses, classes, students, records] = await Promise.all([
+  const [schools, moduleAccesses, classes, students, amaliRecords, pchiRecords] = await Promise.all([
     getSchools(),
     getSchoolModuleAccesses(),
     getClasses(),
     getStudents(),
     getUpkkAmaliSolatMarks(),
+    getUpkkPchiMarks(),
   ]);
 
   return (
-    <AppFrame title="Penilaian UPKK" subtitle="UPKK - Amali Solat Tahun 5." active="upkkAssessment">
-      <UpkkAmaliSolatManager
+    <AppFrame
+      title="Penilaian UPKK"
+      subtitle="UPKK Tahun 5: Amali Solat, PCHI dan Al-Quran."
+      active="upkkAssessment"
+    >
+      <UpkkAssessmentTabs
         schools={schools}
         moduleAccesses={moduleAccesses}
         classes={classes}
         students={students}
-        records={records}
+        amaliRecords={amaliRecords}
+        pchiRecords={pchiRecords}
       />
     </AppFrame>
   );
