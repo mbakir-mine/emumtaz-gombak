@@ -12,15 +12,28 @@ import UpkkAssessmentTabs from './UpkkAssessmentTabs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function PenilaianUpkkPage() {
-  const [schools, moduleAccesses, classes, students, amaliRecords, pchiRecords] = await Promise.all([
+function loadUpkkData() {
+  return Promise.all([
     getSchools(),
     getSchoolModuleAccesses(),
     getClasses(),
     getStudents(),
     getUpkkAmaliSolatMarks(),
     getUpkkPchiMarks(),
-  ]);
+  ] as const);
+}
+
+export default async function PenilaianUpkkPage() {
+  let data: Awaited<ReturnType<typeof loadUpkkData>>;
+
+  try {
+    data = await loadUpkkData();
+  } catch (error) {
+    console.error('Gagal memuatkan data Penilaian UPKK.', error);
+    data = [[], [], [], [], [], []];
+  }
+
+  const [schools, moduleAccesses, classes, students, amaliRecords, pchiRecords] = data;
 
   return (
     <AppFrame

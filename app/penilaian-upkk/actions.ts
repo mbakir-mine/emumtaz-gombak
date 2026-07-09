@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { calculateUpkkAmaliTotal, UPKK_AMALI_SOLAT_ITEMS } from '@/lib/upkkAmaliSolat';
 import { calculateUpkkPchiTotal, UPKK_PCHI_ITEMS } from '@/lib/upkkPchi';
@@ -31,14 +30,6 @@ function readScore(value: FormDataEntryValue | null, max: number) {
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : 'Ralat tidak dijangka.';
-}
-
-function refreshUpkkPage() {
-  try {
-    revalidatePath('/penilaian-upkk');
-  } catch (error) {
-    console.error('Gagal refresh halaman Penilaian UPKK selepas simpan.', error);
-  }
 }
 
 export async function saveUpkkAmaliSolat(
@@ -134,7 +125,6 @@ async function saveUpkkAmaliSolatRecord(formData: FormData): Promise<UpkkActionS
     };
   }
 
-  refreshUpkkPage();
   return { ok: true, message: 'Markah UPKK Amali Solat berjaya disimpan.' };
 }
 
@@ -231,6 +221,5 @@ async function saveUpkkPchiRecord(formData: FormData): Promise<UpkkActionState> 
     };
   }
 
-  refreshUpkkPage();
   return { ok: true, message: 'Markah UPKK PCHI berjaya disimpan.' };
 }
