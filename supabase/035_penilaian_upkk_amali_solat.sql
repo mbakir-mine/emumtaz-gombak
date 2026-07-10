@@ -33,6 +33,20 @@ create table if not exists public.upkk_amali_solat_marks (
   unique (tahun_akademik, student_id)
 );
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'upkk_amali_solat_marks_year_student_key'
+      and conrelid = 'public.upkk_amali_solat_marks'::regclass
+  ) then
+    alter table public.upkk_amali_solat_marks
+      add constraint upkk_amali_solat_marks_year_student_key
+      unique (tahun_akademik, student_id);
+  end if;
+end $$;
+
 create index if not exists idx_upkk_amali_school_year
   on public.upkk_amali_solat_marks (kod_sekolah, tahun_akademik);
 

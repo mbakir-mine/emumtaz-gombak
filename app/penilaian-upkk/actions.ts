@@ -32,6 +32,47 @@ function errorText(error: unknown) {
   return error instanceof Error ? error.message : 'Ralat tidak dijangka.';
 }
 
+type UpkkMarkPayload = {
+  kod_sekolah: string;
+  tahun_akademik: number;
+  class_id: string;
+  student_id: string;
+  scores: Record<string, number>;
+  jumlah: number;
+  status: 'DRAF' | 'LENGKAP';
+  updated_at: string;
+};
+
+async function saveUpkkMarkRecord(
+  tableName: 'upkk_amali_solat_marks' | 'upkk_pchi_marks',
+  payload: UpkkMarkPayload,
+) {
+  if (!supabase) {
+    throw new Error('Supabase belum disambungkan.');
+  }
+
+  const { data: existingRecord, error: lookupError } = await supabase
+    .from(tableName)
+    .select('id')
+    .eq('tahun_akademik', payload.tahun_akademik)
+    .eq('student_id', payload.student_id)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(lookupError.message);
+  }
+
+  const query = existingRecord?.id
+    ? supabase.from(tableName).update(payload).eq('id', existingRecord.id)
+    : supabase.from(tableName).insert(payload);
+
+  const { error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function saveUpkkAmaliSolat(
   _previousState: UpkkActionState,
   formData: FormData,
@@ -104,8 +145,8 @@ async function saveUpkkAmaliSolatRecord(formData: FormData): Promise<UpkkActionS
   }
 
   const jumlah = calculateUpkkAmaliTotal(scores);
-  const { error } = await supabase.from('upkk_amali_solat_marks').upsert(
-    {
+  try {
+    await saveUpkkMarkRecord('upkk_amali_solat_marks', {
       kod_sekolah: kodSekolah,
       tahun_akademik: tahunAkademik,
       class_id: classId,
@@ -114,14 +155,11 @@ async function saveUpkkAmaliSolatRecord(formData: FormData): Promise<UpkkActionS
       jumlah,
       status: jumlah > 0 ? 'LENGKAP' : 'DRAF',
       updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'tahun_akademik,student_id' },
-  );
-
-  if (error) {
+    });
+  } catch (error) {
     return {
       ok: false,
-      message: `Gagal simpan markah UPKK. Jalankan SQL 035_penilaian_upkk_amali_solat.sql dahulu. Ralat: ${error.message}`,
+      message: `Gagal simpan markah UPKK Amali Solat. Ralat: ${errorText(error)}`,
     };
   }
 
@@ -200,8 +238,8 @@ async function saveUpkkPchiRecord(formData: FormData): Promise<UpkkActionState> 
   }
 
   const jumlah = calculateUpkkPchiTotal(scores);
-  const { error } = await supabase.from('upkk_pchi_marks').upsert(
-    {
+  try {
+    await saveUpkkMarkRecord('upkk_pchi_marks', {
       kod_sekolah: kodSekolah,
       tahun_akademik: tahunAkademik,
       class_id: classId,
@@ -210,14 +248,11 @@ async function saveUpkkPchiRecord(formData: FormData): Promise<UpkkActionState> 
       jumlah,
       status: jumlah > 0 ? 'LENGKAP' : 'DRAF',
       updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'tahun_akademik,student_id' },
-  );
-
-  if (error) {
+    });
+  } catch (error) {
     return {
       ok: false,
-      message: `Gagal simpan markah UPKK PCHI. Jalankan SQL 036_penilaian_upkk_pchi.sql dahulu. Ralat: ${error.message}`,
+      message: `Gagal simpan markah UPKK PCHI. Ralat: ${errorText(error)}`,
     };
   }
 

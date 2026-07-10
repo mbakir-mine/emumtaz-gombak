@@ -196,9 +196,15 @@ export const UPKK_AMALI_SOLAT_ITEMS = UPKK_AMALI_SOLAT_SECTIONS.flatMap((section
   ),
 );
 
-export function calculateUpkkAmaliTotal(scores: Record<string, number>) {
+function normalizeScoreValue(value: unknown) {
+  const numericValue =
+    typeof value === 'string' ? Number(value.trim().replace(',', '.')) : Number(value ?? 0);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+export function calculateUpkkAmaliTotal(scores: Record<string, unknown>) {
   return UPKK_AMALI_SOLAT_ITEMS.reduce((total, item) => {
-    const rawValue = Number(scores[item.code] ?? 0);
+    const rawValue = normalizeScoreValue(scores[item.code]);
     const score = Number.isFinite(rawValue) ? Math.min(item.max, Math.max(0, rawValue)) : 0;
     return total + score;
   }, 0);

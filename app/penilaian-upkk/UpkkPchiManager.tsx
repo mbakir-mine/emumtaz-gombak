@@ -23,9 +23,15 @@ function isActive(status: string | null | undefined) {
   return (status ?? '').toUpperCase() === 'AKTIF';
 }
 
-function formatNumber(value: number) {
-  if (!Number.isFinite(value)) return '0';
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, '');
+function toFiniteNumber(value: unknown) {
+  const numericValue =
+    typeof value === 'string' ? Number(value.trim().replace(',', '.')) : Number(value ?? 0);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function formatNumber(value: unknown) {
+  const numericValue = toFiniteNumber(value);
+  return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1).replace(/\.0$/, '');
 }
 
 function genderLabel(value: string | null) {
@@ -35,11 +41,15 @@ function genderLabel(value: string | null) {
   return value || '-';
 }
 
-function sectionScore(section: UpkkPchiSection, scores: Record<string, number>) {
+function scoreValue(scores: Record<string, unknown> | null | undefined, code: string) {
+  return toFiniteNumber(scores?.[code]);
+}
+
+function sectionScore(section: UpkkPchiSection, scores: Record<string, unknown> | null | undefined) {
   return section.groups.reduce(
     (sectionTotal, group) =>
       sectionTotal +
-      group.items.reduce((groupTotal, item) => groupTotal + Number(scores[item.code] ?? 0), 0),
+      group.items.reduce((groupTotal, item) => groupTotal + scoreValue(scores, item.code), 0),
     0,
   );
 }
@@ -175,9 +185,9 @@ export default function UpkkPchiManager({
   const selectedRecord = selectedStudent ? recordByStudent.get(selectedStudent.mykid) ?? null : null;
   const selectedScores = selectedRecord?.scores ?? {};
   const selectedTotal = calculateUpkkPchiTotal(selectedScores);
-  const completedCount = studentsInClass.filter((student) => Number(recordByStudent.get(student.mykid)?.jumlah ?? 0) > 0).length;
+  const completedCount = studentsInClass.filter((student) => toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah) > 0).length;
   const classAverage = completedCount
-    ? recordsForClass.reduce((total, record) => total + Number(record.jumlah ?? 0), 0) / completedCount
+    ? recordsForClass.reduce((total, record) => total + toFiniteNumber(record.jumlah), 0) / completedCount
     : 0;
 
   function handleDownloadExcel() {
@@ -215,7 +225,7 @@ export default function UpkkPchiManager({
           student.nama_murid,
           student.mykid,
           genderLabel(student.jantina),
-          ...exportItems.map((item) => (hasRecord ? formatNumber(Number(scores[item.code] ?? 0)) : '')),
+          ...exportItems.map((item) => (hasRecord ? formatNumber(scoreValue(scores, item.code)) : '')),
           ...UPKK_PCHI_SECTIONS.map((section) => (hasRecord ? formatNumber(sectionScore(section, scores)) : '')),
           hasRecord ? formatNumber(calculateUpkkPchiTotal(scores)) : '',
           record?.status ?? 'BELUM DINILAI',
@@ -338,7 +348,7 @@ export default function UpkkPchiManager({
                 </thead>
                 <tbody>
                   {studentsInClass.map((student, index) => {
-                    const total = Number(recordByStudent.get(student.mykid)?.jumlah ?? 0);
+                    const total = toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah);
                     return (
                       <tr key={student.mykid} className={student.mykid === selectedStudentId ? 'upkk-selected-row' : undefined}>
                         <td>{index + 1}</td>
@@ -414,7 +424,7 @@ export default function UpkkPchiManager({
                                 min="0"
                                 max={item.max}
                                 step="0.5"
-                                defaultValue={selectedScores[item.code] ?? ''}
+                                defaultValue={selectedScores[item.code] === undefined ? '' : formatNumber(selectedScores[item.code])}
                                 placeholder={`/${item.max}`}
                                 disabled={!selectedStudent || isPending}
                               />

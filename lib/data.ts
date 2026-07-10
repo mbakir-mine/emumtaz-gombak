@@ -917,6 +917,49 @@ export async function getStudents(): Promise<StudentRecord[]> {
   return fetchStudentsInBatches();
 }
 
+function normalizeUpkkNumber(value: unknown) {
+  const numeric = typeof value === 'string' ? Number(value.trim().replace(',', '.')) : Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function normalizeUpkkScores(rawScores: unknown): Record<string, number> {
+  let parsedScores = rawScores;
+
+  if (typeof parsedScores === 'string') {
+    try {
+      parsedScores = JSON.parse(parsedScores);
+    } catch {
+      return {};
+    }
+  }
+
+  if (!parsedScores || typeof parsedScores !== 'object' || Array.isArray(parsedScores)) {
+    return {};
+  }
+
+  return Object.entries(parsedScores as Record<string, unknown>).reduce<Record<string, number>>(
+    (scores, [code, value]) => {
+      scores[code] = normalizeUpkkNumber(value);
+      return scores;
+    },
+    {},
+  );
+}
+
+function normalizeUpkkRecord(row: any): UpkkAmaliSolatRecord {
+  return {
+    id: String(row?.id ?? ''),
+    kod_sekolah: String(row?.kod_sekolah ?? ''),
+    tahun_akademik: normalizeUpkkNumber(row?.tahun_akademik),
+    class_id: String(row?.class_id ?? ''),
+    student_id: String(row?.student_id ?? ''),
+    scores: normalizeUpkkScores(row?.scores),
+    jumlah: normalizeUpkkNumber(row?.jumlah),
+    status: String(row?.status ?? 'DRAF'),
+    catatan: row?.catatan ?? null,
+  };
+}
+
 export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> {
   if (!supabase) return [];
 
@@ -927,11 +970,7 @@ export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> 
 
   if (error) return [];
 
-  return (data ?? []).map((row: any) => ({
-    ...row,
-    scores: row.scores && typeof row.scores === 'object' ? row.scores : {},
-    jumlah: Number(row.jumlah ?? 0),
-  }));
+  return (data ?? []).map(normalizeUpkkRecord);
 }
 
 export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
@@ -944,11 +983,7 @@ export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
 
   if (error) return [];
 
-  return (data ?? []).map((row: any) => ({
-    ...row,
-    scores: row.scores && typeof row.scores === 'object' ? row.scores : {},
-    jumlah: Number(row.jumlah ?? 0),
-  }));
+  return (data ?? []).map(normalizeUpkkRecord);
 }
 
 export async function getStudentsPage(options: StudentPageOptions = {}): Promise<StudentPageResult> {

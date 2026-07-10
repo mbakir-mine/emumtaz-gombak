@@ -183,9 +183,15 @@ export const UPKK_PCHI_ITEMS = UPKK_PCHI_SECTIONS.flatMap((section) =>
   ),
 );
 
-export function calculateUpkkPchiTotal(scores: Record<string, number>) {
+function normalizeScoreValue(value: unknown) {
+  const numericValue =
+    typeof value === 'string' ? Number(value.trim().replace(',', '.')) : Number(value ?? 0);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+export function calculateUpkkPchiTotal(scores: Record<string, unknown>) {
   return UPKK_PCHI_ITEMS.reduce((total, item) => {
-    const rawValue = Number(scores[item.code] ?? 0);
+    const rawValue = normalizeScoreValue(scores[item.code]);
     const score = Number.isFinite(rawValue) ? Math.min(item.max, Math.max(0, rawValue)) : 0;
     return total + score;
   }, 0);
