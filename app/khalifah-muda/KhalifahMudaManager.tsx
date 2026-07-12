@@ -156,12 +156,14 @@ export default function KhalifahMudaManager({
       if (record.record_kind === 'AKTIVITI_KELAS') {
         if (record.student_id && summary.has(record.student_id)) {
           const current = summary.get(record.student_id)!;
+          current.good += 1;
           current.points += record.points;
           if (!current.latest || record.record_date > current.latest) current.latest = record.record_date;
           return;
         }
 
         summary.forEach((current) => {
+          current.good += 1;
           current.points += record.points;
           if (!current.latest || record.record_date > current.latest) current.latest = record.record_date;
         });
