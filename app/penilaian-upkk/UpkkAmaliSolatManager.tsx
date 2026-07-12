@@ -97,6 +97,10 @@ function clampScoreInput(value: string, max: number) {
   return formatNumber(Math.min(max, Math.max(0, numericValue)));
 }
 
+function safeScoreValue(value: string | undefined, max: number) {
+  return formatNumber(Math.min(max, Math.max(0, toFiniteNumber(value))));
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -484,14 +488,26 @@ export default function UpkkAmaliSolatManager({
             </div>
 
             <form
-              key={`${selectedClassId}-${selectedStudentId}-${selectedRecord?.id ?? 'baharu'}`}
               action={formAction}
               className="upkk-form-card"
+              noValidate
             >
               <input type="hidden" name="kod_sekolah" value={selectedSchool} />
               <input type="hidden" name="tahun_akademik" value={selectedYear} />
               <input type="hidden" name="class_id" value={selectedClassId} />
               <input type="hidden" name="student_id" value={selectedStudentId} />
+              {UPKK_AMALI_SOLAT_SECTIONS.flatMap((section) =>
+                section.groups.flatMap((group) =>
+                  group.items.map((item) => (
+                    <input
+                      key={item.code}
+                      type="hidden"
+                      name={`score_${item.code}`}
+                      value={safeScoreValue(scoreDraft[item.code], item.max)}
+                    />
+                  )),
+                ),
+              )}
 
               <div className="upkk-form-head">
                 <div>
@@ -540,7 +556,6 @@ export default function UpkkAmaliSolatManager({
                                     <input
                                       className="upkk-score-input"
                                       type="number"
-                                      name={`score_${item.code}`}
                                       min="0"
                                       max={item.max}
                                       step="0.5"
