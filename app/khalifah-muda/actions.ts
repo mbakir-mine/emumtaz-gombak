@@ -53,6 +53,27 @@ async function getActiveClassStudents(classId: string, kodSekolah: string) {
   return data ?? [];
 }
 
+async function getKhalifahMudaIndicator(indicatorKey: string) {
+  const fallback = findKhalifahMudaIndicator(indicatorKey);
+  if (!supabase || !indicatorKey) return fallback;
+
+  const { data, error } = await supabase
+    .from('khalifah_muda_components')
+    .select('key,label,domain,kind,points,status')
+    .eq('key', indicatorKey)
+    .eq('status', 'AKTIF')
+    .maybeSingle();
+
+  if (error || !data) return fallback;
+  return {
+    key: data.key,
+    label: data.label,
+    domain: data.domain,
+    kind: data.kind,
+    points: Number(data.points ?? 0),
+  };
+}
+
 export async function createKhalifahMudaClassRecord(
   _previousState: KhalifahMudaActionState,
   formData: FormData,
@@ -65,7 +86,7 @@ export async function createKhalifahMudaClassRecord(
   const indicatorKey = readText(formData, 'indicator_key');
   const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
   const catatan = readText(formData, 'catatan');
-  const indicator = findKhalifahMudaIndicator(indicatorKey);
+  const indicator = await getKhalifahMudaIndicator(indicatorKey);
   const selectedStudentIds = new Set(formData.getAll('student_ids').map((value) => String(value)));
 
   if (!kodSekolah || !classId || !indicator || indicator.kind !== 'AKTIVITI_KELAS') {
@@ -125,7 +146,7 @@ export async function createKhalifahMudaStudentRecord(
   const indicatorKey = readText(formData, 'indicator_key');
   const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
   const catatan = readText(formData, 'catatan');
-  const indicator = findKhalifahMudaIndicator(indicatorKey);
+  const indicator = await getKhalifahMudaIndicator(indicatorKey);
 
   if (!kodSekolah || !classId || !studentId || !indicator || indicator.kind === 'AKTIVITI_KELAS') {
     return { ok: false, message: 'Pilih murid Tahun 6 dan indikator peristiwa.' };

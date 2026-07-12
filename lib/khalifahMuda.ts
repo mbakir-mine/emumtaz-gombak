@@ -4,6 +4,8 @@ export type KhalifahMudaIndicator = {
   domain: string;
   kind: 'POSITIF' | 'BIMBINGAN' | 'AKTIVITI_KELAS';
   points: number;
+  sort_order?: number;
+  status?: string;
 };
 
 export const KHALIFAH_MUDA_MODULE_KEY = 'KHALIFAH_MUDA';

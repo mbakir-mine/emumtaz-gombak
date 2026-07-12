@@ -91,6 +91,12 @@ export const navItems: NavItem[] = [
   },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
   { key: 'componentMarks', label: 'Komponen Markah', href: '/komponen-markah', roles: ['OWNER', 'ADMIN_DAERAH'] },
+  {
+    key: 'khalifahMudaComponents',
+    label: 'Komponen Khalifah Muda',
+    href: '/komponen-khalifah-muda',
+    roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'],
+  },
   { key: 'marks', label: 'Markah', href: '/markah', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'] },
   { key: 'reports', label: 'Laporan', href: '/laporan', roles: allRoles },
   { key: 'reportIndividual', label: 'Laporan Individu', href: '/laporan/individu', roles: allRoles },

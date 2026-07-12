@@ -1,5 +1,11 @@
 import { hasSupabaseEnv, supabase } from './supabase';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
+import {
+  khalifahMudaClassActivities,
+  khalifahMudaGuidanceIndicators,
+  khalifahMudaPositiveIndicators,
+  type KhalifahMudaIndicator,
+} from './khalifahMuda';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 import { gradePointForMark } from './subjects';
@@ -188,6 +194,12 @@ export type KhalifahMudaRecord = {
   recorded_by: string | null;
   created_at: string;
   nama_murid?: string | null;
+};
+
+export type KhalifahMudaComponent = KhalifahMudaIndicator & {
+  id?: string;
+  sort_order: number;
+  status: string;
 };
 
 export type TimetableSlot = {
@@ -1341,6 +1353,42 @@ export async function getKhalifahMudaRecords(): Promise<KhalifahMudaRecord[]> {
     recorded_by: item.recorded_by,
     created_at: item.created_at,
     nama_murid: Array.isArray(item.students) ? item.students[0]?.nama_murid : item.students?.nama_murid,
+  }));
+}
+
+function defaultKhalifahMudaComponents(): KhalifahMudaComponent[] {
+  return [
+    ...khalifahMudaClassActivities,
+    ...khalifahMudaPositiveIndicators,
+    ...khalifahMudaGuidanceIndicators,
+  ].map((item, index) => ({
+    ...item,
+    sort_order: index + 1,
+    status: 'AKTIF',
+  }));
+}
+
+export async function getKhalifahMudaComponents(): Promise<KhalifahMudaComponent[]> {
+  if (!supabase) return defaultKhalifahMudaComponents();
+
+  const { data, error } = await supabase
+    .from('khalifah_muda_components')
+    .select('id,key,label,domain,kind,points,sort_order,status')
+    .order('kind')
+    .order('sort_order')
+    .order('label');
+
+  if (error) return defaultKhalifahMudaComponents();
+
+  return ((data ?? []) as any[]).map((item) => ({
+    id: item.id,
+    key: item.key,
+    label: item.label,
+    domain: item.domain,
+    kind: item.kind,
+    points: Number(item.points ?? 0),
+    sort_order: Number(item.sort_order ?? 0),
+    status: item.status ?? 'AKTIF',
   }));
 }
 

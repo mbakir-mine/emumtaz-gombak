@@ -481,6 +481,60 @@ a {
   color: #dc2626;
 }
 
+.khalifah-component-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.khalifah-component-add,
+.khalifah-component-row {
+  display: grid;
+  gap: 10px;
+}
+
+.khalifah-component-add {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
+  align-items: end;
+  border: 1px dashed #b9d6c2;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.khalifah-component-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.khalifah-component-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.khalifah-component-list {
+  display: grid;
+  gap: 10px;
+}
+
+.khalifah-component-row {
+  grid-template-columns: minmax(180px, 1.3fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) 90px 90px 120px 140px auto;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.khalifah-component-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.khalifah-component-row .form-success,
+.khalifah-component-row .form-message,
+.khalifah-component-add .form-success,
+.khalifah-component-add .form-message {
+  grid-column: 1 / -1;
+}
+
 .khalifah-pill {
   display: inline-flex;
   align-items: center;

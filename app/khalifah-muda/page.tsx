@@ -1,6 +1,7 @@
 import AppFrame from '../ui/AppFrame';
 import {
   getClasses,
+  getKhalifahMudaComponents,
   getKhalifahMudaRecords,
   getSchoolModuleAccesses,
   getSchools,
@@ -12,12 +13,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function KhalifahMudaPage() {
-  const [schools, moduleAccesses, classes, students, records] = await Promise.all([
+  const [schools, moduleAccesses, classes, students, records, components] = await Promise.all([
     getSchools(),
     getSchoolModuleAccesses(),
     getClasses(),
     getStudents(),
     getKhalifahMudaRecords(),
+    getKhalifahMudaComponents(),
   ]);
 
   return (
@@ -32,6 +34,7 @@ export default async function KhalifahMudaPage() {
         classes={classes}
         students={students}
         records={records}
+        components={components}
       />
     </AppFrame>
   );

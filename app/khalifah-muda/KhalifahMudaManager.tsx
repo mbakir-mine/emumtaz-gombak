@@ -1,13 +1,10 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
-import type { ClassRecord, KhalifahMudaRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
+import type { ClassRecord, KhalifahMudaComponent, KhalifahMudaRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
 import {
   KHALIFAH_MUDA_MODULE_KEY,
   KHALIFAH_MUDA_YEAR,
-  khalifahMudaClassActivities,
-  khalifahMudaGuidanceIndicators,
-  khalifahMudaPositiveIndicators,
 } from '@/lib/khalifahMuda';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeSchools } from '../ui/scopedData';
@@ -66,12 +63,14 @@ export default function KhalifahMudaManager({
   classes,
   students,
   records,
+  components,
 }: {
   schools: School[];
   moduleAccesses: SchoolModuleAccess[];
   classes: ClassRecord[];
   students: StudentRecord[];
   records: KhalifahMudaRecord[];
+  components: KhalifahMudaComponent[];
 }) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -152,6 +151,19 @@ export default function KhalifahMudaManager({
   const classRecords = useMemo(
     () => records.filter((record) => record.kod_sekolah === selectedSchool && record.class_id === selectedClassId),
     [records, selectedClassId, selectedSchool],
+  );
+  const activeComponents = useMemo(() => components.filter((component) => isActive(component.status)), [components]);
+  const classActivities = useMemo(
+    () => activeComponents.filter((component) => component.kind === 'AKTIVITI_KELAS').sort((a, b) => a.sort_order - b.sort_order),
+    [activeComponents],
+  );
+  const positiveIndicators = useMemo(
+    () => activeComponents.filter((component) => component.kind === 'POSITIF').sort((a, b) => a.sort_order - b.sort_order),
+    [activeComponents],
+  );
+  const guidanceIndicators = useMemo(
+    () => activeComponents.filter((component) => component.kind === 'BIMBINGAN').sort((a, b) => a.sort_order - b.sort_order),
+    [activeComponents],
   );
 
   const studentSummary = useMemo(() => {
@@ -339,7 +351,7 @@ export default function KhalifahMudaManager({
               <label>
                 Aktiviti
                 <select name="indicator_key" required>
-                  {khalifahMudaClassActivities.map((indicator) => (
+                  {classActivities.map((indicator) => (
                     <option key={indicator.key} value={indicator.key}>
                       {indicator.label}
                     </option>
@@ -403,14 +415,14 @@ export default function KhalifahMudaManager({
                 Indikator
                 <select name="indicator_key" required>
                   <optgroup label="Penghargaan">
-                    {khalifahMudaPositiveIndicators.map((indicator) => (
+                    {positiveIndicators.map((indicator) => (
                       <option key={indicator.key} value={indicator.key}>
                         {indicator.label}
                       </option>
                     ))}
                   </optgroup>
                   <optgroup label="Perlu Bimbingan">
-                    {khalifahMudaGuidanceIndicators.map((indicator) => (
+                    {guidanceIndicators.map((indicator) => (
                       <option key={indicator.key} value={indicator.key}>
                         {indicator.label}
                       </option>
