@@ -99,7 +99,7 @@ export default function KhalifahMudaManager({
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedSummaryStudentId, setSelectedSummaryStudentId] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'recent'>('summary');
+  const [activeTab, setActiveTab] = useState<'classRecord' | 'studentRecord' | 'summary' | 'recent'>('recent');
   const today = new Date().toISOString().slice(0, 10);
   const [classState, classAction, classPending] = useActionState(createKhalifahMudaClassRecord, initialActionState);
   const [studentState, studentAction, studentPending] = useActionState(createKhalifahMudaStudentRecord, initialActionState);
@@ -293,6 +293,20 @@ export default function KhalifahMudaManager({
         <>
           <div className="khalifah-tabs">
             <button
+              className={activeTab === 'classRecord' ? 'khalifah-tab active' : 'khalifah-tab'}
+              type="button"
+              onClick={() => setActiveTab('classRecord')}
+            >
+              Rekod Aktiviti Kelas
+            </button>
+            <button
+              className={activeTab === 'studentRecord' ? 'khalifah-tab active' : 'khalifah-tab'}
+              type="button"
+              onClick={() => setActiveTab('studentRecord')}
+            >
+              Rekod Individu
+            </button>
+            <button
               className={activeTab === 'summary' ? 'khalifah-tab active' : 'khalifah-tab'}
               type="button"
               onClick={() => setActiveTab('summary')}
@@ -309,6 +323,112 @@ export default function KhalifahMudaManager({
           </div>
 
           <section className="khalifah-tab-panel">
+            {activeTab === 'classRecord' ? (
+              <form action={classAction} className="khalifah-tab-form">
+              <div>
+                <h3>Rekod Aktiviti Kelas</h3>
+                <p className="table-note">Rekod secara pukal. Tidak perlu klik semua murid satu persatu.</p>
+              </div>
+              <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+              <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
+              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
+              <label>
+                Tarikh
+                <input name="record_date" type="date" defaultValue={today} />
+              </label>
+              <label>
+                Aktiviti
+                <select name="indicator_key" required>
+                  {khalifahMudaClassActivities.map((indicator) => (
+                    <option key={indicator.key} value={indicator.key}>
+                      {indicator.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Catatan Ringkas
+                <input name="catatan" placeholder="Contoh: Dilaksanakan selepas bacaan doa" />
+              </label>
+              <fieldset className="khalifah-attendance-field">
+                <legend>Murid Hadir</legend>
+                <div className="khalifah-attendance-list">
+                  {classStudents.length === 0 ? (
+                    <p className="empty">Tiada murid aktif dalam kelas ini.</p>
+                  ) : (
+                    classStudents.map((student) => (
+                      <label key={student.id} className="khalifah-attendance-option">
+                        <input name="student_ids" type="checkbox" value={student.id} defaultChecked />
+                        <span>{student.nama_murid}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </fieldset>
+              <button className="button" type="submit" disabled={!selectedClass || classPending}>
+                {classPending ? 'Menyimpan...' : 'Simpan Aktiviti Kelas'}
+              </button>
+              {classState.message && <p className={classState.ok ? 'form-success' : 'form-message'}>{classState.message}</p>}
+              </form>
+            ) : null}
+
+            {activeTab === 'studentRecord' ? (
+              <form action={studentAction} className="khalifah-tab-form">
+              <div>
+                <h3>Rekod Peristiwa Murid</h3>
+                <p className="table-note">Rekod perkara positif atau perkara yang memerlukan bimbingan.</p>
+              </div>
+              <input type="hidden" name="kod_sekolah" value={selectedSchool} />
+              <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
+              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
+              <label>
+                Tarikh
+                <input name="record_date" type="date" defaultValue={today} />
+              </label>
+              <label>
+                Murid
+                <select name="student_id" value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)} required>
+                  {classStudents.length === 0 ? (
+                    <option value="">Tiada murid</option>
+                  ) : (
+                    classStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.nama_murid}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+              <label>
+                Indikator
+                <select name="indicator_key" required>
+                  <optgroup label="Penghargaan">
+                    {khalifahMudaPositiveIndicators.map((indicator) => (
+                      <option key={indicator.key} value={indicator.key}>
+                        {indicator.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Perlu Bimbingan">
+                    {khalifahMudaGuidanceIndicators.map((indicator) => (
+                      <option key={indicator.key} value={indicator.key}>
+                        {indicator.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </label>
+              <label>
+                Catatan Ringkas
+                <input name="catatan" placeholder="Contoh: Membantu rakan mengemas kelas" />
+              </label>
+              <button className="button" type="submit" disabled={!selectedStudentId || studentPending}>
+                {studentPending ? 'Menyimpan...' : 'Simpan Rekod Murid'}
+              </button>
+              {studentState.message && <p className={studentState.ok ? 'form-success' : 'form-message'}>{studentState.message}</p>}
+              </form>
+            ) : null}
+
             {activeTab === 'summary' ? (
               <>
                 <div className="panel-head module-subhead">
@@ -398,7 +518,9 @@ export default function KhalifahMudaManager({
                   </div>
                 ) : null}
               </>
-            ) : (
+            ) : null}
+
+            {activeTab === 'recent' ? (
               <>
                 <div className="panel-head module-subhead">
                   <h2>Rekod Terkini</h2>
@@ -437,112 +559,8 @@ export default function KhalifahMudaManager({
                   </div>
                 )}
               </>
-            )}
+            ) : null}
           </section>
-
-          <div className="khalifah-workspace">
-            <form action={classAction} className="khalifah-card">
-              <div>
-                <h3>Rekod Aktiviti Kelas</h3>
-                <p className="table-note">Rekod secara pukal. Tidak perlu klik semua murid satu persatu.</p>
-              </div>
-              <input type="hidden" name="kod_sekolah" value={selectedSchool} />
-              <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
-              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
-              <label>
-                Tarikh
-                <input name="record_date" type="date" defaultValue={today} />
-              </label>
-              <label>
-                Aktiviti
-                <select name="indicator_key" required>
-                  {khalifahMudaClassActivities.map((indicator) => (
-                    <option key={indicator.key} value={indicator.key}>
-                      {indicator.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Catatan Ringkas
-                <input name="catatan" placeholder="Contoh: Dilaksanakan selepas bacaan doa" />
-              </label>
-              <fieldset className="khalifah-attendance-field">
-                <legend>Murid Hadir</legend>
-                <div className="khalifah-attendance-list">
-                  {classStudents.length === 0 ? (
-                    <p className="empty">Tiada murid aktif dalam kelas ini.</p>
-                  ) : (
-                    classStudents.map((student) => (
-                      <label key={student.id} className="khalifah-attendance-option">
-                        <input name="student_ids" type="checkbox" value={student.id} defaultChecked />
-                        <span>{student.nama_murid}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </fieldset>
-              <button className="button" type="submit" disabled={!selectedClass || classPending}>
-                {classPending ? 'Menyimpan...' : 'Simpan Aktiviti Kelas'}
-              </button>
-              {classState.message && <p className={classState.ok ? 'form-success' : 'form-message'}>{classState.message}</p>}
-            </form>
-
-            <form action={studentAction} className="khalifah-card">
-              <div>
-                <h3>Rekod Peristiwa Murid</h3>
-                <p className="table-note">Rekod perkara positif atau perkara yang memerlukan bimbingan.</p>
-              </div>
-              <input type="hidden" name="kod_sekolah" value={selectedSchool} />
-              <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
-              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
-              <label>
-                Tarikh
-                <input name="record_date" type="date" defaultValue={today} />
-              </label>
-              <label>
-                Murid
-                <select name="student_id" value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)} required>
-                  {classStudents.length === 0 ? (
-                    <option value="">Tiada murid</option>
-                  ) : (
-                    classStudents.map((student) => (
-                      <option key={student.id} value={student.id}>
-                        {student.nama_murid}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
-              <label>
-                Indikator
-                <select name="indicator_key" required>
-                  <optgroup label="Penghargaan">
-                    {khalifahMudaPositiveIndicators.map((indicator) => (
-                      <option key={indicator.key} value={indicator.key}>
-                        {indicator.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Perlu Bimbingan">
-                    {khalifahMudaGuidanceIndicators.map((indicator) => (
-                      <option key={indicator.key} value={indicator.key}>
-                        {indicator.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </label>
-              <label>
-                Catatan Ringkas
-                <input name="catatan" placeholder="Contoh: Membantu rakan mengemas kelas" />
-              </label>
-              <button className="button" type="submit" disabled={!selectedStudentId || studentPending}>
-                {studentPending ? 'Menyimpan...' : 'Simpan Rekod Murid'}
-              </button>
-              {studentState.message && <p className={studentState.ok ? 'form-success' : 'form-message'}>{studentState.message}</p>}
-            </form>
-          </div>
 
         </>
       )}
