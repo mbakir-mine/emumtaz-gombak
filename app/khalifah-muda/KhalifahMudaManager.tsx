@@ -98,6 +98,7 @@ export default function KhalifahMudaManager({
   const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? selectableSchools[0]?.kod_sekolah ?? '');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedSummaryStudentId, setSelectedSummaryStudentId] = useState('');
   const today = new Date().toISOString().slice(0, 10);
   const [classState, classAction, classPending] = useActionState(createKhalifahMudaClassRecord, initialActionState);
   const [studentState, studentAction, studentPending] = useActionState(createKhalifahMudaStudentRecord, initialActionState);
@@ -142,7 +143,10 @@ export default function KhalifahMudaManager({
     if (!classStudents.some((student) => student.id === selectedStudentId)) {
       setSelectedStudentId(classStudents[0]?.id ?? '');
     }
-  }, [classStudents, selectedStudentId]);
+    if (selectedSummaryStudentId && !classStudents.some((student) => student.id === selectedSummaryStudentId)) {
+      setSelectedSummaryStudentId('');
+    }
+  }, [classStudents, selectedStudentId, selectedSummaryStudentId]);
 
   const classRecords = useMemo(
     () => records.filter((record) => record.kod_sekolah === selectedSchool && record.class_id === selectedClassId),
@@ -187,6 +191,19 @@ export default function KhalifahMudaManager({
       .map((record) => (record.student_id ? classActivityGroupKey(record) : record.id)),
   ).size;
   const observedCount = [...studentSummary.values()].filter((item) => item.good > 0 || item.guide > 0).length;
+  const selectedSummaryStudent = classStudents.find((student) => student.id === selectedSummaryStudentId) ?? null;
+  const selectedSummaryRecords = useMemo(
+    () =>
+      selectedSummaryStudent
+        ? classRecords.filter((record) => {
+            if (record.record_kind === 'AKTIVITI_KELAS') {
+              return record.student_id === selectedSummaryStudent.id || record.student_id === null;
+            }
+            return record.student_id === selectedSummaryStudent.id;
+          })
+        : [],
+    [classRecords, selectedSummaryStudent],
+  );
   const recentRecords = useMemo(() => {
     const grouped = new Map<string, RecentRecord>();
     const result: RecentRecord[] = [];
@@ -432,7 +449,15 @@ export default function KhalifahMudaManager({
                       return (
                         <tr key={student.id}>
                           <td>{index + 1}</td>
-                          <td><strong>{student.nama_murid}</strong></td>
+                          <td>
+                            <button
+                              className="khalifah-student-link"
+                              type="button"
+                              onClick={() => setSelectedSummaryStudentId(student.id)}
+                            >
+                              {student.nama_murid}
+                            </button>
+                          </td>
                           <td className="khalifah-good">{summary.good}</td>
                           <td className="khalifah-guide">{summary.guide}</td>
                           <td>{summary.points}</td>
@@ -443,6 +468,51 @@ export default function KhalifahMudaManager({
                   </tbody>
                 </table>
               </div>
+              {selectedSummaryStudent ? (
+                <div className="khalifah-detail-panel">
+                  <div className="panel-head module-subhead">
+                    <div>
+                      <h3>{selectedSummaryStudent.nama_murid}</h3>
+                      <p className="table-note">Rekod penghargaan dan bimbingan murid.</p>
+                    </div>
+                    <button className="button secondary" type="button" onClick={() => setSelectedSummaryStudentId('')}>
+                      Tutup
+                    </button>
+                  </div>
+                  {selectedSummaryRecords.length === 0 ? (
+                    <p className="empty">Belum ada rekod untuk murid ini.</p>
+                  ) : (
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Tarikh</th>
+                            <th>Jenis</th>
+                            <th>Indikator</th>
+                            <th>Mata</th>
+                            <th>Catatan</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedSummaryRecords.map((record) => (
+                            <tr key={record.id}>
+                              <td>{formatDate(record.record_date)}</td>
+                              <td>
+                                <span className={recordKindClass(record.record_kind)}>
+                                  {record.record_kind === 'AKTIVITI_KELAS' ? 'Penghargaan' : recordKindLabel(record.record_kind)}
+                                </span>
+                              </td>
+                              <td>{record.indicator_label}</td>
+                              <td>{record.points}</td>
+                              <td>{record.catatan ?? '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </section>
 
             <section className="khalifah-table-card">

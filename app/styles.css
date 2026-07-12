@@ -386,6 +386,36 @@ a {
   margin-top: 1px;
 }
 
+.khalifah-student-link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0;
+  text-align: left;
+}
+
+.khalifah-student-link:hover,
+.khalifah-student-link:focus {
+  color: var(--green);
+  text-decoration: underline;
+}
+
+.khalifah-detail-panel {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.khalifah-detail-panel h3 {
+  margin: 0 0 4px;
+}
+
 .khalifah-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
