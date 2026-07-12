@@ -139,6 +139,13 @@ export default function KhalifahMudaManager({
     const summary = new Map<string, { good: number; guide: number; points: number; latest: string | null }>();
     classStudents.forEach((student) => summary.set(student.id, { good: 0, guide: 0, points: 0, latest: null }));
     classRecords.forEach((record) => {
+      if (record.record_kind === 'AKTIVITI_KELAS') {
+        summary.forEach((current) => {
+          current.points += record.points;
+          if (!current.latest || record.record_date > current.latest) current.latest = record.record_date;
+        });
+        return;
+      }
       if (!record.student_id || !summary.has(record.student_id)) return;
       const current = summary.get(record.student_id)!;
       if (record.record_kind === 'POSITIF') current.good += 1;
