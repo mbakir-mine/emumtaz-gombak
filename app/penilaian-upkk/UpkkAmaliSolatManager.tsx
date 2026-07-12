@@ -54,6 +54,40 @@ function sectionScore(section: UpkkAmaliSection, scores: Record<string, unknown>
   );
 }
 
+function blankScoreDraft() {
+  const draft: Record<string, string> = {};
+  UPKK_AMALI_SOLAT_SECTIONS.forEach((section) => {
+    section.groups.forEach((group) => {
+      group.items.forEach((item) => {
+        draft[item.code] = '';
+      });
+    });
+  });
+  return draft;
+}
+
+function scoreDraftFromRecord(scores: Record<string, unknown> | null | undefined) {
+  const draft = blankScoreDraft();
+  Object.keys(draft).forEach((code) => {
+    if (scores?.[code] !== undefined) {
+      draft[code] = formatNumber(scores[code]);
+    }
+  });
+  return draft;
+}
+
+function scoresFromDraft(draft: Record<string, string>) {
+  const scores: Record<string, number> = {};
+  UPKK_AMALI_SOLAT_SECTIONS.forEach((section) => {
+    section.groups.forEach((group) => {
+      group.items.forEach((item) => {
+        scores[item.code] = toFiniteNumber(draft[item.code]);
+      });
+    });
+  });
+  return scores;
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -100,6 +134,7 @@ export default function UpkkAmaliSolatManager({
   const [selectedYear, setSelectedYear] = useState(years.includes(currentYear) ? currentYear : years[0] ?? currentYear);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [scoreDraft, setScoreDraft] = useState<Record<string, string>>(() => blankScoreDraft());
   const [actionState, formAction, isPending] = useActionState(saveUpkkAmaliSolat, initialUpkkActionState);
 
   useEffect(() => {
@@ -183,7 +218,11 @@ export default function UpkkAmaliSolatManager({
   );
 
   const selectedRecord = selectedStudent ? recordByStudent.get(selectedStudent.mykid) ?? null : null;
-  const selectedScores = selectedRecord?.scores ?? {};
+  useEffect(() => {
+    setScoreDraft(scoreDraftFromRecord(selectedRecord?.scores));
+  }, [selectedRecord, selectedStudentId]);
+
+  const selectedScores = useMemo(() => scoresFromDraft(scoreDraft), [scoreDraft]);
   const selectedTotal = calculateUpkkAmaliTotal(selectedScores);
   const completedCount = studentsInClass.filter((student) => toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah) > 0).length;
   const classAverage = completedCount
@@ -496,8 +535,12 @@ export default function UpkkAmaliSolatManager({
                                       min="0"
                                       max={item.max}
                                       step="0.5"
-                                      defaultValue={
-                                        selectedScores[item.code] === undefined ? '' : formatNumber(selectedScores[item.code])
+                                      value={scoreDraft[item.code] ?? ''}
+                                      onChange={(event) =>
+                                        setScoreDraft((currentDraft) => ({
+                                          ...currentDraft,
+                                          [item.code]: event.target.value,
+                                        }))
                                       }
                                       placeholder={`/${item.max}`}
                                       aria-label={`${item.code} ${item.label}`}
