@@ -112,6 +112,12 @@ function assessmentStatus(total: number, fullTotal: number) {
   return 'DALAM PROSES';
 }
 
+function assessmentStatusClass(status: string) {
+  if (status === 'DALAM PROSES') return 'upkk-status upkk-status-progress';
+  if (status === 'SELESAI') return 'upkk-status upkk-status-complete';
+  return 'upkk-status';
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -414,6 +420,7 @@ export default function UpkkPchiManager({
                   {studentsInClass.map((student, index) => {
                     const rowSelected = student.mykid === selectedStudentId;
                     const total = rowSelected ? selectedTotal : toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah);
+                    const status = assessmentStatus(total, UPKK_PCHI_TOTAL);
                     return (
                       <tr key={student.mykid} className={rowSelected ? 'upkk-selected-row' : undefined}>
                         <td>{index + 1}</td>
@@ -423,7 +430,9 @@ export default function UpkkPchiManager({
                           </button>
                         </td>
                         <td>{formatNumber(total)}</td>
-                        <td>{assessmentStatus(total, UPKK_PCHI_TOTAL)}</td>
+                        <td>
+                          <span className={assessmentStatusClass(status)}>{status}</span>
+                        </td>
                       </tr>
                     );
                   })}

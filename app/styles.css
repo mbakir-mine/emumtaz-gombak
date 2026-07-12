@@ -294,6 +294,19 @@ a {
   background: #f0faf2;
 }
 
+.upkk-status {
+  color: #111827;
+  font-weight: 700;
+}
+
+.upkk-status-progress {
+  color: #dc2626;
+}
+
+.upkk-status-complete {
+  color: var(--green);
+}
+
 .upkk-form-card {
   padding: 14px;
 }
