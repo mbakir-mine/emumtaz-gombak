@@ -88,6 +88,15 @@ function scoresFromDraft(draft: Record<string, string>) {
   return scores;
 }
 
+function clampScoreInput(value: string, max: number) {
+  if (value.trim() === '') return '';
+
+  const numericValue = Number(value.replace(',', '.'));
+  if (!Number.isFinite(numericValue)) return '';
+
+  return formatNumber(Math.min(max, Math.max(0, numericValue)));
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -539,7 +548,7 @@ export default function UpkkAmaliSolatManager({
                                       onChange={(event) =>
                                         setScoreDraft((currentDraft) => ({
                                           ...currentDraft,
-                                          [item.code]: event.target.value,
+                                          [item.code]: clampScoreInput(event.target.value, item.max),
                                         }))
                                       }
                                       placeholder={`/${item.max}`}
