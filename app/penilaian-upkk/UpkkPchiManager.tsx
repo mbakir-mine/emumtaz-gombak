@@ -59,6 +59,53 @@ function sectionScore(section: UpkkPchiSection, scores: Record<string, unknown> 
   );
 }
 
+function blankScoreDraft() {
+  const draft: Record<string, string> = {};
+  UPKK_PCHI_SECTIONS.forEach((section) => {
+    section.groups.forEach((group) => {
+      group.items.forEach((item) => {
+        draft[item.code] = '';
+      });
+    });
+  });
+  return draft;
+}
+
+function scoreDraftFromRecord(scores: Record<string, unknown> | null | undefined) {
+  const draft = blankScoreDraft();
+  Object.keys(draft).forEach((code) => {
+    if (scores?.[code] !== undefined) {
+      draft[code] = formatNumber(scores[code]);
+    }
+  });
+  return draft;
+}
+
+function scoresFromDraft(draft: Record<string, string>) {
+  const scores: Record<string, number> = {};
+  UPKK_PCHI_SECTIONS.forEach((section) => {
+    section.groups.forEach((group) => {
+      group.items.forEach((item) => {
+        scores[item.code] = toFiniteNumber(draft[item.code]);
+      });
+    });
+  });
+  return scores;
+}
+
+function clampScoreInput(value: string, max: number) {
+  if (value.trim() === '') return '';
+
+  const numericValue = Number(value.replace(',', '.'));
+  if (!Number.isFinite(numericValue)) return '';
+
+  return formatNumber(Math.min(max, Math.max(0, numericValue)));
+}
+
+function safeScoreValue(value: string | undefined, max: number) {
+  return formatNumber(Math.min(max, Math.max(0, toFiniteNumber(value))));
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -105,6 +152,7 @@ export default function UpkkPchiManager({
   const [selectedYear, setSelectedYear] = useState(years.includes(currentYear) ? currentYear : years[0] ?? currentYear);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [scoreDraft, setScoreDraft] = useState<Record<string, string>>(() => blankScoreDraft());
   const [actionState, formAction, isPending] = useActionState(saveUpkkPchi, initialUpkkActionState);
 
   useEffect(() => {
@@ -188,7 +236,11 @@ export default function UpkkPchiManager({
   );
 
   const selectedRecord = selectedStudent ? recordByStudent.get(selectedStudent.mykid) ?? null : null;
-  const selectedScores = selectedRecord?.scores ?? {};
+  useEffect(() => {
+    setScoreDraft(scoreDraftFromRecord(selectedRecord?.scores));
+  }, [selectedRecord, selectedStudentId]);
+
+  const selectedScores = useMemo(() => scoresFromDraft(scoreDraft), [scoreDraft]);
   const selectedTotal = calculateUpkkPchiTotal(selectedScores);
   const completedCount = studentsInClass.filter((student) => toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah) > 0).length;
   const classAverage = completedCount
@@ -370,11 +422,23 @@ export default function UpkkPchiManager({
               </table>
             </div>
 
-            <form action={formAction} className="upkk-form-card">
+            <form action={formAction} className="upkk-form-card" noValidate>
               <input type="hidden" name="kod_sekolah" value={selectedSchool} />
               <input type="hidden" name="tahun_akademik" value={selectedYear} />
               <input type="hidden" name="class_id" value={selectedClass.id} />
               <input type="hidden" name="student_id" value={selectedStudent?.mykid ?? ''} />
+              {UPKK_PCHI_SECTIONS.flatMap((section) =>
+                section.groups.flatMap((group) =>
+                  group.items.map((item) => (
+                    <input
+                      key={item.code}
+                      type="hidden"
+                      name={`score_${item.code}`}
+                      value={safeScoreValue(scoreDraft[item.code], item.max)}
+                    />
+                  )),
+                ),
+              )}
 
               <div className="upkk-form-head">
                 <div>
@@ -425,11 +489,16 @@ export default function UpkkPchiManager({
                               <input
                                 className="upkk-score-input"
                                 type="number"
-                                name={`score_${item.code}`}
                                 min="0"
                                 max={item.max}
                                 step="0.5"
-                                defaultValue={selectedScores[item.code] === undefined ? '' : formatNumber(selectedScores[item.code])}
+                                value={scoreDraft[item.code] ?? ''}
+                                onChange={(event) =>
+                                  setScoreDraft((currentDraft) => ({
+                                    ...currentDraft,
+                                    [item.code]: clampScoreInput(event.target.value, item.max),
+                                  }))
+                                }
                                 placeholder={`/${item.max}`}
                                 disabled={!selectedStudent || isPending}
                               />
