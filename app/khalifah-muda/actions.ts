@@ -94,12 +94,12 @@ export async function createKhalifahMudaClassRecord(
   }
 
   if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
-    return { ok: false, message: 'Sekolah ini belum diberi akses Modul Khalifah Muda.' };
+    return { ok: false, message: 'Sekolah ini belum diberi akses Modul IHAB.' };
   }
 
   const classRecord = await ensureYearSixClass(classId, kodSekolah);
   if (!classRecord) {
-    return { ok: false, message: 'Modul Khalifah Muda hanya untuk kelas Tahun 6 aktif.' };
+    return { ok: false, message: 'Modul IHAB hanya untuk kelas Tahun 6 aktif.' };
   }
 
   const classStudents = await getActiveClassStudents(classId, kodSekolah);
@@ -153,12 +153,12 @@ export async function createKhalifahMudaStudentRecord(
   }
 
   if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
-    return { ok: false, message: 'Sekolah ini belum diberi akses Modul Khalifah Muda.' };
+    return { ok: false, message: 'Sekolah ini belum diberi akses Modul IHAB.' };
   }
 
   const classRecord = await ensureYearSixClass(classId, kodSekolah);
   if (!classRecord) {
-    return { ok: false, message: 'Modul Khalifah Muda hanya untuk kelas Tahun 6 aktif.' };
+    return { ok: false, message: 'Modul IHAB hanya untuk kelas Tahun 6 aktif.' };
   }
 
   const { data: student, error: studentError } = await supabase

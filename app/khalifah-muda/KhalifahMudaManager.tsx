@@ -240,7 +240,7 @@ export default function KhalifahMudaManager({
   if (selectableSchools.length === 0) {
     return (
       <section className="panel optional-module-panel">
-        <h2>Modul Khalifah Muda belum diaktifkan</h2>
+        <h2>Modul IHAB belum diaktifkan</h2>
         <p className="table-note">
           Modul ini hanya boleh digunakan oleh sekolah yang diberi keizinan. Pentadbir Utama mempunyai akses tetap.
         </p>
@@ -252,7 +252,7 @@ export default function KhalifahMudaManager({
     <section className="panel optional-module-panel khalifah-panel">
       <div className="panel-head">
         <div>
-          <h2>Modul Khalifah Muda</h2>
+          <h2>Modul IHAB</h2>
           <p className="table-note">
             Rekod pemerhatian berasaskan peristiwa untuk murid Tahun {KHALIFAH_MUDA_YEAR}. Guru merekod perkara penting,
             sistem menyusun ringkasan perkembangan.
@@ -539,7 +539,7 @@ export default function KhalifahMudaManager({
                   <span>{recentRecords.length} rekod</span>
                 </div>
                 {recentRecords.length === 0 ? (
-                  <p className="empty">Belum ada rekod Khalifah Muda untuk kelas ini.</p>
+                  <p className="empty">Belum ada rekod IHAB untuk kelas ini.</p>
                 ) : (
                   <div className="table-scroll">
                     <table>
