@@ -9,7 +9,7 @@ import {
   type UpkkPchiSection,
 } from '@/lib/upkkPchi';
 import { useAccessProfile } from '../ui/AuthGate';
-import { initialUpkkActionState, saveUpkkPchi } from './actions';
+import { saveUpkkPchi, type UpkkActionState } from './actions';
 
 type UpkkPchiManagerProps = {
   schools: School[];
@@ -17,6 +17,11 @@ type UpkkPchiManagerProps = {
   classes: ClassRecord[];
   students: StudentRecord[];
   records: UpkkPchiRecord[];
+};
+
+const initialUpkkActionState: UpkkActionState = {
+  ok: false,
+  message: '',
 };
 
 function isActive(status: string | null | undefined) {

@@ -9,11 +9,6 @@ export type UpkkActionState = {
   message: string;
 };
 
-export const initialUpkkActionState: UpkkActionState = {
-  ok: false,
-  message: '',
-};
-
 function readText(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }

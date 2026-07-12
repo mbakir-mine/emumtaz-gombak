@@ -9,7 +9,7 @@ import {
   type UpkkAmaliSection,
 } from '@/lib/upkkAmaliSolat';
 import { useAccessProfile } from '../ui/AuthGate';
-import { initialUpkkActionState, saveUpkkAmaliSolat } from './actions';
+import { saveUpkkAmaliSolat, type UpkkActionState } from './actions';
 
 type UpkkAmaliSolatManagerProps = {
   schools: School[];
@@ -17,6 +17,11 @@ type UpkkAmaliSolatManagerProps = {
   classes: ClassRecord[];
   students: StudentRecord[];
   records: UpkkAmaliSolatRecord[];
+};
+
+const initialUpkkActionState: UpkkActionState = {
+  ok: false,
+  message: '',
 };
 
 function isActive(status: string | null | undefined) {
