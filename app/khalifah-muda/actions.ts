@@ -40,6 +40,19 @@ async function ensureYearSixClass(classId: string, kodSekolah: string) {
   return data;
 }
 
+async function getActiveClassStudents(classId: string, kodSekolah: string) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('students')
+    .select('id,kod_sekolah,class_id,nama_murid,status')
+    .eq('kod_sekolah', kodSekolah)
+    .eq('class_id', classId)
+    .eq('status', 'AKTIF');
+
+  if (error) return [];
+  return data ?? [];
+}
+
 export async function createKhalifahMudaClassRecord(
   _previousState: KhalifahMudaActionState,
   formData: FormData,
@@ -53,6 +66,7 @@ export async function createKhalifahMudaClassRecord(
   const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
   const catatan = readText(formData, 'catatan');
   const indicator = findKhalifahMudaIndicator(indicatorKey);
+  const selectedStudentIds = new Set(formData.getAll('student_ids').map((value) => String(value)));
 
   if (!kodSekolah || !classId || !indicator || indicator.kind !== 'AKTIVITI_KELAS') {
     return { ok: false, message: 'Lengkapkan sekolah, kelas Tahun 6 dan aktiviti kelas.' };
@@ -67,26 +81,35 @@ export async function createKhalifahMudaClassRecord(
     return { ok: false, message: 'Modul Khalifah Muda hanya untuk kelas Tahun 6 aktif.' };
   }
 
-  const { error } = await supabase.from('khalifah_muda_records').insert({
-    kod_sekolah: kodSekolah,
-    class_id: classId,
-    student_id: null,
-    record_date: recordDate,
-    record_scope: 'KELAS',
-    record_kind: indicator.kind,
-    domain: indicator.domain,
-    indicator_key: indicator.key,
-    indicator_label: indicator.label,
-    points: indicator.points,
-    catatan: catatan || null,
-  });
+  const classStudents = await getActiveClassStudents(classId, kodSekolah);
+  const selectedStudents = classStudents.filter((student) => selectedStudentIds.has(student.id));
+
+  if (selectedStudents.length === 0) {
+    return { ok: false, message: 'Tick sekurang-kurangnya seorang murid yang hadir.' };
+  }
+
+  const { error } = await supabase.from('khalifah_muda_records').insert(
+    selectedStudents.map((student) => ({
+      kod_sekolah: kodSekolah,
+      class_id: classId,
+      student_id: student.id,
+      record_date: recordDate,
+      record_scope: 'KELAS',
+      record_kind: indicator.kind,
+      domain: indicator.domain,
+      indicator_key: indicator.key,
+      indicator_label: indicator.label,
+      points: indicator.points,
+      catatan: catatan || null,
+    })),
+  );
 
   if (error) {
     return { ok: false, message: `Gagal simpan rekod kelas: ${error.message}` };
   }
 
   revalidatePath('/khalifah-muda');
-  return { ok: true, message: 'Rekod aktiviti kelas berjaya disimpan.' };
+  return { ok: true, message: `Rekod aktiviti kelas berjaya disimpan untuk ${selectedStudents.length} murid.` };
 }
 
 export async function createKhalifahMudaStudentRecord(

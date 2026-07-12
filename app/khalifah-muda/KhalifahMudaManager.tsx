@@ -46,6 +46,20 @@ function recordKindClass(kind: KhalifahMudaRecord['record_kind']) {
   return 'khalifah-pill';
 }
 
+type RecentRecord = KhalifahMudaRecord & {
+  participantCount?: number;
+};
+
+function classActivityGroupKey(record: KhalifahMudaRecord) {
+  return [
+    record.record_date,
+    record.indicator_key,
+    record.catatan ?? '',
+    record.points,
+    record.created_at,
+  ].join('|');
+}
+
 export default function KhalifahMudaManager({
   schools,
   moduleAccesses,
@@ -140,6 +154,13 @@ export default function KhalifahMudaManager({
     classStudents.forEach((student) => summary.set(student.id, { good: 0, guide: 0, points: 0, latest: null }));
     classRecords.forEach((record) => {
       if (record.record_kind === 'AKTIVITI_KELAS') {
+        if (record.student_id && summary.has(record.student_id)) {
+          const current = summary.get(record.student_id)!;
+          current.points += record.points;
+          if (!current.latest || record.record_date > current.latest) current.latest = record.record_date;
+          return;
+        }
+
         summary.forEach((current) => {
           current.points += record.points;
           if (!current.latest || record.record_date > current.latest) current.latest = record.record_date;
@@ -158,9 +179,39 @@ export default function KhalifahMudaManager({
 
   const positiveCount = classRecords.filter((record) => record.record_kind === 'POSITIF').length;
   const guidanceCount = classRecords.filter((record) => record.record_kind === 'BIMBINGAN').length;
-  const classActivityCount = classRecords.filter((record) => record.record_kind === 'AKTIVITI_KELAS').length;
+  const classActivityCount = new Set(
+    classRecords
+      .filter((record) => record.record_kind === 'AKTIVITI_KELAS')
+      .map((record) => (record.student_id ? classActivityGroupKey(record) : record.id)),
+  ).size;
   const observedCount = [...studentSummary.values()].filter((item) => item.good > 0 || item.guide > 0).length;
-  const recentRecords = classRecords.slice(0, 40);
+  const recentRecords = useMemo(() => {
+    const grouped = new Map<string, RecentRecord>();
+    const result: RecentRecord[] = [];
+
+    classRecords.forEach((record) => {
+      if (record.record_kind !== 'AKTIVITI_KELAS' || !record.student_id) {
+        result.push({
+          ...record,
+          participantCount: record.record_kind === 'AKTIVITI_KELAS' ? classStudents.length : undefined,
+        });
+        return;
+      }
+
+      const key = classActivityGroupKey(record);
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.participantCount = (existing.participantCount ?? 1) + 1;
+        return;
+      }
+
+      const groupedRecord = { ...record, participantCount: 1 };
+      grouped.set(key, groupedRecord);
+      result.push(groupedRecord);
+    });
+
+    return result.slice(0, 40);
+  }, [classRecords, classStudents.length]);
 
   if (selectableSchools.length === 0) {
     return (
@@ -278,6 +329,21 @@ export default function KhalifahMudaManager({
                 Catatan Ringkas
                 <input name="catatan" placeholder="Contoh: Dilaksanakan selepas bacaan doa" />
               </label>
+              <fieldset className="khalifah-attendance-field">
+                <legend>Murid Hadir</legend>
+                <div className="khalifah-attendance-list">
+                  {classStudents.length === 0 ? (
+                    <p className="empty">Tiada murid aktif dalam kelas ini.</p>
+                  ) : (
+                    classStudents.map((student) => (
+                      <label key={student.id} className="khalifah-attendance-option">
+                        <input name="student_ids" type="checkbox" value={student.id} defaultChecked />
+                        <span>{student.nama_murid}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </fieldset>
               <button className="button" type="submit" disabled={!selectedClass || classPending}>
                 {classPending ? 'Menyimpan...' : 'Simpan Aktiviti Kelas'}
               </button>
@@ -401,7 +467,11 @@ export default function KhalifahMudaManager({
                         <tr key={record.id}>
                           <td>{formatDate(record.record_date)}</td>
                           <td><span className={recordKindClass(record.record_kind)}>{recordKindLabel(record.record_kind)}</span></td>
-                          <td>{record.record_scope === 'KELAS' ? selectedClass?.nama_kelas ?? 'Kelas' : record.nama_murid ?? '-'}</td>
+                          <td>
+                            {record.record_scope === 'KELAS'
+                              ? `${selectedClass?.nama_kelas ?? 'Kelas'}${record.participantCount ? ` (${record.participantCount} murid)` : ''}`
+                              : record.nama_murid ?? '-'}
+                          </td>
                           <td>{record.indicator_label}</td>
                           <td>{record.catatan ?? '-'}</td>
                         </tr>
