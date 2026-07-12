@@ -106,6 +106,12 @@ function safeScoreValue(value: string | undefined, max: number) {
   return formatNumber(Math.min(max, Math.max(0, toFiniteNumber(value))));
 }
 
+function assessmentStatus(total: number, fullTotal: number) {
+  if (total <= 0) return 'BELUM DIUJI';
+  if (total >= fullTotal) return 'SELESAI';
+  return 'DALAM PROSES';
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -285,7 +291,7 @@ export default function UpkkAmaliSolatManager({
           ...exportItems.map((item) => (hasRecord ? formatNumber(scoreValue(scores, item.code)) : '')),
           ...UPKK_AMALI_SOLAT_SECTIONS.map((section) => (hasRecord ? formatNumber(sectionScore(section, scores)) : '')),
           hasRecord ? formatNumber(calculateUpkkAmaliTotal(scores)) : '',
-          toFiniteNumber(record?.jumlah) > 0 ? 'Dinilai' : 'Belum dinilai',
+          assessmentStatus(toFiniteNumber(record?.jumlah), UPKK_AMALI_SOLAT_TOTAL),
         ];
 
         return `<tr>${row
@@ -467,7 +473,7 @@ export default function UpkkAmaliSolatManager({
                       {studentsInClass.map((student, index) => {
                         const record = recordByStudent.get(student.mykid);
                         const rowSelected = student.mykid === selectedStudentId;
-                        const total = toFiniteNumber(record?.jumlah);
+                        const total = rowSelected ? selectedTotal : toFiniteNumber(record?.jumlah);
                         return (
                           <tr key={student.mykid} className={rowSelected ? 'upkk-selected-row' : undefined}>
                             <td>{index + 1}</td>
@@ -482,7 +488,7 @@ export default function UpkkAmaliSolatManager({
                             </td>
                             <td>{genderLabel(student.jantina)}</td>
                             <td>{formatNumber(total)}</td>
-                            <td>{total > 0 ? 'Dinilai' : 'Belum dinilai'}</td>
+                            <td>{assessmentStatus(total, UPKK_AMALI_SOLAT_TOTAL)}</td>
                           </tr>
                         );
                       })}

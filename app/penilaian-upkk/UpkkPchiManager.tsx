@@ -106,6 +106,12 @@ function safeScoreValue(value: string | undefined, max: number) {
   return formatNumber(Math.min(max, Math.max(0, toFiniteNumber(value))));
 }
 
+function assessmentStatus(total: number, fullTotal: number) {
+  if (total <= 0) return 'BELUM DIUJI';
+  if (total >= fullTotal) return 'SELESAI';
+  return 'DALAM PROSES';
+}
+
 function escapeExcelCell(value: string | number | null | undefined) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -285,7 +291,7 @@ export default function UpkkPchiManager({
           ...exportItems.map((item) => (hasRecord ? formatNumber(scoreValue(scores, item.code)) : '')),
           ...UPKK_PCHI_SECTIONS.map((section) => (hasRecord ? formatNumber(sectionScore(section, scores)) : '')),
           hasRecord ? formatNumber(calculateUpkkPchiTotal(scores)) : '',
-          record?.status ?? 'BELUM DINILAI',
+          assessmentStatus(toFiniteNumber(record?.jumlah), UPKK_PCHI_TOTAL),
         ];
         return `<tr>${row.map((value) => `<td>${escapeExcelCell(value)}</td>`).join('')}</tr>`;
       })
@@ -401,13 +407,15 @@ export default function UpkkPchiManager({
                     <th>BIL</th>
                     <th>NAMA MURID</th>
                     <th>JUMLAH</th>
+                    <th>STATUS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {studentsInClass.map((student, index) => {
-                    const total = toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah);
+                    const rowSelected = student.mykid === selectedStudentId;
+                    const total = rowSelected ? selectedTotal : toFiniteNumber(recordByStudent.get(student.mykid)?.jumlah);
                     return (
-                      <tr key={student.mykid} className={student.mykid === selectedStudentId ? 'upkk-selected-row' : undefined}>
+                      <tr key={student.mykid} className={rowSelected ? 'upkk-selected-row' : undefined}>
                         <td>{index + 1}</td>
                         <td>
                           <button className="upkk-student-button" type="button" onClick={() => setSelectedStudentId(student.mykid)}>
@@ -415,6 +423,7 @@ export default function UpkkPchiManager({
                           </button>
                         </td>
                         <td>{formatNumber(total)}</td>
+                        <td>{assessmentStatus(total, UPKK_PCHI_TOTAL)}</td>
                       </tr>
                     );
                   })}
