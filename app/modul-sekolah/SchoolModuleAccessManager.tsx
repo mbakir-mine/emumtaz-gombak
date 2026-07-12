@@ -3,7 +3,6 @@
 import { useActionState, useMemo, useState } from 'react';
 import type { School, SchoolModuleAccess } from '@/lib/data';
 import { optionalSchoolModules } from '@/lib/schoolModules';
-import { KHALIFAH_MUDA_LOCKED_ACCESS_MODULES } from '@/lib/khalifahMuda';
 import { updateSchoolModuleAccess, type SchoolModuleActionState } from './actions';
 
 const initialState: SchoolModuleActionState = {
@@ -51,17 +50,15 @@ function SchoolModuleRow({
           <input type="hidden" name="kod_sekolah" value={school.kod_sekolah} />
           <div className="module-checkbox-grid">
             {optionalSchoolModules.map((module) => (
-              KHALIFAH_MUDA_LOCKED_ACCESS_MODULES.some((key) => key === module.key) ? null : (
-                <label className="module-checkbox" key={module.key}>
-                  <input
-                    type="checkbox"
-                    name="module_keys"
-                    value={module.key}
-                    defaultChecked={accessMap.get(`${school.kod_sekolah}|${module.key}`) ?? false}
-                  />
-                  <span>{module.shortLabel}</span>
-                </label>
-              )
+              <label className="module-checkbox" key={module.key}>
+                <input
+                  type="checkbox"
+                  name="module_keys"
+                  value={module.key}
+                  defaultChecked={accessMap.get(`${school.kod_sekolah}|${module.key}`) ?? false}
+                />
+                <span>{module.shortLabel}</span>
+              </label>
             ))}
           </div>
           <button className="button table-action" type="submit">

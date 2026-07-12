@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { KHALIFAH_MUDA_LOCKED_ACCESS_MODULES } from '@/lib/khalifahMuda';
 import { optionalSchoolModules } from '@/lib/schoolModules';
 import { supabase } from '@/lib/supabase';
 
@@ -28,7 +27,6 @@ export async function updateSchoolModuleAccess(
   }
 
   const rows = optionalSchoolModules
-    .filter((module) => !KHALIFAH_MUDA_LOCKED_ACCESS_MODULES.some((key) => key === module.key))
     .map((module) => {
       const enabled = selectedModules.has(module.key);
 
@@ -49,7 +47,7 @@ export async function updateSchoolModuleAccess(
       return {
         ok: false,
         message:
-          'Jadual/constraint modul sekolah belum dikemaskini. Jalankan SQL 030_parent_access_module.sql di Supabase dahulu.',
+          'Jadual/constraint modul sekolah belum dikemaskini. Jalankan SQL 037_khalifah_muda_module.sql di Supabase dahulu.',
       };
     }
 

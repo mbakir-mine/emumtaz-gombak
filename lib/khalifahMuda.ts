@@ -10,7 +10,6 @@ export type KhalifahMudaIndicator = {
 
 export const KHALIFAH_MUDA_MODULE_KEY = 'KHALIFAH_MUDA';
 export const KHALIFAH_MUDA_YEAR = 6;
-export const KHALIFAH_MUDA_LOCKED_ACCESS_MODULES = [KHALIFAH_MUDA_MODULE_KEY] as const;
 
 export const khalifahMudaPositiveIndicators: KhalifahMudaIndicator[] = [
   { key: 'salam', label: 'Memberi salam', domain: 'Adab', kind: 'POSITIF', points: 1 },
