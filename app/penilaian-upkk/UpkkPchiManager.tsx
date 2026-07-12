@@ -360,7 +360,7 @@ export default function UpkkPchiManager({
           <select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)}>
             {yearFiveClasses.map((classRecord) => (
               <option key={classRecord.id} value={classRecord.id}>
-                Tahun {classRecord.tahun} - {classRecord.nama_kelas}
+                {classRecord.nama_kelas}
               </option>
             ))}
           </select>
