@@ -529,7 +529,7 @@ export default function UpkkPchiManager({
                 </div>
               ))}
 
-              <button className="upkk-submit-button" type="submit" disabled={!selectedStudent || isPending}>
+              <button className="button upkk-submit-button" type="submit" disabled={!selectedStudent || isPending}>
                 {isPending ? 'Menyimpan...' : 'Simpan Markah PCHI'}
               </button>
               {actionState.message ? (
