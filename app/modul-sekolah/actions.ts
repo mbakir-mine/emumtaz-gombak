@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { KHALIFAH_MUDA_LOCKED_ACCESS_MODULES } from '@/lib/khalifahMuda';
 import { optionalSchoolModules } from '@/lib/schoolModules';
 import { supabase } from '@/lib/supabase';
 
@@ -26,16 +27,18 @@ export async function updateSchoolModuleAccess(
     return { ok: false, message: 'Kod sekolah tidak lengkap.' };
   }
 
-  const rows = optionalSchoolModules.map((module) => {
-    const enabled = selectedModules.has(module.key);
+  const rows = optionalSchoolModules
+    .filter((module) => !KHALIFAH_MUDA_LOCKED_ACCESS_MODULES.some((key) => key === module.key))
+    .map((module) => {
+      const enabled = selectedModules.has(module.key);
 
-    return {
-      kod_sekolah: kodSekolah,
-      module_key: module.key,
-      enabled,
-      enabled_at: enabled ? new Date().toISOString() : null,
-    };
-  });
+      return {
+        kod_sekolah: kodSekolah,
+        module_key: module.key,
+        enabled,
+        enabled_at: enabled ? new Date().toISOString() : null,
+      };
+    });
 
   const { error } = await supabase.from('school_module_access').upsert(rows, {
     onConflict: 'kod_sekolah,module_key',

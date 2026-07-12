@@ -13,7 +13,8 @@ function readText(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }
 
-async function ensureModuleAccess(kodSekolah: string) {
+async function ensureModuleAccess(kodSekolah: string, accessRole: string) {
+  if (accessRole === 'OWNER') return true;
   if (!supabase) return false;
   const { data, error } = await supabase
     .from('school_module_access')
@@ -47,6 +48,7 @@ export async function createKhalifahMudaClassRecord(
 
   const kodSekolah = readText(formData, 'kod_sekolah');
   const classId = readText(formData, 'class_id');
+  const accessRole = readText(formData, 'access_role');
   const indicatorKey = readText(formData, 'indicator_key');
   const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
   const catatan = readText(formData, 'catatan');
@@ -56,7 +58,7 @@ export async function createKhalifahMudaClassRecord(
     return { ok: false, message: 'Lengkapkan sekolah, kelas Tahun 6 dan aktiviti kelas.' };
   }
 
-  if (!(await ensureModuleAccess(kodSekolah))) {
+  if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
     return { ok: false, message: 'Sekolah ini belum diberi akses Modul Khalifah Muda.' };
   }
 
@@ -96,6 +98,7 @@ export async function createKhalifahMudaStudentRecord(
   const kodSekolah = readText(formData, 'kod_sekolah');
   const classId = readText(formData, 'class_id');
   const studentId = readText(formData, 'student_id');
+  const accessRole = readText(formData, 'access_role');
   const indicatorKey = readText(formData, 'indicator_key');
   const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
   const catatan = readText(formData, 'catatan');
@@ -105,7 +108,7 @@ export async function createKhalifahMudaStudentRecord(
     return { ok: false, message: 'Pilih murid Tahun 6 dan indikator peristiwa.' };
   }
 
-  if (!(await ensureModuleAccess(kodSekolah))) {
+  if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
     return { ok: false, message: 'Sekolah ini belum diberi akses Modul Khalifah Muda.' };
   }
 

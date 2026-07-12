@@ -73,7 +73,11 @@ export default function KhalifahMudaManager({
   const selectableSchools = useMemo(
     () =>
       scopeSchools(profile, schools)
-        .filter((school) => isActive(school.status) && enabledSchoolCodes.has(school.kod_sekolah))
+        .filter(
+          (school) =>
+            isActive(school.status) &&
+            (profile?.role === 'OWNER' || enabledSchoolCodes.has(school.kod_sekolah)),
+        )
         .sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah)),
     [enabledSchoolCodes, profile, schools],
   );
@@ -156,7 +160,7 @@ export default function KhalifahMudaManager({
       <section className="panel optional-module-panel">
         <h2>Modul Khalifah Muda belum diaktifkan</h2>
         <p className="table-note">
-          Modul ini hanya boleh digunakan oleh sekolah yang diberi keizinan melalui halaman Akses Modul Sekolah.
+          Modul ini hanya boleh digunakan oleh sekolah yang diberi keizinan. Pentadbir Utama mempunyai akses tetap.
         </p>
       </section>
     );
@@ -248,6 +252,7 @@ export default function KhalifahMudaManager({
               </div>
               <input type="hidden" name="kod_sekolah" value={selectedSchool} />
               <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
+              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
               <label>
                 Tarikh
                 <input name="record_date" type="date" defaultValue={today} />
@@ -279,6 +284,7 @@ export default function KhalifahMudaManager({
               </div>
               <input type="hidden" name="kod_sekolah" value={selectedSchool} />
               <input type="hidden" name="class_id" value={selectedClass?.id ?? ''} />
+              <input type="hidden" name="access_role" value={profile?.role ?? ''} />
               <label>
                 Tarikh
                 <input name="record_date" type="date" defaultValue={today} />
