@@ -311,6 +311,84 @@ a {
   padding: 14px;
 }
 
+.khalifah-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.khalifah-filter-grid {
+  margin-top: 0;
+}
+
+.khalifah-summary-grid {
+  margin-top: 0;
+}
+
+.khalifah-workspace {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.khalifah-card,
+.khalifah-table-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.khalifah-card {
+  display: grid;
+  gap: 12px;
+}
+
+.khalifah-card h3 {
+  margin: 0 0 4px;
+}
+
+.khalifah-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 14px;
+}
+
+.khalifah-good,
+.khalifah-guide {
+  font-weight: 800;
+}
+
+.khalifah-good {
+  color: var(--green);
+}
+
+.khalifah-guide {
+  color: #dc2626;
+}
+
+.khalifah-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: #eef4ff;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.khalifah-pill-good {
+  background: var(--green-2);
+  color: var(--green);
+}
+
+.khalifah-pill-guide {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .upkk-form-head {
   margin-bottom: 12px;
 }

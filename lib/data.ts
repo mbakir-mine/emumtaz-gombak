@@ -172,6 +172,24 @@ export type AmalKhairRecord = {
   nama_murid?: string | null;
 };
 
+export type KhalifahMudaRecord = {
+  id: string;
+  kod_sekolah: string;
+  class_id: string;
+  student_id: string | null;
+  record_date: string;
+  record_scope: 'KELAS' | 'INDIVIDU';
+  record_kind: 'AKTIVITI_KELAS' | 'POSITIF' | 'BIMBINGAN';
+  domain: string;
+  indicator_key: string;
+  indicator_label: string;
+  points: number;
+  catatan: string | null;
+  recorded_by: string | null;
+  created_at: string;
+  nama_murid?: string | null;
+};
+
 export type TimetableSlot = {
   id: string;
   kod_sekolah: string;
@@ -1284,6 +1302,44 @@ export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
     kategori: Array.isArray(item.amal_khair_categories)
       ? item.amal_khair_categories[0]?.nama_kategori
       : item.amal_khair_categories?.nama_kategori,
+    nama_murid: Array.isArray(item.students) ? item.students[0]?.nama_murid : item.students?.nama_murid,
+  }));
+}
+
+export async function getKhalifahMudaRecords(): Promise<KhalifahMudaRecord[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('khalifah_muda_records')
+    .select(
+      `
+      id,kod_sekolah,class_id,student_id,record_date,record_scope,record_kind,domain,
+      indicator_key,indicator_label,points,catatan,recorded_by,created_at,status,
+      students(nama_murid)
+    `,
+    )
+    .eq('status', 'AKTIF')
+    .order('record_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1000);
+
+  if (error) return [];
+
+  return (data ?? []).map((item: any) => ({
+    id: item.id,
+    kod_sekolah: item.kod_sekolah,
+    class_id: item.class_id,
+    student_id: item.student_id,
+    record_date: item.record_date,
+    record_scope: item.record_scope,
+    record_kind: item.record_kind,
+    domain: item.domain,
+    indicator_key: item.indicator_key,
+    indicator_label: item.indicator_label,
+    points: Number(item.points ?? 0),
+    catatan: item.catatan,
+    recorded_by: item.recorded_by,
+    created_at: item.created_at,
     nama_murid: Array.isArray(item.students) ? item.students[0]?.nama_murid : item.students?.nama_murid,
   }));
 }

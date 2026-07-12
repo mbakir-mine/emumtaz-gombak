@@ -55,6 +55,13 @@ export const optionalSchoolModules = [
     shortLabel: 'UPKK',
     description: 'Borang UPKK Amali Solat, PCHI dan Al-Quran untuk murid Tahun 5.',
   },
+  {
+    key: 'KHALIFAH_MUDA',
+    navKey: 'khalifahMuda',
+    label: 'Khalifah Muda',
+    shortLabel: 'Khalifah',
+    description: 'Rekod tarbiah, pemerhatian sahsiah dan bimbingan murid Tahun 6.',
+  },
 ] as const;
 
 export type OptionalSchoolModuleKey = (typeof optionalSchoolModules)[number]['key'];

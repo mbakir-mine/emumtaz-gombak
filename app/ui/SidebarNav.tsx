@@ -24,7 +24,7 @@ const groupedMenu = [
     key: 'optionalModules',
     label: 'Modul Sekolah',
     href: '/kehadiran',
-    items: ['calendar', 'attendance', 'amalKhair', 'pbd', 'upkkAssessment', 'timetable', 'rph'],
+    items: ['calendar', 'attendance', 'amalKhair', 'pbd', 'upkkAssessment', 'khalifahMuda', 'timetable', 'rph'],
   },
   {
     key: 'scoring',
@@ -73,6 +73,7 @@ const childLabels: Record<string, string> = {
   amalKhair: 'Amal Khair',
   pbd: 'PBD',
   upkkAssessment: 'Penilaian UPKK',
+  khalifahMuda: 'Khalifah Muda',
   timetable: 'Jadual Waktu',
   rph: 'RPH AI',
   setup: 'Akses Markah',

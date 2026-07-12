@@ -69,6 +69,13 @@ export const navItems: NavItem[] = [
     moduleKey: 'PENILAIAN_UPKK',
   },
   {
+    key: 'khalifahMuda',
+    label: 'Khalifah Muda',
+    href: '/khalifah-muda',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'KHALIFAH_MUDA',
+  },
+  {
     key: 'timetable',
     label: 'Jadual Waktu',
     href: '/jadual-waktu',
