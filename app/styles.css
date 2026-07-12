@@ -320,8 +320,38 @@ a {
   margin-top: 0;
 }
 
-.khalifah-summary-grid {
-  margin-top: 0;
+.khalifah-tabs {
+  display: flex;
+  gap: 12px;
+  margin: -6px 0 0;
+}
+
+.khalifah-tab {
+  border: 0;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  min-width: 200px;
+  padding: 14px 22px;
+  text-transform: uppercase;
+}
+
+.khalifah-tab:not(.active) {
+  background: #22b455;
+}
+
+.khalifah-tab:hover,
+.khalifah-tab:focus,
+.khalifah-tab.active {
+  background: #0f7a3a;
+}
+
+.khalifah-tab-panel {
+  background: #fff;
+  min-height: 220px;
+  padding: 14px;
 }
 
 .khalifah-workspace {

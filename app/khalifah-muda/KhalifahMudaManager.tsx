@@ -99,6 +99,7 @@ export default function KhalifahMudaManager({
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedSummaryStudentId, setSelectedSummaryStudentId] = useState('');
+  const [activeTab, setActiveTab] = useState<'summary' | 'recent'>('summary');
   const today = new Date().toISOString().slice(0, 10);
   const [classState, classAction, classPending] = useActionState(createKhalifahMudaClassRecord, initialActionState);
   const [studentState, studentAction, studentPending] = useActionState(createKhalifahMudaStudentRecord, initialActionState);
@@ -183,14 +184,6 @@ export default function KhalifahMudaManager({
     return summary;
   }, [classRecords, classStudents]);
 
-  const positiveCount = classRecords.filter((record) => record.record_kind === 'POSITIF').length;
-  const guidanceCount = classRecords.filter((record) => record.record_kind === 'BIMBINGAN').length;
-  const classActivityCount = new Set(
-    classRecords
-      .filter((record) => record.record_kind === 'AKTIVITI_KELAS')
-      .map((record) => (record.student_id ? classActivityGroupKey(record) : record.id)),
-  ).size;
-  const observedCount = [...studentSummary.values()].filter((item) => item.good > 0 || item.guide > 0).length;
   const selectedSummaryStudent = classStudents.find((student) => student.id === selectedSummaryStudentId) ?? null;
   const selectedSummaryRecords = useMemo(
     () =>
@@ -298,28 +291,154 @@ export default function KhalifahMudaManager({
         <p className="empty">Tiada kelas Tahun {KHALIFAH_MUDA_YEAR} aktif untuk {selectedSchoolRecord?.nama_sekolah ?? selectedSchool}.</p>
       ) : (
         <>
-          <div className="upkk-summary-grid khalifah-summary-grid">
-            <div className="upkk-summary-card">
-              <span>Murid Tahun {KHALIFAH_MUDA_YEAR}</span>
-              <strong>{classStudents.length}</strong>
-            </div>
-            <div className="upkk-summary-card">
-              <span>Telah Diperhati</span>
-              <strong>{observedCount}</strong>
-            </div>
-            <div className="upkk-summary-card">
-              <span>Penghargaan</span>
-              <strong>{positiveCount}</strong>
-            </div>
-            <div className="upkk-summary-card">
-              <span>Perlu Bimbingan</span>
-              <strong>{guidanceCount}</strong>
-            </div>
-            <div className="upkk-summary-card">
-              <span>Aktiviti Kelas</span>
-              <strong>{classActivityCount}</strong>
-            </div>
+          <div className="khalifah-tabs">
+            <button
+              className={activeTab === 'summary' ? 'khalifah-tab active' : 'khalifah-tab'}
+              type="button"
+              onClick={() => setActiveTab('summary')}
+            >
+              Ringkasan Murid
+            </button>
+            <button
+              className={activeTab === 'recent' ? 'khalifah-tab active' : 'khalifah-tab'}
+              type="button"
+              onClick={() => setActiveTab('recent')}
+            >
+              Rekod Terkini
+            </button>
           </div>
+
+          <section className="khalifah-tab-panel">
+            {activeTab === 'summary' ? (
+              <>
+                <div className="panel-head module-subhead">
+                  <h2>Ringkasan Murid</h2>
+                  <span>{classStudents.length} murid</span>
+                </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Bil</th>
+                        <th>Nama Murid</th>
+                        <th>Penghargaan</th>
+                        <th>Bimbingan</th>
+                        <th>Mata</th>
+                        <th>Rekod Akhir</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {classStudents.map((student, index) => {
+                        const summary = studentSummary.get(student.id) ?? { good: 0, guide: 0, points: 0, latest: null };
+                        return (
+                          <tr key={student.id}>
+                            <td>{index + 1}</td>
+                            <td>
+                              <button
+                                className="khalifah-student-link"
+                                type="button"
+                                onClick={() => setSelectedSummaryStudentId(student.id)}
+                              >
+                                {student.nama_murid}
+                              </button>
+                            </td>
+                            <td className="khalifah-good">{summary.good}</td>
+                            <td className="khalifah-guide">{summary.guide}</td>
+                            <td>{summary.points}</td>
+                            <td>{summary.latest ? formatDate(summary.latest) : 'Belum diperhati'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {selectedSummaryStudent ? (
+                  <div className="khalifah-detail-panel">
+                    <div className="panel-head module-subhead">
+                      <div>
+                        <h3>{selectedSummaryStudent.nama_murid}</h3>
+                        <p className="table-note">Rekod penghargaan dan bimbingan murid.</p>
+                      </div>
+                      <button className="button secondary" type="button" onClick={() => setSelectedSummaryStudentId('')}>
+                        Tutup
+                      </button>
+                    </div>
+                    {selectedSummaryRecords.length === 0 ? (
+                      <p className="empty">Belum ada rekod untuk murid ini.</p>
+                    ) : (
+                      <div className="table-scroll">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Tarikh</th>
+                              <th>Jenis</th>
+                              <th>Indikator</th>
+                              <th>Mata</th>
+                              <th>Catatan</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedSummaryRecords.map((record) => (
+                              <tr key={record.id}>
+                                <td>{formatDate(record.record_date)}</td>
+                                <td>
+                                  <span className={recordKindClass(record.record_kind)}>
+                                    {record.record_kind === 'AKTIVITI_KELAS' ? 'Penghargaan' : recordKindLabel(record.record_kind)}
+                                  </span>
+                                </td>
+                                <td>{record.indicator_label}</td>
+                                <td>{record.points}</td>
+                                <td>{record.catatan ?? '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <div className="panel-head module-subhead">
+                  <h2>Rekod Terkini</h2>
+                  <span>{recentRecords.length} rekod</span>
+                </div>
+                {recentRecords.length === 0 ? (
+                  <p className="empty">Belum ada rekod Khalifah Muda untuk kelas ini.</p>
+                ) : (
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Tarikh</th>
+                          <th>Jenis</th>
+                          <th>Murid / Kelas</th>
+                          <th>Indikator</th>
+                          <th>Catatan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentRecords.map((record) => (
+                          <tr key={record.id}>
+                            <td>{formatDate(record.record_date)}</td>
+                            <td><span className={recordKindClass(record.record_kind)}>{recordKindLabel(record.record_kind)}</span></td>
+                            <td>
+                              {record.record_scope === 'KELAS'
+                                ? `${selectedClass?.nama_kelas ?? 'Kelas'}${record.participantCount ? ` (${record.participantCount} murid)` : ''}`
+                                : record.nama_murid ?? '-'}
+                            </td>
+                            <td>{record.indicator_label}</td>
+                            <td>{record.catatan ?? '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
 
           <div className="khalifah-workspace">
             <form action={classAction} className="khalifah-card">
@@ -425,135 +544,6 @@ export default function KhalifahMudaManager({
             </form>
           </div>
 
-          <div className="khalifah-layout">
-            <section className="khalifah-table-card">
-              <div className="panel-head module-subhead">
-                <h2>Ringkasan Murid</h2>
-                <span>{classStudents.length} murid</span>
-              </div>
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Bil</th>
-                      <th>Nama Murid</th>
-                      <th>Penghargaan</th>
-                      <th>Bimbingan</th>
-                      <th>Mata</th>
-                      <th>Rekod Akhir</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {classStudents.map((student, index) => {
-                      const summary = studentSummary.get(student.id) ?? { good: 0, guide: 0, points: 0, latest: null };
-                      return (
-                        <tr key={student.id}>
-                          <td>{index + 1}</td>
-                          <td>
-                            <button
-                              className="khalifah-student-link"
-                              type="button"
-                              onClick={() => setSelectedSummaryStudentId(student.id)}
-                            >
-                              {student.nama_murid}
-                            </button>
-                          </td>
-                          <td className="khalifah-good">{summary.good}</td>
-                          <td className="khalifah-guide">{summary.guide}</td>
-                          <td>{summary.points}</td>
-                          <td>{summary.latest ? formatDate(summary.latest) : 'Belum diperhati'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {selectedSummaryStudent ? (
-                <div className="khalifah-detail-panel">
-                  <div className="panel-head module-subhead">
-                    <div>
-                      <h3>{selectedSummaryStudent.nama_murid}</h3>
-                      <p className="table-note">Rekod penghargaan dan bimbingan murid.</p>
-                    </div>
-                    <button className="button secondary" type="button" onClick={() => setSelectedSummaryStudentId('')}>
-                      Tutup
-                    </button>
-                  </div>
-                  {selectedSummaryRecords.length === 0 ? (
-                    <p className="empty">Belum ada rekod untuk murid ini.</p>
-                  ) : (
-                    <div className="table-scroll">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Tarikh</th>
-                            <th>Jenis</th>
-                            <th>Indikator</th>
-                            <th>Mata</th>
-                            <th>Catatan</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedSummaryRecords.map((record) => (
-                            <tr key={record.id}>
-                              <td>{formatDate(record.record_date)}</td>
-                              <td>
-                                <span className={recordKindClass(record.record_kind)}>
-                                  {record.record_kind === 'AKTIVITI_KELAS' ? 'Penghargaan' : recordKindLabel(record.record_kind)}
-                                </span>
-                              </td>
-                              <td>{record.indicator_label}</td>
-                              <td>{record.points}</td>
-                              <td>{record.catatan ?? '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </section>
-
-            <section className="khalifah-table-card">
-              <div className="panel-head module-subhead">
-                <h2>Rekod Terkini</h2>
-                <span>{recentRecords.length} rekod</span>
-              </div>
-              {recentRecords.length === 0 ? (
-                <p className="empty">Belum ada rekod Khalifah Muda untuk kelas ini.</p>
-              ) : (
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Tarikh</th>
-                        <th>Jenis</th>
-                        <th>Murid / Kelas</th>
-                        <th>Indikator</th>
-                        <th>Catatan</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentRecords.map((record) => (
-                        <tr key={record.id}>
-                          <td>{formatDate(record.record_date)}</td>
-                          <td><span className={recordKindClass(record.record_kind)}>{recordKindLabel(record.record_kind)}</span></td>
-                          <td>
-                            {record.record_scope === 'KELAS'
-                              ? `${selectedClass?.nama_kelas ?? 'Kelas'}${record.participantCount ? ` (${record.participantCount} murid)` : ''}`
-                              : record.nama_murid ?? '-'}
-                          </td>
-                          <td>{record.indicator_label}</td>
-                          <td>{record.catatan ?? '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          </div>
         </>
       )}
     </section>
