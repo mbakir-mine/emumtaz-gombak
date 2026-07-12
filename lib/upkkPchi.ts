@@ -71,8 +71,8 @@ export const UPKK_PCHI_SECTIONS: UpkkPchiSection[] = [
         code: 'A4',
         title: 'Adab Berjiran dan Bermasyarakat',
         items: [
-          { code: 'A4.1', label: 'Sebutkan satu adab dengan jiran', max: 2 },
-          { code: 'A4.2', label: 'Sebutkan satu hak jiran', max: 2 },
+          { code: 'A4.1', label: 'Sebutkan satu adab dengan orang dewasa', max: 2 },
+          { code: 'A4.2', label: 'Sebutkan satu adab dengan jiran', max: 2 },
           { code: 'A4.3', label: 'Sebutkan satu adab menyambut tetamu', max: 2 },
           { code: 'A4.4', label: 'Sebutkan satu adab terhadap orang kurang upaya', max: 2 },
         ],
