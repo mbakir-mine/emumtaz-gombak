@@ -15,7 +15,7 @@ function stringList(formData: FormData, key: string) {
 const clearTeacherValue = '__CLEAR__';
 
 function canSplitSubject(kodSubjek: string, tahun: number) {
-  return tahun === 1 && kodSubjek === 'JAWI';
+  return [1, 2].includes(tahun) && kodSubjek === 'JAWI';
 }
 
 function normalizeSplitLabels(rows: Array<{ kodSubjek: string; kodKomponen?: string; assignmentLabel: string }>) {

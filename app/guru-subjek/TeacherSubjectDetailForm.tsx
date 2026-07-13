@@ -53,7 +53,7 @@ function firstSplitLabel() {
 }
 
 function canSplitSubject(subject: SubjectRecord, selectedClass: ClassRecord) {
-  return selectedClass.tahun === 1 && subject.kod_subjek === 'JAWI';
+  return [1, 2].includes(selectedClass.tahun) && subject.kod_subjek === 'JAWI';
 }
 
 export default function TeacherSubjectDetailForm({
