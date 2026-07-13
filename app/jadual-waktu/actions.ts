@@ -325,6 +325,7 @@ export async function saveTimetableRequirements(
   const classId = String(formData.get('class_id') ?? '').trim();
   const subjectCodes = stringList(formData, 'requirement_kod_subjek');
   const componentCodes = stringList(formData, 'requirement_kod_komponen');
+  const assignmentLabels = stringList(formData, 'requirement_assignment_label');
   const displayNames = stringList(formData, 'requirement_nama_paparan');
   const teacherIds = stringList(formData, 'requirement_teacher_id');
   const slotCounts = stringList(formData, 'requirement_bil_slot');
@@ -342,6 +343,7 @@ export async function saveTimetableRequirements(
         class_id: classId,
         kod_subjek: kodSubjek,
         kod_komponen: componentCodes[index] || null,
+        assignment_label: assignmentLabels[index] || null,
         nama_paparan: displayNames[index] || null,
         teacher_id: teacherIds[index] || null,
         bil_slot_seminggu: Number.isFinite(bilSlot) ? bilSlot : 0,
@@ -404,6 +406,7 @@ type AutoRequirement = {
   class_id: string;
   kod_subjek: string;
   kod_komponen: string | null;
+  assignment_label: string | null;
   nama_paparan: string | null;
   teacher_id: string | null;
   bil_slot_seminggu: number;
@@ -414,6 +417,7 @@ type TimetableUnit = {
   class_id: string;
   kod_subjek: string;
   kod_komponen: string | null;
+  assignment_label: string | null;
   nama_paparan: string | null;
   teacher_id: string | null;
   duration: 1 | 2;
@@ -536,7 +540,7 @@ export async function generateAutoTimetable(
   const classIds = yearClasses.map((item) => item.id);
   const { data: requirements, error: requirementError } = await supabase
     .from('timetable_requirements')
-    .select('class_id,kod_subjek,kod_komponen,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
+    .select('class_id,kod_subjek,kod_komponen,assignment_label,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
     .eq('kod_sekolah', kodSekolah)
     .eq('status', 'AKTIF')
     .in('class_id', classIds)
@@ -586,6 +590,7 @@ export async function generateAutoTimetable(
             class_id: requirement.class_id,
             kod_subjek: requirement.kod_subjek,
             kod_komponen: requirement.kod_komponen,
+            assignment_label: requirement.assignment_label,
             nama_paparan: requirement.nama_paparan,
             teacher_id: requirement.teacher_id,
             duration: 2,
@@ -598,6 +603,7 @@ export async function generateAutoTimetable(
             class_id: requirement.class_id,
             kod_subjek: requirement.kod_subjek,
             kod_komponen: requirement.kod_komponen,
+            assignment_label: requirement.assignment_label,
             nama_paparan: requirement.nama_paparan,
             teacher_id: requirement.teacher_id,
             duration: 1,
@@ -617,6 +623,7 @@ export async function generateAutoTimetable(
     kod_sekolah: string;
     kod_subjek: string;
     kod_komponen: string | null;
+    assignment_label: string | null;
     nama_paparan: string | null;
     teacher_id: string | null;
     bilik: string | null;
@@ -663,6 +670,7 @@ export async function generateAutoTimetable(
         kod_sekolah: kodSekolah,
         kod_subjek: unit.kod_subjek,
         kod_komponen: unit.kod_komponen,
+        assignment_label: unit.assignment_label,
         nama_paparan: unit.nama_paparan,
         teacher_id: unit.teacher_id,
         bilik: null,

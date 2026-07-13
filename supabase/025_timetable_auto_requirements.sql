@@ -7,6 +7,7 @@ create table if not exists public.timetable_requirements (
   class_id uuid not null references public.classes(id) on delete cascade,
   kod_subjek text not null references public.subjects(kod_subjek),
   kod_komponen text,
+  assignment_label text,
   nama_paparan text,
   teacher_id uuid references public.app_users(id) on delete set null,
   bil_slot_seminggu int not null default 1 check (bil_slot_seminggu >= 0 and bil_slot_seminggu <= 40),
@@ -20,6 +21,9 @@ alter table public.timetable_requirements
   add column if not exists kod_komponen text;
 
 alter table public.timetable_requirements
+  add column if not exists assignment_label text;
+
+alter table public.timetable_requirements
   add column if not exists nama_paparan text;
 
 alter table public.timetable_requirements
@@ -28,14 +32,19 @@ alter table public.timetable_requirements
 alter table public.timetable_requirements
   drop constraint if exists timetable_requirements_class_id_kod_subjek_key;
 
+drop index if exists public.idx_timetable_requirements_unique_item;
+
 create index if not exists idx_timetable_requirements_school
   on public.timetable_requirements (kod_sekolah, class_id);
 
 create unique index if not exists idx_timetable_requirements_unique_item
-  on public.timetable_requirements (class_id, kod_subjek, coalesce(kod_komponen, ''));
+  on public.timetable_requirements (class_id, kod_subjek, coalesce(kod_komponen, ''), coalesce(assignment_label, ''));
 
 alter table public.timetable_entries
   add column if not exists kod_komponen text;
+
+alter table public.timetable_entries
+  add column if not exists assignment_label text;
 
 alter table public.timetable_entries
   add column if not exists nama_paparan text;

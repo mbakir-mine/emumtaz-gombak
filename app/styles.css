@@ -2137,6 +2137,7 @@ th {
 .teacher-assignment-toolbar select,
 .teacher-assignment-toolbar input,
 .subject-bulk-toolbar select,
+.subject-split-row input,
 .teacher-assignment-table select {
   width: 100%;
   min-height: 38px;
@@ -2236,6 +2237,30 @@ th {
   border: 1px solid #d8eadb;
   border-radius: 8px;
   background: linear-gradient(135deg, #f7fcf8 0%, #fff9e8 100%);
+}
+
+.subject-split-teachers {
+  display: grid;
+  gap: 8px;
+}
+
+.subject-split-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.6fr) minmax(240px, 1.4fr) auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid #d8eadb;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f7fcf8 0%, #fff9e8 100%);
+}
+
+.subject-split-add {
+  justify-self: start;
+}
+
+.subject-split-remove {
+  min-width: 76px;
 }
 
 .teacher-assignment-table .selected-row {

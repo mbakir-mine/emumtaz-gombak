@@ -23,6 +23,31 @@ const initialState = {
   message: '',
 };
 
+type SubjectSplitRow = {
+  key: string;
+  label: string;
+  teacherId: string;
+  slotCount: string;
+};
+
+function displaySplitLabel(subjectName: string, label: string, index: number) {
+  if (label) return label;
+  return index === 0 ? subjectName : `${subjectName} ${index + 1}`;
+}
+
+function nextSplitLabel(subjectName: string, rows: SubjectSplitRow[]) {
+  let nextIndex = rows.length + 1;
+  let label = `${subjectName} ${nextIndex}`;
+  const existing = new Set(rows.map((row) => row.label));
+
+  while (existing.has(label)) {
+    nextIndex += 1;
+    label = `${subjectName} ${nextIndex}`;
+  }
+
+  return label;
+}
+
 export default function TeacherSubjectDetailForm({
   classId,
   schools,
@@ -47,9 +72,9 @@ export default function TeacherSubjectDetailForm({
   timetableRequirements: TimetableRequirement[];
 }) {
   const profile = useAccessProfile();
-  const [subjectSelections, setSubjectSelections] = useState<Record<string, string>>({});
+  const [subjectRows, setSubjectRows] = useState<Record<string, SubjectSplitRow[]>>({});
   const [componentSelections, setComponentSelections] = useState<Record<string, string>>({});
-  const [slotSelections, setSlotSelections] = useState<Record<string, string>>({});
+  const [componentSlots, setComponentSlots] = useState<Record<string, string>>({});
   const [applyAllTeacher, setApplyAllTeacher] = useState('');
   const [state, action, pending] = useActionState(bulkAssignTeacherSubjects, initialState);
 
@@ -68,16 +93,16 @@ export default function TeacherSubjectDetailForm({
     return map;
   }, [classAssignments]);
 
-  const subjectTeacherMap = useMemo(() => {
-    const map = new Map<string, string>();
+  const subjectAssignmentMap = useMemo(() => {
+    const map = new Map<string, TeacherSubjectAssignment[]>();
     subjectAssignments.forEach((assignment) => {
-      const key = `${assignment.class_id}|${assignment.kod_subjek}`;
-      if (!map.has(key)) {
-        map.set(key, assignment.user_id);
-      }
+      if (assignment.class_id !== classId) return;
+      const list = map.get(assignment.kod_subjek) ?? [];
+      list.push(assignment);
+      map.set(assignment.kod_subjek, list);
     });
     return map;
-  }, [subjectAssignments]);
+  }, [classId, subjectAssignments]);
 
   const componentTeacherMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -94,7 +119,7 @@ export default function TeacherSubjectDetailForm({
     const map = new Map<string, TimetableRequirement>();
     timetableRequirements.forEach((requirement) => {
       if (requirement.class_id === classId) {
-        map.set(`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`, requirement);
+        map.set(`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}|${requirement.assignment_label ?? ''}`, requirement);
       }
     });
     return map;
@@ -127,41 +152,68 @@ export default function TeacherSubjectDetailForm({
 
   useEffect(() => {
     if (!selectedClass) {
-      setSubjectSelections({});
+      setSubjectRows({});
       setComponentSelections({});
-      setSlotSelections({});
+      setComponentSlots({});
       setApplyAllTeacher('');
       return;
     }
 
-    const nextSelections: Record<string, string> = {};
+    const nextSubjectRows: Record<string, SubjectSplitRow[]> = {};
     const nextComponentSelections: Record<string, string> = {};
-    const nextSlotSelections: Record<string, string> = {};
+    const nextComponentSlots: Record<string, string> = {};
+
     filteredSubjects.forEach((subject) => {
-      nextSelections[subject.kod_subjek] = subjectTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}`) ?? '';
-      const subjectKey = `${subject.kod_subjek}|`;
-      nextSlotSelections[subjectKey] =
-        timetableRequirementMap.get(subjectKey)?.bil_slot_seminggu?.toString() ?? '';
-      (componentsBySubject.get(subject.kod_subjek) ?? []).forEach((component) => {
-        const key = `${subject.kod_subjek}|${component.kod_komponen}`;
-        nextComponentSelections[key] =
+      const components = componentsBySubject.get(subject.kod_subjek) ?? [];
+      if (components.length === 0) {
+        const assignments = subjectAssignmentMap.get(subject.kod_subjek) ?? [];
+        const baseRows = assignments.length > 0 ? assignments : [{ assignment_label: '', user_id: '' }];
+
+        nextSubjectRows[subject.kod_subjek] = baseRows.map((assignment, index) => {
+          const label = String(assignment.assignment_label ?? '').trim();
+          const requirement = timetableRequirementMap.get(`${subject.kod_subjek}||${label}`);
+          return {
+            key: `${subject.kod_subjek}-${label || 'utama'}-${index}`,
+            label,
+            teacherId: assignment.user_id ?? '',
+            slotCount: requirement?.bil_slot_seminggu?.toString() ?? '',
+          };
+        });
+      }
+
+      components.forEach((component) => {
+        const componentKey = `${subject.kod_subjek}|${component.kod_komponen}`;
+        nextComponentSelections[componentKey] =
           componentTeacherMap.get(`${selectedClass.id}|${subject.kod_subjek}|${component.kod_komponen}`) ?? '';
-        nextSlotSelections[key] = timetableRequirementMap.get(key)?.bil_slot_seminggu?.toString() ?? '';
+        nextComponentSlots[componentKey] =
+          timetableRequirementMap.get(`${subject.kod_subjek}|${component.kod_komponen}|`)?.bil_slot_seminggu?.toString() ?? '';
       });
     });
-    setSubjectSelections(nextSelections);
+
+    setSubjectRows(nextSubjectRows);
     setComponentSelections(nextComponentSelections);
-    setSlotSelections(nextSlotSelections);
+    setComponentSlots(nextComponentSlots);
     setApplyAllTeacher('');
-  }, [componentTeacherMap, componentsBySubject, filteredSubjects, selectedClass, subjectTeacherMap, timetableRequirementMap]);
+  }, [
+    componentTeacherMap,
+    componentsBySubject,
+    filteredSubjects,
+    selectedClass,
+    subjectAssignmentMap,
+    timetableRequirementMap,
+  ]);
 
   function applyTeacherToAllSubjects() {
     if (!applyAllTeacher) return;
-    setSubjectSelections((current) => {
+    setSubjectRows((current) => {
       const next = { ...current };
       filteredSubjects.forEach((subject) => {
         if ((componentsBySubject.get(subject.kod_subjek) ?? []).length === 0) {
-          next[subject.kod_subjek] = applyAllTeacher;
+          const rows = next[subject.kod_subjek] ?? [];
+          next[subject.kod_subjek] =
+            rows.length > 0
+              ? rows.map((row, index) => (index === 0 ? { ...row, teacherId: applyAllTeacher } : row))
+              : [{ key: `${subject.kod_subjek}-utama`, label: '', teacherId: applyAllTeacher, slotCount: '' }];
         }
       });
       return next;
@@ -174,6 +226,43 @@ export default function TeacherSubjectDetailForm({
         });
       });
       return next;
+    });
+  }
+
+  function updateSubjectRow(kodSubjek: string, rowKey: string, patch: Partial<SubjectSplitRow>) {
+    setSubjectRows((current) => ({
+      ...current,
+      [kodSubjek]: (current[kodSubjek] ?? []).map((row) => (row.key === rowKey ? { ...row, ...patch } : row)),
+    }));
+  }
+
+  function addSubjectRow(subject: SubjectRecord) {
+    setSubjectRows((current) => {
+      const rows = current[subject.kod_subjek] ?? [];
+      const label = nextSplitLabel(subject.nama_subjek, rows);
+      return {
+        ...current,
+        [subject.kod_subjek]: [
+          ...rows,
+          {
+            key: `${subject.kod_subjek}-${Date.now()}`,
+            label,
+            teacherId: '',
+            slotCount: '',
+          },
+        ],
+      };
+    });
+  }
+
+  function removeSubjectRow(kodSubjek: string, rowKey: string) {
+    setSubjectRows((current) => {
+      const rows = current[kodSubjek] ?? [];
+      const nextRows = rows.filter((row) => row.key !== rowKey);
+      return {
+        ...current,
+        [kodSubjek]: nextRows.length > 0 ? nextRows : [{ key: `${kodSubjek}-utama`, label: '', teacherId: '', slotCount: '' }],
+      };
     });
   }
 
@@ -237,6 +326,10 @@ export default function TeacherSubjectDetailForm({
               <tbody>
                 {filteredSubjects.map((subject, index) => {
                   const components = componentsBySubject.get(subject.kod_subjek) ?? [];
+                  const rows = subjectRows[subject.kod_subjek] ?? [
+                    { key: `${subject.kod_subjek}-utama`, label: '', teacherId: '', slotCount: '' },
+                  ];
+
                   return (
                     <tr key={subject.kod_subjek}>
                       <td>{index + 1}</td>
@@ -244,31 +337,32 @@ export default function TeacherSubjectDetailForm({
                       <td>{subject.nama_subjek}</td>
                       <td className="slot-column">
                         {components.length === 0 ? (
-                          <>
-                            <input name="timetable_kod_subjek" type="hidden" value={subject.kod_subjek} />
-                            <input name="timetable_kod_komponen" type="hidden" value="" />
-                            <input name="timetable_nama_paparan" type="hidden" value={subject.nama_subjek} />
-                            <input
-                              name="timetable_teacher_id"
-                              type="hidden"
-                              value={subjectSelections[subject.kod_subjek] ?? ''}
-                            />
-                            <input
-                              className="subject-slot-input"
-                              name="timetable_bil_slot"
-                              type="number"
-                              min="0"
-                              max="40"
-                              value={slotSelections[`${subject.kod_subjek}|`] ?? ''}
-                              onChange={(event) =>
-                                setSlotSelections((current) => ({
-                                  ...current,
-                                  [`${subject.kod_subjek}|`]: event.target.value,
-                                }))
-                              }
-                              placeholder="0"
-                            />
-                          </>
+                          <div className="subject-slot-stack">
+                            {rows.map((row, rowIndex) => (
+                              <label key={row.key} className="subject-slot-label">
+                                <span>{displaySplitLabel(subject.nama_subjek, row.label, rowIndex)}</span>
+                                <input name="timetable_kod_subjek" type="hidden" value={subject.kod_subjek} />
+                                <input name="timetable_kod_komponen" type="hidden" value="" />
+                                <input name="timetable_assignment_label" type="hidden" value={row.label} />
+                                <input
+                                  name="timetable_nama_paparan"
+                                  type="hidden"
+                                  value={displaySplitLabel(subject.nama_subjek, row.label, rowIndex)}
+                                />
+                                <input name="timetable_teacher_id" type="hidden" value={row.teacherId} />
+                                <input
+                                  className="subject-slot-input"
+                                  name="timetable_bil_slot"
+                                  type="number"
+                                  min="0"
+                                  max="40"
+                                  value={row.slotCount}
+                                  onChange={(event) => updateSubjectRow(subject.kod_subjek, row.key, { slotCount: event.target.value })}
+                                  placeholder="0"
+                                />
+                              </label>
+                            ))}
+                          </div>
                         ) : (
                           <div className="subject-slot-stack">
                             {components.map((component) => {
@@ -278,21 +372,18 @@ export default function TeacherSubjectDetailForm({
                                   <span>{component.nama_komponen}</span>
                                   <input name="timetable_kod_subjek" type="hidden" value={subject.kod_subjek} />
                                   <input name="timetable_kod_komponen" type="hidden" value={component.kod_komponen} />
+                                  <input name="timetable_assignment_label" type="hidden" value="" />
                                   <input name="timetable_nama_paparan" type="hidden" value={component.nama_komponen} />
-                                  <input
-                                    name="timetable_teacher_id"
-                                    type="hidden"
-                                    value={componentSelections[componentKey] ?? ''}
-                                  />
+                                  <input name="timetable_teacher_id" type="hidden" value={componentSelections[componentKey] ?? ''} />
                                   <input
                                     className="subject-slot-input"
                                     name="timetable_bil_slot"
                                     type="number"
                                     min="0"
                                     max="40"
-                                    value={slotSelections[componentKey] ?? ''}
+                                    value={componentSlots[componentKey] ?? ''}
                                     onChange={(event) =>
-                                      setSlotSelections((current) => ({
+                                      setComponentSlots((current) => ({
                                         ...current,
                                         [componentKey]: event.target.value,
                                       }))
@@ -308,28 +399,53 @@ export default function TeacherSubjectDetailForm({
                       <td>
                         <div className="subject-teacher-stack">
                           {components.length === 0 && (
-                            <label>
-                              <span>Guru subjek</span>
-                              <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
-                              <select
-                                name="subject_teacher_id"
-                                value={subjectSelections[subject.kod_subjek] ?? ''}
-                                onChange={(event) =>
-                                  setSubjectSelections((current) => ({
-                                    ...current,
-                                    [subject.kod_subjek]: event.target.value,
-                                  }))
-                                }
-                              >
-                                <option value="">Kekalkan / belum ditetapkan</option>
-                                {subjectSelections[subject.kod_subjek] && <option value="__CLEAR__">Kosongkan guru subjek</option>}
-                                {selectedClassTeachers.map((user) => (
-                                  <option key={user.id} value={user.id}>
-                                    {user.nama}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
+                            <div className="subject-split-teachers">
+                              {rows.map((row, rowIndex) => (
+                                <div key={row.key} className="subject-split-row">
+                                  <label>
+                                    <span>Pecahan</span>
+                                    <input
+                                      name="subject_assignment_label"
+                                      value={row.label}
+                                      onChange={(event) =>
+                                        updateSubjectRow(subject.kod_subjek, row.key, { label: event.target.value.trimStart() })
+                                      }
+                                      placeholder={rowIndex === 0 ? 'Utama' : `${subject.nama_subjek} ${rowIndex + 1}`}
+                                    />
+                                  </label>
+                                  <label>
+                                    <span>Guru subjek</span>
+                                    <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
+                                    <select
+                                      name="subject_teacher_id"
+                                      value={row.teacherId}
+                                      onChange={(event) =>
+                                        updateSubjectRow(subject.kod_subjek, row.key, { teacherId: event.target.value })
+                                      }
+                                    >
+                                      <option value="">Pilih guru / belum ditetapkan</option>
+                                      {row.teacherId && <option value="__CLEAR__">Kosongkan guru subjek</option>}
+                                      {selectedClassTeachers.map((user) => (
+                                        <option key={user.id} value={user.id}>
+                                          {user.nama}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  <button
+                                    className="soft-action-button subject-split-remove"
+                                    type="button"
+                                    onClick={() => removeSubjectRow(subject.kod_subjek, row.key)}
+                                    disabled={rows.length <= 1 && !row.teacherId && !row.slotCount && !row.label}
+                                  >
+                                    Buang
+                                  </button>
+                                </div>
+                              ))}
+                              <button className="soft-action-button subject-split-add" type="button" onClick={() => addSubjectRow(subject)}>
+                                Tambah Guru
+                              </button>
+                            </div>
                           )}
 
                           {components.length > 0 && (

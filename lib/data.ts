@@ -220,6 +220,7 @@ export type TimetableEntry = {
   kod_sekolah: string;
   kod_subjek: string | null;
   kod_komponen?: string | null;
+  assignment_label?: string | null;
   nama_paparan?: string | null;
   teacher_id: string | null;
   bilik: string | null;
@@ -232,6 +233,7 @@ export type TimetableRequirement = {
   class_id: string;
   kod_subjek: string;
   kod_komponen?: string | null;
+  assignment_label?: string | null;
   nama_paparan?: string | null;
   teacher_id: string | null;
   bil_slot_seminggu: number;
@@ -499,6 +501,7 @@ export type TeacherSubjectAssignment = {
   user_id: string;
   class_id: string;
   kod_subjek: string;
+  assignment_label?: string | null;
   users?: UserRecord;
   classes?: ClassRecord;
   subjects?: SubjectRecord;
@@ -653,7 +656,7 @@ async function getTeacherDashboardRows(
 
   const [{ data: classAssignments }, { data: subjectAssignments }] = await Promise.all([
     supabase.from('teacher_class_assignments').select('user_id,class_id'),
-    supabase.from('teacher_subject_assignments').select('user_id,class_id,kod_subjek'),
+    supabase.from('teacher_subject_assignments').select('user_id,class_id,kod_subjek,assignment_label'),
   ]);
 
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
@@ -1410,7 +1413,7 @@ export async function getTimetableEntries(): Promise<TimetableEntry[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_entries')
-    .select('id,slot_id,class_id,kod_sekolah,kod_subjek,kod_komponen,nama_paparan,teacher_id,bilik,status')
+      .select('id,slot_id,class_id,kod_sekolah,kod_subjek,kod_komponen,assignment_label,nama_paparan,teacher_id,bilik,status')
     .eq('status', 'AKTIF')
     .order('kod_sekolah');
 
@@ -1431,7 +1434,7 @@ export async function getTimetableRequirements(): Promise<TimetableRequirement[]
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_requirements')
-    .select('id,kod_sekolah,class_id,kod_subjek,kod_komponen,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
+    .select('id,kod_sekolah,class_id,kod_subjek,kod_komponen,assignment_label,nama_paparan,teacher_id,bil_slot_seminggu,boleh_gabung,status')
     .eq('status', 'AKTIF')
     .order('kod_sekolah')
     .order('class_id');
@@ -1835,6 +1838,7 @@ export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssi
       user_id,
       class_id,
       kod_subjek,
+      assignment_label,
       users:app_users(id,email,nama,role,kod_sekolah,status),
       classes(id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status),
       subjects(kod_subjek,nama_subjek,markah_penuh,dikira_purata,susunan,status)
@@ -1848,6 +1852,7 @@ export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssi
     user_id: item.user_id,
     class_id: item.class_id,
     kod_subjek: item.kod_subjek,
+    assignment_label: item.assignment_label ?? null,
     users: Array.isArray(item.users) ? item.users[0] : item.users,
     classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,
     subjects: Array.isArray(item.subjects) ? item.subjects[0] : item.subjects,

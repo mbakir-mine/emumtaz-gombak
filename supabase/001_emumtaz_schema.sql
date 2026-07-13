@@ -95,6 +95,7 @@ create table if not exists teacher_subject_assignments (
   user_id uuid not null references app_users(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade,
   kod_subjek text not null references subjects(kod_subjek),
+  assignment_label text,
   created_at timestamptz not null default now(),
   unique (user_id, class_id, kod_subjek)
 );

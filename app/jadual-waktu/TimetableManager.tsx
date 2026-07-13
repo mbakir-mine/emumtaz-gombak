@@ -199,22 +199,24 @@ export default function TimetableManager({
     ...selectedClassSubjectAssignments
       .filter((assignment) => !componentParentSubjects.has(assignment.kod_subjek))
       .map((assignment) => ({
-        key: `${assignment.kod_subjek}|`,
+        key: `${assignment.kod_subjek}||${assignment.assignment_label ?? ''}`,
         kod_subjek: assignment.kod_subjek,
         kod_komponen: '',
-        nama_paparan: subjectMap.get(assignment.kod_subjek) ?? assignment.kod_subjek,
+        assignment_label: assignment.assignment_label ?? '',
+        nama_paparan: assignment.assignment_label || subjectMap.get(assignment.kod_subjek) || assignment.kod_subjek,
         teacher_id: assignment.user_id,
         teacher_name: userMap.get(assignment.user_id) ?? assignment.users?.nama ?? '-',
-        sub_note: 'Subjek',
+        sub_note: assignment.assignment_label ? subjectMap.get(assignment.kod_subjek) ?? assignment.kod_subjek : 'Subjek',
       })),
     ...selectedClassComponentAssignments.map((assignment) => {
       const component = (componentsBySubject.get(assignment.kod_subjek) ?? []).find(
         (item) => item.kod_komponen === assignment.kod_komponen,
       );
       return {
-        key: `${assignment.kod_subjek}|${assignment.kod_komponen}`,
+        key: `${assignment.kod_subjek}|${assignment.kod_komponen}|`,
         kod_subjek: assignment.kod_subjek,
         kod_komponen: assignment.kod_komponen,
+        assignment_label: '',
         nama_paparan: component?.nama_komponen ?? assignment.kod_komponen,
         teacher_id: assignment.user_id,
         teacher_name: userMap.get(assignment.user_id) ?? assignment.users?.nama ?? '-',
@@ -223,7 +225,10 @@ export default function TimetableManager({
     }),
   ].sort((a, b) => a.nama_paparan.localeCompare(b.nama_paparan));
   const requirementByKey = new Map(
-    classRequirements.map((requirement) => [`${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`, requirement]),
+    classRequirements.map((requirement) => [
+      `${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}|${requirement.assignment_label ?? ''}`,
+      requirement,
+    ]),
   );
   const scheduleTabs = [
     { id: 'kelas', label: 'Jadual Kelas' },
@@ -477,6 +482,7 @@ export default function TimetableManager({
                         <td>
                           <input type="hidden" name="requirement_kod_subjek" value={source.kod_subjek} />
                           <input type="hidden" name="requirement_kod_komponen" value={source.kod_komponen} />
+                          <input type="hidden" name="requirement_assignment_label" value={source.assignment_label} />
                           <input type="hidden" name="requirement_nama_paparan" value={source.nama_paparan} />
                           <strong>{source.nama_paparan}</strong>
                           <small>{source.sub_note}</small>

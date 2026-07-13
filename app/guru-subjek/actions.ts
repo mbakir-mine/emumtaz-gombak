@@ -14,6 +14,27 @@ function stringList(formData: FormData, key: string) {
 
 const clearTeacherValue = '__CLEAR__';
 
+function normalizeSplitLabels(rows: Array<{ kodSubjek: string; kodKomponen?: string; assignmentLabel: string }>) {
+  const totalBySubject = new Map<string, number>();
+  rows.forEach((row) => {
+    const key = `${row.kodSubjek}|${row.kodKomponen ?? ''}`;
+    totalBySubject.set(key, (totalBySubject.get(key) ?? 0) + 1);
+  });
+
+  const countBySubject = new Map<string, number>();
+  return rows.map((row) => {
+    const key = `${row.kodSubjek}|${row.kodKomponen ?? ''}`;
+    const nextCount = (countBySubject.get(key) ?? 0) + 1;
+    countBySubject.set(key, nextCount);
+
+    if (row.assignmentLabel || row.kodKomponen || (totalBySubject.get(key) ?? 0) <= 1 || nextCount === 1) {
+      return row.assignmentLabel;
+    }
+
+    return `Pecahan ${nextCount}`;
+  });
+}
+
 export async function assignTeacherSubject(
   _previousState: TeacherSubjectActionState,
   formData: FormData,
@@ -107,6 +128,7 @@ export async function bulkAssignTeacherSubjects(
   const classId = String(formData.get('subject_class_id') ?? '').trim();
   const kodSekolah = String(formData.get('subject_kod_sekolah') ?? '').trim();
   const subjectCodes = stringList(formData, 'kod_subjek').filter(Boolean);
+  const subjectAssignmentLabels = stringList(formData, 'subject_assignment_label');
   const userIds = stringList(formData, 'subject_teacher_id');
   const componentParentSubjectCodes = [
     ...new Set(stringList(formData, 'component_parent_kod_subjek').filter(Boolean)),
@@ -116,6 +138,7 @@ export async function bulkAssignTeacherSubjects(
   const componentUserIds = stringList(formData, 'component_teacher_id');
   const timetableSubjectCodes = stringList(formData, 'timetable_kod_subjek');
   const timetableComponentCodes = stringList(formData, 'timetable_kod_komponen');
+  const timetableAssignmentLabels = stringList(formData, 'timetable_assignment_label');
   const timetableDisplayNames = stringList(formData, 'timetable_nama_paparan');
   const timetableTeacherIds = stringList(formData, 'timetable_teacher_id');
   const timetableSlotCounts = stringList(formData, 'timetable_bil_slot');
@@ -127,12 +150,26 @@ export async function bulkAssignTeacherSubjects(
       return {
         kodSubjek,
         kodKomponen: timetableComponentCodes[index] ?? '',
+        assignmentLabel: timetableAssignmentLabels[index] ?? '',
         namaPaparan: timetableDisplayNames[index] ?? '',
         teacherId: timetableTeacherIds[index] ?? '',
         bilSlot,
       };
     })
     .filter((row) => row.kodSubjek);
+  const normalizedSubjectLabels = normalizeSplitLabels(
+    subjectCodes.map((kodSubjek, index) => ({
+      kodSubjek,
+      assignmentLabel: (subjectAssignmentLabels[index] ?? '').trim(),
+    })),
+  );
+  const normalizedTimetableLabels = normalizeSplitLabels(
+    timetableRows.map((row) => ({
+      kodSubjek: row.kodSubjek,
+      kodKomponen: row.kodKomponen,
+      assignmentLabel: row.assignmentLabel.trim(),
+    })),
+  );
 
   if (!classId || subjectCodes.length + componentSubjectCodes.length === 0) {
     return { ok: false, message: 'Pilih kelas dan subjek untuk dikemaskini.' };
@@ -147,13 +184,8 @@ export async function bulkAssignTeacherSubjects(
 
   let updated = 0;
   let componentUpdated = 0;
-  for (const [index, kodSubjek] of subjectCodes.entries()) {
-    const userId = userIds[index] ?? '';
-
-    if (!userId) {
-      continue;
-    }
-
+  const subjectCodesToReset = [...new Set(subjectCodes)];
+  for (const kodSubjek of subjectCodesToReset) {
     const { error: deleteError } = await supabase
       .from('teacher_subject_assignments')
       .delete()
@@ -163,16 +195,24 @@ export async function bulkAssignTeacherSubjects(
     if (deleteError) {
       return { ok: false, message: `Gagal kemaskini guru subjek: ${deleteError.message}` };
     }
+  }
 
-    if (userId !== clearTeacherValue) {
-      const { error: insertError } = await supabase.from('teacher_subject_assignments').insert({
-        class_id: classId,
-        kod_subjek: kodSubjek,
-        user_id: userId,
-      });
-      if (insertError) {
-        return { ok: false, message: `Gagal simpan guru subjek: ${insertError.message}` };
-      }
+  for (const [index, kodSubjek] of subjectCodes.entries()) {
+    const userId = userIds[index] ?? '';
+
+    if (!userId || userId === clearTeacherValue) {
+      continue;
+    }
+
+    const rawLabel = normalizedSubjectLabels[index] ?? '';
+    const { error: insertError } = await supabase.from('teacher_subject_assignments').insert({
+      class_id: classId,
+      kod_subjek: kodSubjek,
+      user_id: userId,
+      assignment_label: rawLabel || null,
+    });
+    if (insertError) {
+      return { ok: false, message: `Gagal simpan guru subjek: ${insertError.message}` };
     }
 
     updated += 1;
@@ -232,7 +272,7 @@ export async function bulkAssignTeacherSubjects(
   if (kodSekolah && timetableRows.length > 0) {
     const { data: existingRequirements, error: existingRequirementError } = await supabase
       .from('timetable_requirements')
-      .select('kod_subjek,kod_komponen,boleh_gabung')
+      .select('kod_subjek,kod_komponen,assignment_label,boleh_gabung')
       .eq('class_id', classId);
 
     if (existingRequirementError) {
@@ -242,19 +282,21 @@ export async function bulkAssignTeacherSubjects(
       const existingRequirementMap = new Map<string, boolean>();
       (existingRequirements ?? []).forEach((requirement) => {
         existingRequirementMap.set(
-          `${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}`,
+          `${requirement.kod_subjek}|${requirement.kod_komponen ?? ''}|${requirement.assignment_label ?? ''}`,
           Boolean(requirement.boleh_gabung),
         );
       });
 
-      for (const row of timetableRows) {
+      const requirementResetKeys = new Set(timetableRows.map((row) => `${row.kodSubjek}|${row.kodKomponen}`));
+      for (const resetKey of requirementResetKeys) {
+        const [kodSubjek, kodKomponen] = resetKey.split('|');
         let deleteQuery = supabase
           .from('timetable_requirements')
           .delete()
           .eq('class_id', classId)
-          .eq('kod_subjek', row.kodSubjek);
+          .eq('kod_subjek', kodSubjek);
 
-        deleteQuery = row.kodKomponen ? deleteQuery.eq('kod_komponen', row.kodKomponen) : deleteQuery.is('kod_komponen', null);
+        deleteQuery = kodKomponen ? deleteQuery.eq('kod_komponen', kodKomponen) : deleteQuery.is('kod_komponen', null);
 
         const { error: deleteRequirementError } = await deleteQuery;
         if (deleteRequirementError) {
@@ -263,18 +305,22 @@ export async function bulkAssignTeacherSubjects(
             message: `Guru subjek disimpan, tetapi Bil. Masa gagal dikemaskini: ${deleteRequirementError.message}`,
           };
         }
+      }
 
+      for (const [index, row] of timetableRows.entries()) {
         const teacherId = row.teacherId && row.teacherId !== clearTeacherValue ? row.teacherId : '';
         if (!teacherId || row.bilSlot <= 0) {
           continue;
         }
 
-        const requirementKey = `${row.kodSubjek}|${row.kodKomponen}`;
+        const assignmentLabel = normalizedTimetableLabels[index] ?? '';
+        const requirementKey = `${row.kodSubjek}|${row.kodKomponen}|${assignmentLabel}`;
         const { error: insertRequirementError } = await supabase.from('timetable_requirements').insert({
           kod_sekolah: kodSekolah,
           class_id: classId,
           kod_subjek: row.kodSubjek,
           kod_komponen: row.kodKomponen || null,
+          assignment_label: assignmentLabel || null,
           nama_paparan: row.namaPaparan || null,
           teacher_id: teacherId,
           bil_slot_seminggu: row.bilSlot,
