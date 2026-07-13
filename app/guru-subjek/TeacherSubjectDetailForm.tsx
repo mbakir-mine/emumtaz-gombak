@@ -48,6 +48,10 @@ function nextSplitLabel(subjectName: string, rows: SubjectSplitRow[]) {
   return label;
 }
 
+function canSplitSubject(subject: SubjectRecord, selectedClass: ClassRecord) {
+  return selectedClass.tahun === 1 && subject.kod_subjek === 'JAWI';
+}
+
 export default function TeacherSubjectDetailForm({
   classId,
   schools,
@@ -295,6 +299,7 @@ export default function TeacherSubjectDetailForm({
         <form action={action}>
           <input name="subject_class_id" type="hidden" value={selectedClass.id} />
           <input name="subject_kod_sekolah" type="hidden" value={selectedClass.kod_sekolah} />
+          <input name="subject_tahun" type="hidden" value={selectedClass.tahun} />
           <div className="subject-bulk-toolbar">
             <label>
               Tetapkan semua subjek kepada
@@ -326,9 +331,10 @@ export default function TeacherSubjectDetailForm({
               <tbody>
                 {filteredSubjects.map((subject, index) => {
                   const components = componentsBySubject.get(subject.kod_subjek) ?? [];
-                  const rows = subjectRows[subject.kod_subjek] ?? [
+                  const allowSplit = canSplitSubject(subject, selectedClass);
+                  const rows = (subjectRows[subject.kod_subjek] ?? [
                     { key: `${subject.kod_subjek}-utama`, label: '', teacherId: '', slotCount: '' },
-                  ];
+                  ]).slice(0, allowSplit ? undefined : 1);
 
                   return (
                     <tr key={subject.kod_subjek}>
@@ -432,19 +438,23 @@ export default function TeacherSubjectDetailForm({
                                       ))}
                                     </select>
                                   </label>
-                                  <button
-                                    className="soft-action-button subject-split-remove"
-                                    type="button"
-                                    onClick={() => removeSubjectRow(subject.kod_subjek, row.key)}
-                                    disabled={rows.length <= 1 && !row.teacherId && !row.slotCount && !row.label}
-                                  >
-                                    Buang
-                                  </button>
+                                  {allowSplit && (
+                                    <button
+                                      className="soft-action-button subject-split-remove"
+                                      type="button"
+                                      onClick={() => removeSubjectRow(subject.kod_subjek, row.key)}
+                                      disabled={rows.length <= 1 && !row.teacherId && !row.slotCount && !row.label}
+                                    >
+                                      Buang
+                                    </button>
+                                  )}
                                 </div>
                               ))}
-                              <button className="soft-action-button subject-split-add" type="button" onClick={() => addSubjectRow(subject)}>
-                                Tambah Guru
-                              </button>
+                              {allowSplit && (
+                                <button className="soft-action-button subject-split-add" type="button" onClick={() => addSubjectRow(subject)}>
+                                  Tambah Guru
+                                </button>
+                              )}
                             </div>
                           )}
 

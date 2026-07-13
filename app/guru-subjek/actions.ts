@@ -14,6 +14,10 @@ function stringList(formData: FormData, key: string) {
 
 const clearTeacherValue = '__CLEAR__';
 
+function canSplitSubject(kodSubjek: string, tahun: number) {
+  return tahun === 1 && kodSubjek === 'JAWI';
+}
+
 function normalizeSplitLabels(rows: Array<{ kodSubjek: string; kodKomponen?: string; assignmentLabel: string }>) {
   const totalBySubject = new Map<string, number>();
   rows.forEach((row) => {
@@ -127,6 +131,7 @@ export async function bulkAssignTeacherSubjects(
 
   const classId = String(formData.get('subject_class_id') ?? '').trim();
   const kodSekolah = String(formData.get('subject_kod_sekolah') ?? '').trim();
+  const tahun = Number(formData.get('subject_tahun') ?? 0);
   const subjectCodes = stringList(formData, 'kod_subjek').filter(Boolean);
   const subjectAssignmentLabels = stringList(formData, 'subject_assignment_label');
   const userIds = stringList(formData, 'subject_teacher_id');
@@ -160,14 +165,14 @@ export async function bulkAssignTeacherSubjects(
   const normalizedSubjectLabels = normalizeSplitLabels(
     subjectCodes.map((kodSubjek, index) => ({
       kodSubjek,
-      assignmentLabel: (subjectAssignmentLabels[index] ?? '').trim(),
+      assignmentLabel: canSplitSubject(kodSubjek, tahun) ? (subjectAssignmentLabels[index] ?? '').trim() : '',
     })),
   );
   const normalizedTimetableLabels = normalizeSplitLabels(
     timetableRows.map((row) => ({
       kodSubjek: row.kodSubjek,
       kodKomponen: row.kodKomponen,
-      assignmentLabel: row.assignmentLabel.trim(),
+      assignmentLabel: canSplitSubject(row.kodSubjek, tahun) ? row.assignmentLabel.trim() : '',
     })),
   );
 
@@ -185,6 +190,7 @@ export async function bulkAssignTeacherSubjects(
   let updated = 0;
   let componentUpdated = 0;
   const subjectCodesToReset = [...new Set(subjectCodes)];
+  const savedSubjectCounts = new Map<string, number>();
   for (const kodSubjek of subjectCodesToReset) {
     const { error: deleteError } = await supabase
       .from('teacher_subject_assignments')
@@ -199,6 +205,11 @@ export async function bulkAssignTeacherSubjects(
 
   for (const [index, kodSubjek] of subjectCodes.entries()) {
     const userId = userIds[index] ?? '';
+    const savedCount = savedSubjectCounts.get(kodSubjek) ?? 0;
+
+    if (!canSplitSubject(kodSubjek, tahun) && savedCount >= 1) {
+      continue;
+    }
 
     if (!userId || userId === clearTeacherValue) {
       continue;
@@ -216,6 +227,7 @@ export async function bulkAssignTeacherSubjects(
     }
 
     updated += 1;
+    savedSubjectCounts.set(kodSubjek, savedCount + 1);
   }
 
   for (const kodSubjek of componentParentSubjectCodes) {
@@ -307,7 +319,14 @@ export async function bulkAssignTeacherSubjects(
         }
       }
 
+      const savedRequirementCounts = new Map<string, number>();
       for (const [index, row] of timetableRows.entries()) {
+        const requirementCountKey = `${row.kodSubjek}|${row.kodKomponen}`;
+        const savedRequirementCount = savedRequirementCounts.get(requirementCountKey) ?? 0;
+        if (!canSplitSubject(row.kodSubjek, tahun) && savedRequirementCount >= 1) {
+          continue;
+        }
+
         const teacherId = row.teacherId && row.teacherId !== clearTeacherValue ? row.teacherId : '';
         if (!teacherId || row.bilSlot <= 0) {
           continue;
@@ -336,6 +355,7 @@ export async function bulkAssignTeacherSubjects(
         }
 
         requirementUpdated += 1;
+        savedRequirementCounts.set(requirementCountKey, savedRequirementCount + 1);
       }
     }
   }
