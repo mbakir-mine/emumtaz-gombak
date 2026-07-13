@@ -2255,6 +2255,10 @@ th {
   background: linear-gradient(135deg, #f7fcf8 0%, #fff9e8 100%);
 }
 
+.subject-split-row-simple {
+  grid-template-columns: minmax(240px, 1fr) auto;
+}
+
 .subject-split-add {
   justify-self: start;
 }

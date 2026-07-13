@@ -37,7 +37,7 @@ function displaySplitLabel(subjectName: string, label: string, index: number) {
 
 function nextSplitLabel(subjectName: string, rows: SubjectSplitRow[]) {
   let nextIndex = rows.length + 1;
-  let label = `${subjectName} ${nextIndex}`;
+  let label = nextIndex === 2 ? 'Guru Kedua' : `${subjectName} ${nextIndex}`;
   const existing = new Set(rows.map((row) => row.label));
 
   while (existing.has(label)) {
@@ -46,6 +46,10 @@ function nextSplitLabel(subjectName: string, rows: SubjectSplitRow[]) {
   }
 
   return label;
+}
+
+function firstSplitLabel() {
+  return 'Guru Utama';
 }
 
 function canSplitSubject(subject: SubjectRecord, selectedClass: ClassRecord) {
@@ -247,7 +251,7 @@ export default function TeacherSubjectDetailForm({
       return {
         ...current,
         [subject.kod_subjek]: [
-          ...rows,
+          ...rows.map((row, index) => (index === 0 && !row.label ? { ...row, label: firstSplitLabel() } : row)),
           {
             key: `${subject.kod_subjek}-${Date.now()}`,
             label,
@@ -335,6 +339,7 @@ export default function TeacherSubjectDetailForm({
                   const rows = (subjectRows[subject.kod_subjek] ?? [
                     { key: `${subject.kod_subjek}-utama`, label: '', teacherId: '', slotCount: '' },
                   ]).slice(0, allowSplit ? undefined : 1);
+                  const showSplitLabels = allowSplit && rows.length > 1;
 
                   return (
                     <tr key={subject.kod_subjek}>
@@ -407,18 +412,25 @@ export default function TeacherSubjectDetailForm({
                           {components.length === 0 && (
                             <div className="subject-split-teachers">
                               {rows.map((row, rowIndex) => (
-                                <div key={row.key} className="subject-split-row">
-                                  <label>
-                                    <span>Pecahan</span>
-                                    <input
-                                      name="subject_assignment_label"
-                                      value={row.label}
-                                      onChange={(event) =>
-                                        updateSubjectRow(subject.kod_subjek, row.key, { label: event.target.value.trimStart() })
-                                      }
-                                      placeholder={rowIndex === 0 ? 'Utama' : `${subject.nama_subjek} ${rowIndex + 1}`}
-                                    />
-                                  </label>
+                                <div
+                                  key={row.key}
+                                  className={showSplitLabels ? 'subject-split-row' : 'subject-split-row subject-split-row-simple'}
+                                >
+                                  {showSplitLabels ? (
+                                    <label>
+                                      <span>Pecahan</span>
+                                      <input
+                                        name="subject_assignment_label"
+                                        value={row.label}
+                                        onChange={(event) =>
+                                          updateSubjectRow(subject.kod_subjek, row.key, { label: event.target.value.trimStart() })
+                                        }
+                                        placeholder={rowIndex === 0 ? 'Guru Utama' : `Guru ${rowIndex + 1}`}
+                                      />
+                                    </label>
+                                  ) : (
+                                    <input name="subject_assignment_label" type="hidden" value={row.label} />
+                                  )}
                                   <label>
                                     <span>Guru subjek</span>
                                     <input name="kod_subjek" type="hidden" value={subject.kod_subjek} />
