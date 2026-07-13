@@ -56,6 +56,11 @@ function canSplitSubject(subject: SubjectRecord, selectedClass: ClassRecord) {
   return [1, 2].includes(selectedClass.tahun) && subject.kod_subjek === 'JAWI';
 }
 
+function slotNumber(value: string) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
+}
+
 export default function TeacherSubjectDetailForm({
   classId,
   schools,
@@ -157,6 +162,26 @@ export default function TeacherSubjectDetailForm({
       ),
     [selectedClass, subjects],
   );
+  const totalClassSlots = useMemo(() => {
+    if (!selectedClass) return 0;
+
+    return filteredSubjects.reduce((total, subject) => {
+      const components = componentsBySubject.get(subject.kod_subjek) ?? [];
+      if (components.length > 0) {
+        return (
+          total +
+          components.reduce((componentTotal, component) => {
+            const componentKey = `${subject.kod_subjek}|${component.kod_komponen}`;
+            return componentTotal + slotNumber(componentSlots[componentKey] ?? '');
+          }, 0)
+        );
+      }
+
+      const allowSplit = canSplitSubject(subject, selectedClass);
+      const rows = (subjectRows[subject.kod_subjek] ?? []).slice(0, allowSplit ? undefined : 1);
+      return total + rows.reduce((subjectTotal, row) => subjectTotal + slotNumber(row.slotCount), 0);
+    }, 0);
+  }, [componentSlots, componentsBySubject, filteredSubjects, selectedClass, subjectRows]);
 
   useEffect(() => {
     if (!selectedClass) {
@@ -319,6 +344,11 @@ export default function TeacherSubjectDetailForm({
             <button className="soft-action-button" type="button" onClick={applyTeacherToAllSubjects} disabled={!applyAllTeacher}>
               Guna Untuk Semua
             </button>
+          </div>
+          <div className="subject-slot-summary">
+            <span>Jumlah masa kelas</span>
+            <strong>{totalClassSlots}</strong>
+            <small>masa seminggu berdasarkan Bil. Masa subjek kelas ini</small>
           </div>
 
           <div className="table-scroll">

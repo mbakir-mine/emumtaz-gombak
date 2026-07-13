@@ -2267,6 +2267,32 @@ th {
   min-width: 76px;
 }
 
+.subject-slot-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: -2px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d8eadb;
+  border-radius: 8px;
+  background: #f7fcf8;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.subject-slot-summary strong {
+  color: var(--green);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.subject-slot-summary small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .teacher-assignment-table .selected-row {
   background: #f2fbf3;
   box-shadow: inset 4px 0 0 var(--green);
