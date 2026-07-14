@@ -62,7 +62,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           ? `auth_user_id.eq.${user.id},email.ilike.${email.toLowerCase()}`
           : `email.ilike.${email.toLowerCase()}`;
 
-        let profileResult = await withTimeout(
+        const profileResult = await withTimeout(
           Promise.resolve(
             supabase
               .from('app_users')

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
@@ -18,7 +19,8 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
     "typescript": "latest"
   }
 }
-

@@ -884,7 +884,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
   let marks = 0;
   let schoolCategories: Record<string, number> = {};
   let studentGender = { lelaki: 0, perempuan: 0 };
-  let classesByYear: Record<number, number> = {};
+  const classesByYear: Record<number, number> = {};
 
   try {
     [schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender] = await Promise.all([
