@@ -1,0 +1,353 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '../supabase'
+import { useRouter } from 'next/navigation'
+
+export default function InputKelasPage() {
+  const router = useRouter()
+
+  const [kodSekolah, setKodSekolah] = useState('')
+  const [role, setRole] = useState('')
+  const [darjah, setDarjah] = useState('')
+  const [kelas, setKelas] = useState('')
+  const [exam, setExam] = useState('UPSA')
+  const [subjek, setSubjek] = useState('')
+
+  const [students, setStudents] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [kelasList, setKelasList] = useState<string[]>([])
+  const [markah, setMarkah] = useState<any>({})
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    async function init() {
+      const { data } = await supabase.auth.getUser()
+
+      if (!data.user) {
+        router.push('/login')
+        return
+      }
+
+      const savedRole = localStorage.getItem('role') || ''
+      const savedKodSekolah = localStorage.getItem('kod_sekolah') || ''
+
+      if (!savedRole || !savedKodSekolah || savedKodSekolah === 'SEMUA') {
+        router.push('/akses')
+        return
+      }
+
+      setRole(savedRole)
+      setKodSekolah(savedKodSekolah)
+    }
+
+    init()
+  }, [router])
+
+  useEffect(() => {
+    async function loadKelas() {
+      if (!kodSekolah || !darjah) return
+
+      const { data } = await supabase
+        .from('students')
+        .select('kelas')
+        .eq('kod_sekolah', kodSekolah)
+        .eq('darjah', Number(darjah))
+        .eq('status', 'AKTIF')
+
+      const uniqueKelas = Array.from(new Set((data || []).map((x: any) => x.kelas)))
+      setKelasList(uniqueKelas)
+    }
+
+    loadKelas()
+  }, [kodSekolah, darjah])
+
+  useEffect(() => {
+    async function loadSubjects() {
+      if (!darjah) return
+
+      const { data } = await supabase
+        .from('subjects')
+        .select('*')
+        .lte('darjah_min', Number(darjah))
+        .gte('darjah_max', Number(darjah))
+        .order('susunan', { ascending: true })
+
+      setSubjects(data || [])
+    }
+
+    loadSubjects()
+  }, [darjah])
+
+  async function paparMurid() {
+    setMessage('')
+    setMarkah({})
+
+    if (!kodSekolah || !darjah || !kelas || !subjek || !exam) {
+      setMessage('Sila lengkapkan pilihan darjah, kelas, subjek dan peperiksaan.')
+      return
+    }
+
+    const { data: muridData } = await supabase
+      .from('students')
+      .select('*')
+      .eq('kod_sekolah', kodSekolah)
+      .eq('darjah', Number(darjah))
+      .eq('kelas', kelas)
+      .eq('status', 'AKTIF')
+      .order('nama', { ascending: true })
+
+    setStudents(muridData || [])
+
+    const { data: markahData } = await supabase
+      .from('marks')
+      .select('*')
+      .eq('tahun', 2026)
+      .eq('kod_exam', exam)
+      .eq('kod_sekolah', kodSekolah)
+      .eq('kod_subjek', subjek)
+
+    const markahMap: any = {}
+
+    ;(markahData || []).forEach((m: any) => {
+      markahMap[m.mykid] = m.markah
+    })
+
+    setMarkah(markahMap)
+  }
+
+  function updateMarkah(mykid: string, value: string) {
+    setMarkah({
+      ...markah,
+      [mykid]: value
+    })
+  }
+
+  function kiraGred(value: any) {
+    const m = Number(value)
+    if (value === '' || value === undefined) return '-'
+    if (m >= 90) return 'MUMTAZ'
+    if (m >= 75) return 'JAYYID JIDDAN'
+    if (m >= 60) return 'JAYYID'
+    if (m >= 40) return 'MAQBUL'
+    return "MUSA'ADAH"
+  }
+
+  async function simpanSemua() {
+    setMessage('')
+
+    const dataUntukSimpan = students
+      .filter((murid) => markah[murid.mykid] !== '' && markah[murid.mykid] !== undefined)
+      .map((murid) => ({
+        tahun: 2026,
+        kod_exam: exam,
+        kod_sekolah: kodSekolah,
+        mykid: murid.mykid,
+        kod_subjek: subjek,
+        markah: Number(markah[murid.mykid])
+      }))
+
+    if (dataUntukSimpan.length === 0) {
+      setMessage('Tiada markah untuk disimpan.')
+      return
+    }
+
+    const { error } = await supabase.from('marks').upsert(
+      dataUntukSimpan,
+      {
+        onConflict: 'tahun,kod_exam,kod_sekolah,mykid,kod_subjek'
+      }
+    )
+
+    if (error) {
+      console.log(error)
+      setMessage('Gagal simpan markah.')
+    } else {
+      setMessage('Semua markah berjaya disimpan / dikemaskini.')
+      paparMurid()
+    }
+  }
+
+  return (
+    <main style={{
+      minHeight: '100vh',
+      background: '#f1f5f9',
+      padding: '30px',
+      fontFamily: 'Arial'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        background: 'white',
+        padding: '30px',
+        borderRadius: '18px',
+        boxShadow: '0 10px 25px rgba(15,23,42,0.10)'
+      }}>
+        <h1>Input Markah Mengikut Kelas</h1>
+
+        <p>
+          Role: <b>{role}</b><br />
+          Kod Sekolah: <b>{kodSekolah}</b>
+        </p>
+
+        <div style={grid}>
+          <div>
+            <label>Peperiksaan</label>
+            <select value={exam} onChange={(e) => setExam(e.target.value)} style={inputStyle}>
+              <option value="UPSA">UPSA</option>
+              <option value="UASA">UASA</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Darjah</label>
+            <select value={darjah} onChange={(e) => {
+              setDarjah(e.target.value)
+              setKelas('')
+              setSubjek('')
+              setStudents([])
+            }} style={inputStyle}>
+              <option value="">-- Pilih Darjah --</option>
+              <option value="1">Tahun 1</option>
+              <option value="2">Tahun 2</option>
+              <option value="3">Tahun 3</option>
+              <option value="4">Tahun 4</option>
+              <option value="5">Tahun 5</option>
+              <option value="6">Tahun 6</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Kelas</label>
+            <select value={kelas} onChange={(e) => setKelas(e.target.value)} style={inputStyle}>
+              <option value="">-- Pilih Kelas --</option>
+              {kelasList.map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label>Subjek</label>
+            <select value={subjek} onChange={(e) => setSubjek(e.target.value)} style={inputStyle}>
+              <option value="">-- Pilih Subjek --</option>
+              {subjects.map((s) => (
+                <option key={s.kod_subjek} value={s.kod_subjek}>
+                  {s.nama_subjek}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button onClick={paparMurid} style={buttonStyle}>
+          PAPAR SENARAI MURID
+        </button>
+
+        {message && (
+          <p style={{
+            marginTop: '15px',
+            background: '#ecfdf5',
+            color: '#065f46',
+            padding: '12px',
+            borderRadius: '10px'
+          }}>
+            {message}
+          </p>
+        )}
+
+        {students.length > 0 && (
+          <>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              marginTop: '25px'
+            }}>
+              <thead>
+                <tr style={{ background: '#047857', color: 'white' }}>
+                  <th style={th}>Bil</th>
+                  <th style={th}>MyKid</th>
+                  <th style={th}>L/P</th>
+                  <th style={th}>Nama Murid</th>
+                  <th style={th}>Markah</th>
+                  <th style={th}>Gred</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {students.map((murid, index) => (
+                  <tr key={murid.mykid}>
+                    <td style={td}>{index + 1}</td>
+                    <td style={td}>{murid.mykid}</td>
+                    <td style={td}>{murid.jantina}</td>
+                    <td style={td}>{murid.nama}</td>
+                    <td style={td}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={markah[murid.mykid] || ''}
+                        onChange={(e) => updateMarkah(murid.mykid, e.target.value)}
+                        style={{
+                          width: '90px',
+                          padding: '8px',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    </td>
+                    <td style={td}>{kiraGred(markah[murid.mykid])}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <button onClick={simpanSemua} style={{
+              ...buttonStyle,
+              marginTop: '20px'
+            }}>
+              SIMPAN SEMUA MARKAH
+            </button>
+          </>
+        )}
+      </div>
+    </main>
+  )
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '12px',
+  marginTop: '6px',
+  marginBottom: '16px',
+  border: '1px solid #cbd5e1',
+  borderRadius: '10px'
+}
+
+const grid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '16px'
+}
+
+const buttonStyle = {
+  width: '100%',
+  padding: '14px',
+  background: '#047857',
+  color: 'white',
+  border: 'none',
+  borderRadius: '10px',
+  fontWeight: 'bold',
+  cursor: 'pointer'
+}
+
+const th = {
+  padding: '12px',
+  border: '1px solid #e2e8f0',
+  textAlign: 'left' as const
+}
+
+const td = {
+  padding: '10px',
+  border: '1px solid #e2e8f0'
+}
