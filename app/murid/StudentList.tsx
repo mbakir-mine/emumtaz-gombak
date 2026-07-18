@@ -211,18 +211,25 @@ function CategoryStudentCard({
 function StudentSummaryCards({
   profile,
   summaries,
+  schoolCategory,
   formOpen,
   onToggleForm,
   onSelect,
 }: {
   profile: AccessProfile | null;
   summaries: StudentSchoolSummary[];
+  schoolCategory: string | null;
   formOpen: boolean;
   onToggleForm: () => void;
   onSelect: (filter: StudentFilter) => void;
 }) {
   const currentScope = scopeLabel(profile);
-  const categoryCounts = SCHOOL_CATEGORY_ORDER.map((category) => ({
+  const visibleCategories = profile?.role === 'ADMIN_SEKOLAH'
+    ? schoolCategory
+      ? [schoolCategory]
+      : []
+    : SCHOOL_CATEGORY_ORDER;
+  const categoryCounts = visibleCategories.map((category) => ({
     category,
     count: summaries
       .filter((summary) => summary.kategori?.toUpperCase() === category)
@@ -257,7 +264,7 @@ function StudentSummaryCards({
         </div>
       </article>
 
-      {SCHOOL_CATEGORY_ORDER.map((category) => (
+      {visibleCategories.map((category) => (
         <CategoryStudentCard
           key={category}
           category={category}
@@ -291,6 +298,10 @@ export default function StudentList({
     [classes, profile, schools, students],
   );
   const schoolMap = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school])), [schools]);
+  const scopedSchoolCategory = useMemo(
+    () => scopeSchools(profile, schools)[0]?.kategori?.toUpperCase() ?? null,
+    [profile, schools],
+  );
   const scopedSchoolCodes = useMemo(() => new Set(scopeSchools(profile, schools).map((school) => school.kod_sekolah)), [profile, schools]);
   const fallbackSchoolSummaries = useMemo<StudentSchoolSummary[]>(() => {
     const grouped = new Map<string, StudentSchoolSummary>();
@@ -379,6 +390,7 @@ export default function StudentList({
       <StudentSummaryCards
         profile={profile}
         summaries={scopedSchoolSummaries}
+        schoolCategory={scopedSchoolCategory}
         formOpen={showForms}
         onToggleForm={() => setShowForms((value) => !value)}
         onSelect={(filter) => {
