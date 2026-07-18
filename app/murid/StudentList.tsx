@@ -228,6 +228,7 @@ function StudentSummaryCards({
   onSelect: (filter: StudentFilter) => void;
 }) {
   const currentScope = scopeLabel(profile);
+  const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const visibleCategories = profile?.role === 'ADMIN_SEKOLAH'
     ? schoolCategory
       ? [schoolCategory]
@@ -240,12 +241,14 @@ function StudentSummaryCards({
       .reduce((total, summary) => total + summary.jumlah_murid, 0),
   }));
   const totalStudents = summaries.reduce((total, summary) => total + summary.jumlah_murid, 0);
+  const maleStudents = summaries.reduce((total, summary) => total + summary.murid_lelaki, 0);
+  const femaleStudents = summaries.reduce((total, summary) => total + summary.murid_perempuan, 0);
 
   return (
     <div className="student-summary-grid student-summary-category-grid">
-      <article className="metric dashboard-metric student-summary-card student-total-card">
+      <article className={`metric dashboard-metric student-summary-card student-total-card ${isSchoolAdmin ? 'student-total-card-school' : ''}`}>
         <div className="student-card-main">
-          <span>Jumlah Keseluruhan</span>
+          <span>{isSchoolAdmin ? 'Jumlah Murid Sekolah' : 'Jumlah Keseluruhan'}</span>
           <CountButton filter={{ label: `Semua murid ${currentScope}` }} onSelect={onSelect}>
             <strong>{totalStudents}</strong>
           </CountButton>
@@ -256,19 +259,36 @@ function StudentSummaryCards({
           ) : null}
         </div>
         <div className="metric-breakdown student-count-list student-total-breakdown">
-          {categoryCounts.map((item) => (
-            <BreakdownRow
-              key={item.category}
-              label={item.category}
-              filter={{ label: `${item.category} ${currentScope}`, category: item.category }}
-              count={item.count}
-              onSelect={onSelect}
-            />
-          ))}
+          {isSchoolAdmin ? (
+            <>
+              <BreakdownRow
+                label="L"
+                filter={{ label: `Murid lelaki ${currentScope}`, category: schoolCategory ?? undefined, gender: 'L' }}
+                count={maleStudents}
+                onSelect={onSelect}
+              />
+              <BreakdownRow
+                label="P"
+                filter={{ label: `Murid perempuan ${currentScope}`, category: schoolCategory ?? undefined, gender: 'P' }}
+                count={femaleStudents}
+                onSelect={onSelect}
+              />
+            </>
+          ) : (
+            categoryCounts.map((item) => (
+              <BreakdownRow
+                key={item.category}
+                label={item.category}
+                filter={{ label: `${item.category} ${currentScope}`, category: item.category }}
+                count={item.count}
+                onSelect={onSelect}
+              />
+            ))
+          )}
         </div>
       </article>
 
-      {visibleCategories.map((category) => (
+      {!isSchoolAdmin && visibleCategories.map((category) => (
         <CategoryStudentCard
           key={category}
           category={category}

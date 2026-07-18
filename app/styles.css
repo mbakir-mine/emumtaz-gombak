@@ -2756,6 +2756,10 @@ th {
   grid-template-columns: 1fr;
 }
 
+.student-total-card-school {
+  grid-column: span 2;
+}
+
 .student-category-card::after {
   content: '';
   position: absolute;
