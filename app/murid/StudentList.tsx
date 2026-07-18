@@ -154,10 +154,12 @@ function BreakdownRow({
 function CategoryStudentCard({
   category,
   summaries,
+  isSchoolAdmin,
   onSelect,
 }: {
   category: string;
   summaries: StudentSchoolSummary[];
+  isSchoolAdmin: boolean;
   onSelect: (filter: StudentFilter) => void;
 }) {
   const categorySummaries = summaries.filter((summary) => summary.kategori?.toUpperCase() === category);
@@ -172,7 +174,7 @@ function CategoryStudentCard({
   }));
 
   return (
-    <article className="student-category-card">
+    <article className={`student-category-card ${isSchoolAdmin ? 'student-category-card-school' : ''}`}>
       <div className="student-category-left">
         <h3>Murid Di {category}</h3>
         <CountButton filter={{ label: `Murid ${category}`, category }} onSelect={onSelect}>
@@ -193,17 +195,19 @@ function CategoryStudentCard({
           />
         </div>
       </div>
-      <div className="student-category-zones">
-        {zoneCounts.map((item) => (
-          <BreakdownRow
-            key={item.zone}
-            label={zoneText(item.zone)}
-            filter={{ label: `${category} ${zoneText(item.zone)}`, category, zone: item.zone }}
-            count={item.count}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
+      {!isSchoolAdmin ? (
+        <div className="student-category-zones">
+          {zoneCounts.map((item) => (
+            <BreakdownRow
+              key={item.zone}
+              label={zoneText(item.zone)}
+              filter={{ label: `${category} ${zoneText(item.zone)}`, category, zone: item.zone }}
+              count={item.count}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -269,6 +273,7 @@ function StudentSummaryCards({
           key={category}
           category={category}
           summaries={summaries}
+          isSchoolAdmin={profile?.role === 'ADMIN_SEKOLAH'}
           onSelect={onSelect}
         />
       ))}

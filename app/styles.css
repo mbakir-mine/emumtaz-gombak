@@ -2752,6 +2752,10 @@ th {
   box-shadow: 0 8px 18px rgba(2, 46, 25, 0.07);
 }
 
+.student-category-card-school {
+  grid-template-columns: 1fr;
+}
+
 .student-category-card::after {
   content: '';
   position: absolute;
