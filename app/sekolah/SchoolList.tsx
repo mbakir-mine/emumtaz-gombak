@@ -114,17 +114,17 @@ function SchoolSummaryCards({
               </CountButton>
             </span>
             <span>
-              <em>SRI</em>
-              <i>:</i>
-              <CountButton filter={{ label: `SRI ${scopeLabel}`, categories: ['SRI'] }} onSelect={onSelect}>
-                <b>{breakdown.sri}</b>
-              </CountButton>
-            </span>
-            <span>
               <em>KAFAI</em>
               <i>:</i>
               <CountButton filter={{ label: `KAFAI ${scopeLabel}`, categories: ['KAFAI'] }} onSelect={onSelect}>
                 <b>{breakdown.kafai}</b>
+              </CountButton>
+            </span>
+            <span>
+              <em>SRI</em>
+              <i>:</i>
+              <CountButton filter={{ label: `SRI ${scopeLabel}`, categories: ['SRI'] }} onSelect={onSelect}>
+                <b>{breakdown.sri}</b>
               </CountButton>
             </span>
           </div>

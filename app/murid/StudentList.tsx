@@ -9,6 +9,7 @@ import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import StudentForm from './StudentForm';
 import StudentImportForm from './StudentImportForm';
+import { SCHOOL_CATEGORY_ORDER } from '@/lib/schoolCategories';
 
 const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
 const yearOrder = [1, 2, 3, 4, 5, 6];
@@ -221,7 +222,7 @@ function StudentSummaryCards({
   onSelect: (filter: StudentFilter) => void;
 }) {
   const currentScope = scopeLabel(profile);
-  const categoryCounts = ['SRAI', 'SRA', 'SRI', 'KAFAI'].map((category) => ({
+  const categoryCounts = SCHOOL_CATEGORY_ORDER.map((category) => ({
     category,
     count: summaries
       .filter((summary) => summary.kategori?.toUpperCase() === category)
@@ -256,7 +257,7 @@ function StudentSummaryCards({
         </div>
       </article>
 
-      {['SRAI', 'SRA', 'SRI', 'KAFAI'].map((category) => (
+      {SCHOOL_CATEGORY_ORDER.map((category) => (
         <CategoryStudentCard
           key={category}
           category={category}

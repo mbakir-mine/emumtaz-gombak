@@ -12,6 +12,7 @@ import type {
   TeacherDashboardSubject,
 } from '@/lib/data';
 import { useAccessProfile } from './ui/AuthGate';
+import { schoolCategoryRank } from '@/lib/schoolCategories';
 
 type MetricItem = {
   label: string;
@@ -81,8 +82,8 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
       breakdown: [
         { label: 'SRAI', value: counts.schoolCategories.SRAI ?? 0 },
         { label: 'SRA', value: counts.schoolCategories.SRA ?? 0 },
-        { label: 'SRI', value: counts.schoolCategories.SRI ?? 0 },
         { label: 'KAFAI', value: counts.schoolCategories.KAFAI ?? 0 },
+        { label: 'SRI', value: counts.schoolCategories.SRI ?? 0 },
       ],
     },
     {
@@ -131,10 +132,12 @@ function groupedTopSchools(rows: DashboardSchoolRank[]) {
     groups.set(key, [...(groups.get(key) ?? []), row]);
   });
 
-  return [...groups.entries()].map(([kategori, items]) => ({
-    kategori,
-    items: items.slice(0, 5),
-  }));
+  return [...groups.entries()]
+    .sort(([left], [right]) => schoolCategoryRank(left) - schoolCategoryRank(right))
+    .map(([kategori, items]) => ({
+      kategori,
+      items: items.slice(0, 5),
+    }));
 }
 
 function topClassByYear(rows: DashboardClassRank[]) {

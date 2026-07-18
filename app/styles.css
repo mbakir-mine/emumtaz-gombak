@@ -2148,6 +2148,14 @@ th {
   color: var(--ink);
 }
 
+.school-summary-card:nth-child(3) {
+  order: 4;
+}
+
+.school-summary-card:nth-child(4) {
+  order: 3;
+}
+
 .teacher-assignment-table .slot-column {
   width: 128px;
   text-align: center;

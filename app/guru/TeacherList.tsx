@@ -8,6 +8,7 @@ import { scopeUsers } from '../ui/scopedData';
 import { bulkUpdateTeacherStatus, updateTeacherStatus } from './actions';
 import TeacherForm from './TeacherForm';
 import TeacherImportForm from './TeacherImportForm';
+import { SCHOOL_CATEGORY_ORDER } from '@/lib/schoolCategories';
 
 function accessLabel(user: UserRecord) {
   if (user.role === 'ADMIN_DAERAH') return 'Semua sekolah';
@@ -144,7 +145,7 @@ function TeacherSummaryCards({
           </strong>
         </div>
         <div className={`teacher-count-list ${isSchoolAdmin ? 'teacher-count-list-year' : ''}`}>
-          {(isSchoolAdmin ? teacherByYear : ['SRAI', 'SRA', 'SRI', 'KAFAI']).map((item) => (
+          {(isSchoolAdmin ? teacherByYear : SCHOOL_CATEGORY_ORDER).map((item) => (
             <span key={typeof item === 'string' ? item : item.year}>
               <em>{typeof item === 'string' ? item : `Tahun ${item.year}`}</em>
               <i>:</i>
