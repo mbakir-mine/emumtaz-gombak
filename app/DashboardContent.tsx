@@ -81,6 +81,7 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
       breakdown: [
         { label: 'SRAI', value: counts.schoolCategories.SRAI ?? 0 },
         { label: 'SRA', value: counts.schoolCategories.SRA ?? 0 },
+        { label: 'SRI', value: counts.schoolCategories.SRI ?? 0 },
         { label: 'KAFAI', value: counts.schoolCategories.KAFAI ?? 0 },
       ],
     },

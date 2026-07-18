@@ -1,6 +1,6 @@
 # e-Mumtaz Gombak
 
-Sistem Analisis Prestasi Murid SRA & KAFAI Daerah Gombak.
+Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI Daerah Gombak.
 
 ## Matlamat Sistem
 

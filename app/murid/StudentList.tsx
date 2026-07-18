@@ -221,7 +221,7 @@ function StudentSummaryCards({
   onSelect: (filter: StudentFilter) => void;
 }) {
   const currentScope = scopeLabel(profile);
-  const categoryCounts = ['SRAI', 'SRA', 'KAFAI'].map((category) => ({
+  const categoryCounts = ['SRAI', 'SRA', 'SRI', 'KAFAI'].map((category) => ({
     category,
     count: summaries
       .filter((summary) => summary.kategori?.toUpperCase() === category)
@@ -256,7 +256,7 @@ function StudentSummaryCards({
         </div>
       </article>
 
-      {['SRAI', 'SRA', 'KAFAI'].map((category) => (
+      {['SRAI', 'SRA', 'SRI', 'KAFAI'].map((category) => (
         <CategoryStudentCard
           key={category}
           category={category}

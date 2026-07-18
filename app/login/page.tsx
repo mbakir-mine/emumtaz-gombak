@@ -45,7 +45,7 @@ export default function LoginPage() {
           <div className="brand-mark">eM</div>
           <div>
             <strong>e-Mumtaz Gombak</strong>
-            <span>Sistem Analisis Prestasi Murid SRA & KAFAI</span>
+            <span>Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI</span>
           </div>
         </div>
 

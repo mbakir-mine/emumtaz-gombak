@@ -144,7 +144,7 @@ function TeacherSummaryCards({
           </strong>
         </div>
         <div className={`teacher-count-list ${isSchoolAdmin ? 'teacher-count-list-year' : ''}`}>
-          {(isSchoolAdmin ? teacherByYear : ['SRAI', 'SRA', 'KAFAI']).map((item) => (
+          {(isSchoolAdmin ? teacherByYear : ['SRAI', 'SRA', 'SRI', 'KAFAI']).map((item) => (
             <span key={typeof item === 'string' ? item : item.year}>
               <em>{typeof item === 'string' ? item : `Tahun ${item.year}`}</em>
               <i>:</i>

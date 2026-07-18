@@ -2388,7 +2388,7 @@ th {
 }
 
 .student-summary-category-grid {
-  grid-template-columns: minmax(250px, 0.9fr) repeat(3, minmax(240px, 1fr));
+  grid-template-columns: minmax(250px, 0.9fr) repeat(4, minmax(200px, 1fr));
 }
 
 .teacher-summary-card {

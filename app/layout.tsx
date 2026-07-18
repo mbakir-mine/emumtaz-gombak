@@ -3,7 +3,7 @@ import './styles.css';
 
 export const metadata: Metadata = {
   title: 'e-Mumtaz Gombak',
-  description: 'Sistem Analisis Prestasi Murid SRA & KAFAI Daerah Gombak',
+  description: 'Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI Daerah Gombak',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

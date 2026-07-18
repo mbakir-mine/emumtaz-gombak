@@ -28,6 +28,7 @@ function categoryBreakdown(schools: School[]) {
   return {
     srai: countByCategory(schools, ['SRAI']),
     sra: countByCategory(schools, ['SRA']),
+    sri: countByCategory(schools, ['SRI']),
     kafai: countByCategory(schools, ['KAFAI']),
   };
 }
@@ -113,6 +114,13 @@ function SchoolSummaryCards({
               </CountButton>
             </span>
             <span>
+              <em>SRI</em>
+              <i>:</i>
+              <CountButton filter={{ label: `SRI ${scopeLabel}`, categories: ['SRI'] }} onSelect={onSelect}>
+                <b>{breakdown.sri}</b>
+              </CountButton>
+            </span>
+            <span>
               <em>KAFAI</em>
               <i>:</i>
               <CountButton filter={{ label: `KAFAI ${scopeLabel}`, categories: ['KAFAI'] }} onSelect={onSelect}>
@@ -160,6 +168,42 @@ function SchoolSummaryCards({
                   <i>:</i>
                   <CountButton
                     filter={{ label: `SRA & SRAI ${zoneText(item.zone)}`, categories: ['SRA', 'SRAI'], zone: item.zone }}
+                    onSelect={onSelect}
+                  >
+                    <b>{item.count}</b>
+                  </CountButton>
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </article>
+
+      <article className="school-summary-card">
+        <div className="school-summary-title">
+          <span>SRI</span>
+          <small>{scopeLabel}</small>
+        </div>
+        <div className="school-summary-main">
+          <CountButton filter={{ label: `SRI ${scopeLabel}`, categories: ['SRI'] }} onSelect={onSelect}>
+            <strong>{breakdown.sri}</strong>
+          </CountButton>
+          <div className="school-zone-list">
+            {isZoneAdmin ? (
+              <span>
+                <em>SRI</em>
+                <i>:</i>
+                <CountButton filter={{ label: `SRI ${scopeLabel}`, categories: ['SRI'] }} onSelect={onSelect}>
+                  <b>{breakdown.sri}</b>
+                </CountButton>
+              </span>
+            ) : (
+              zoneBreakdown(schools, ['SRI']).map((item) => (
+                <span key={item.zone}>
+                  <em>{zoneText(item.zone)}</em>
+                  <i>:</i>
+                  <CountButton
+                    filter={{ label: `SRI ${zoneText(item.zone)}`, categories: ['SRI'], zone: item.zone }}
                     onSelect={onSelect}
                   >
                     <b>{item.count}</b>

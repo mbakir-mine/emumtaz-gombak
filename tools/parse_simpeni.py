@@ -31,7 +31,13 @@ print("missing vs csv", len(missing))
 print(missing[["kod_sekolah", "nama_sekolah", "daerah_negeri", "status_pendaftaran"]].to_string(index=False))
 
 out = gombak[["kod_sekolah", "nama_sekolah"]].copy()
-out["kategori"] = out["kod_sekolah"].map(lambda x: "SRA" if x.startswith(("BYP", "BYR")) else "KAFAI")
+def kategori_sekolah(row):
+    nama = str(row["nama_sekolah"]).upper()
+    if "SEKOLAH RENDAH ISLAM" in nama:
+        return "SRI"
+    return "SRA" if row["kod_sekolah"].startswith(("BYP", "BYR")) else "KAFAI"
+
+out["kategori"] = out.apply(kategori_sekolah, axis=1)
 out["daerah"] = "GOMBAK"
 out["status"] = "AKTIF"
 out.to_csv("outputs/simpeni_gombak_schools.csv", index=False, encoding="utf-8-sig")
