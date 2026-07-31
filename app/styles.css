@@ -693,6 +693,33 @@ a {
   background: #fbfcfc;
 }
 
+.psra-school-display {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.psra-school-display span {
+  color: #5d706a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.psra-school-display strong {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d8e4df;
+  border-radius: 10px;
+  color: #183c32;
+  background: #f4f8f6;
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .psra-locked {
   padding: 32px;
   border-color: #f0d99c;

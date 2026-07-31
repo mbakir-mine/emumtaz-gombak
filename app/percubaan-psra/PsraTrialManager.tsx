@@ -62,7 +62,8 @@ export default function PsraTrialManager({
 }: Props) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
-  const canManageAll = profile?.role === 'OWNER' || profile?.role === 'ADMIN_SEKOLAH';
+  const canSelectSchool = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
+  const canManageAll = canSelectSchool || profile?.role === 'ADMIN_SEKOLAH';
   const assignedClassIds = useMemo(
     () => new Set(classAssignments.filter((item) => item.user_id === profile?.id).map((item) => item.class_id)),
     [classAssignments, profile?.id],
@@ -84,9 +85,9 @@ export default function PsraTrialManager({
   );
 
   const selectableSchools = useMemo(() => {
-    if (profile?.role === 'OWNER') return schools.filter((school) => isActive(school.status));
+    if (canSelectSchool) return schools.filter((school) => isActive(school.status));
     return schools.filter((school) => school.kod_sekolah === profile?.kod_sekolah);
-  }, [profile?.kod_sekolah, profile?.role, schools]);
+  }, [canSelectSchool, profile?.kod_sekolah, schools]);
 
   const years = useMemo(() => {
     const available = new Set<number>([currentYear]);
@@ -301,7 +302,7 @@ export default function PsraTrialManager({
   }
 
   const permissionLabel = canManageAll
-    ? 'Pentadbir sekolah · Semua kelas dan kertas'
+    ? `${profile?.role === 'ADMIN_DAERAH' ? 'Admin daerah' : profile?.role === 'OWNER' ? 'Pentadbir utama' : 'Pentadbir sekolah'} · Semua kelas dan kertas`
     : isClassTeacher
       ? 'Guru kelas · Semua 5 kertas bagi kelas ini'
       : editablePapers.length
@@ -330,16 +331,27 @@ export default function PsraTrialManager({
       </nav>
 
       <section className="psra-filter-bar">
-        <label>
-          Sekolah
-          <select value={selectedSchool} onChange={(event) => setSelectedSchool(event.target.value)}>
-            {selectableSchools.map((school) => (
-              <option value={school.kod_sekolah} key={school.kod_sekolah}>
-                {school.kod_sekolah} - {school.nama_sekolah}
-              </option>
-            ))}
-          </select>
-        </label>
+        {canSelectSchool ? (
+          <label>
+            Sekolah
+            <select value={selectedSchool} onChange={(event) => setSelectedSchool(event.target.value)}>
+              {selectableSchools.map((school) => (
+                <option value={school.kod_sekolah} key={school.kod_sekolah}>
+                  {school.kod_sekolah} - {school.nama_sekolah}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="psra-school-display">
+            <span>Sekolah</span>
+            <strong>
+              {selectableSchools[0]
+                ? `${selectableSchools[0].kod_sekolah} - ${selectableSchools[0].nama_sekolah}`
+                : 'Sekolah tidak ditemui'}
+            </strong>
+          </div>
+        )}
         <label>
           Tahun Akademik
           <select value={selectedYear} onChange={(event) => setSelectedYear(Number(event.target.value))}>

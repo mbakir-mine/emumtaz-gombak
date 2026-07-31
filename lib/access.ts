@@ -72,7 +72,7 @@ export const navItems: NavItem[] = [
     key: 'psraTrial',
     label: 'Percubaan PSRA',
     href: '/percubaan-psra',
-    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
     moduleKey: 'PERCUBAAN_PSRA',
   },
   {
@@ -122,7 +122,7 @@ export const navItems: NavItem[] = [
     key: 'reportPsra',
     label: 'Laporan Percubaan PSRA',
     href: '/percubaan-psra/laporan',
-    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
     moduleKey: 'PERCUBAAN_PSRA',
   },
   { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },

@@ -125,6 +125,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         let enabledModules: OptionalSchoolModuleKey[] = [];
         if (activeProfile.role === 'OWNER') {
           enabledModules = optionalSchoolModules.map((module) => module.key);
+        } else if (activeProfile.role === 'ADMIN_DAERAH') {
+          enabledModules = ['PERCUBAAN_PSRA'];
         } else if (activeProfile.kod_sekolah) {
           const moduleResult = await withTimeout(
             Promise.resolve(
