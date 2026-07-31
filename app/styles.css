@@ -289,6 +289,20 @@ a {
   box-shadow: 0 10px 24px rgba(15, 61, 49, .05);
 }
 
+.psra-report-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.psra-report-pair > .psra-report-panel,
+.psra-report-pair > .psra-report-chart-page {
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+}
+
 .psra-report-panel > header {
   display: flex;
   justify-content: space-between;
@@ -547,6 +561,12 @@ a {
   }
 }
 
+@media (max-width: 1180px) {
+  .psra-report-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
   .psra-report-filters,
   .psra-report-metrics,
@@ -607,6 +627,14 @@ a {
 
   .psra-report-panel {
     break-inside: auto;
+  }
+
+  .psra-report-pair {
+    display: block;
+  }
+
+  .psra-report-pair > .psra-report-panel {
+    height: auto;
   }
 
   .psra-report-chart-page {

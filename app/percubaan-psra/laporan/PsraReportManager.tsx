@@ -459,20 +459,22 @@ export default function PsraReportManager({
           ) : null}
 
           {reportType === 'subjek' ? (
-            <ReportSection
-              title="Laporan Mata Pelajaran"
-              subtitle="Bilangan murid mengikut gred bagi setiap mata pelajaran serta Gred Purata Mata Pelajaran (GPMP)."
-            >
-              <ReportTable headers={['Mata Pelajaran', ...GRADE_NAMES, 'Jumlah Murid', 'GPMP']}>
-                {subjectSummaries.map((item) => (
-                  <tr key={item.paper.subjectCode}>
-                    <th>{item.paper.label}</th>
-                    {GRADE_NAMES.map((grade) => <td key={grade}>{item.counts[grade]}</td>)}
-                    <td>{item.values.length}</td>
-                    <td>{number(item.gpmp)}</td>
-                  </tr>
-                ))}
-              </ReportTable>
+            <div className="psra-report-pair">
+              <ReportSection
+                title="Laporan Mata Pelajaran"
+                subtitle="Bilangan murid mengikut gred bagi setiap mata pelajaran serta Gred Purata Mata Pelajaran (GPMP)."
+              >
+                <ReportTable headers={['Mata Pelajaran', ...GRADE_NAMES, 'Jumlah Murid', 'GPMP']}>
+                  {subjectSummaries.map((item) => (
+                    <tr key={item.paper.subjectCode}>
+                      <th>{item.paper.label}</th>
+                      {GRADE_NAMES.map((grade) => <td key={grade}>{item.counts[grade]}</td>)}
+                      <td>{item.values.length}</td>
+                      <td>{number(item.gpmp)}</td>
+                    </tr>
+                  ))}
+                </ReportTable>
+              </ReportSection>
               <SubjectGradeChart
                 title="Graf Taburan Gred Mengikut Mata Pelajaran"
                 subtitle={`${selectedSchoolName} · Percubaan PSRA ${session} · ${selectedYear}`}
@@ -482,39 +484,41 @@ export default function PsraReportManager({
                   total: item.values.length,
                 }))}
               />
-            </ReportSection>
+            </div>
           ) : null}
 
           {reportType === 'gred' ? (
-            <ReportSection
-              title="Laporan Bilangan Gred Keseluruhan"
-              subtitle="Gred keseluruhan dikira daripada jumlah lima mata pelajaran bagi setiap calon (markah penuh 500)."
-            >
-              <ReportTable headers={['Gred Keseluruhan', 'Julat Markah', 'Bilangan Murid', 'Peratus Calon Lengkap']}>
-                {GRADE_NAMES.map((grade, index) => (
-                  <tr key={grade}>
-                    <th>{grade}</th>
-                    <td>{['450–500', '375–<450', '300–<375', '200–<300', '0–<200'][index]}</td>
-                    <td>{overallGradeCounts[grade]}</td>
-                    <td>
-                      {completeStudents.length
-                        ? `${number((overallGradeCounts[grade] / completeStudents.length) * 100, 1)}%`
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </ReportTable>
-              <p className="psra-report-footnote">
-                Jumlah calon lengkap: <strong>{completeStudents.length}</strong>
-                {' · '}
-                GPS: <strong>{number(gps)}</strong>
-              </p>
+            <div className="psra-report-pair">
+              <ReportSection
+                title="Laporan Bilangan Gred Keseluruhan"
+                subtitle="Gred keseluruhan dikira daripada jumlah lima mata pelajaran bagi setiap calon (markah penuh 500)."
+              >
+                <ReportTable headers={['Gred Keseluruhan', 'Julat Markah', 'Bilangan Murid', 'Peratus Calon Lengkap']}>
+                  {GRADE_NAMES.map((grade, index) => (
+                    <tr key={grade}>
+                      <th>{grade}</th>
+                      <td>{['450–500', '375–<450', '300–<375', '200–<300', '0–<200'][index]}</td>
+                      <td>{overallGradeCounts[grade]}</td>
+                      <td>
+                        {completeStudents.length
+                          ? `${number((overallGradeCounts[grade] / completeStudents.length) * 100, 1)}%`
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </ReportTable>
+                <p className="psra-report-footnote">
+                  Jumlah calon lengkap: <strong>{completeStudents.length}</strong>
+                  {' · '}
+                  GPS: <strong>{number(gps)}</strong>
+                </p>
+              </ReportSection>
               <OverallGradeChart
                 title="Graf Bilangan Gred Keseluruhan"
                 subtitle={`${selectedSchoolName} · Percubaan PSRA ${session} · ${selectedYear} · Gabungan lima mata pelajaran`}
                 counts={overallGradeCounts}
               />
-            </ReportSection>
+            </div>
           ) : null}
         </>
       )}
