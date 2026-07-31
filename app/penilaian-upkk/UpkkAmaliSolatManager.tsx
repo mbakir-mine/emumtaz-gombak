@@ -326,7 +326,7 @@ export default function UpkkAmaliSolatManager({
         <head>
           <meta charset="utf-8" />
           <style>
-            body { font-family: Arial, sans-serif; }
+            body { font-family: "Segoe UI Variable", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
             table { border-collapse: collapse; }
             th, td { border: 1px solid #9ca3af; padding: 4px 6px; font-size: 11px; vertical-align: top; }
             th { background: #e6f3ea; font-weight: 700; }

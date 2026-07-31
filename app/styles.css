@@ -1,18 +1,26 @@
-﻿:root {
-  --bg: #f7faf4;
+:root {
+  --font-sans: "Segoe UI Variable", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bg: #f4f7f5;
   --card: #ffffff;
-  --ink: #071426;
-  --muted: #5f6f83;
-  --line: #d8e1d8;
-  --nav: #022e19;
-  --nav-2: #0b4629;
-  --green: #0b6b3a;
-  --green-2: #e2f4e8;
+  --ink: #17231f;
+  --muted: #65746e;
+  --line: #dce5e1;
+  --nav: #0b3025;
+  --nav-2: #164b3a;
+  --green: #087a5b;
+  --green-strong: #066147;
+  --green-2: #e8f3ee;
   --blue: #2563eb;
-  --amber: #b7791f;
-  --gold: #f4c94f;
-  --lift-shadow: 0 12px 24px rgba(2, 46, 25, 0.14);
-  --press-shadow: 0 4px 10px rgba(2, 46, 25, 0.1);
+  --amber: #a66a12;
+  --gold: #e5b83d;
+  --danger: #b42318;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(15, 36, 29, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 36, 29, 0.07);
+  --lift-shadow: 0 10px 24px rgba(15, 36, 29, 0.11);
+  --press-shadow: 0 2px 7px rgba(15, 36, 29, 0.1);
 }
 
 
@@ -20,13 +28,35 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
   color: var(--ink);
-  background:
-    radial-gradient(circle at top left, rgba(244, 201, 79, 0.16), transparent 34rem),
-    linear-gradient(180deg, #f7faf4, #eef8ef 52%, #f8fbf4);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+strong,
+b {
+  font-weight: 650;
 }
 
 a {
@@ -64,7 +94,7 @@ a {
   border-radius: 8px;
   background: var(--gold);
   color: #052615;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .brand small {
@@ -89,7 +119,7 @@ a {
   border-radius: 8px;
   color: #dbe4ef;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .nav-menu-trigger {
@@ -143,7 +173,7 @@ a {
 .psra-inline-filters label,
 .psra-class-filter {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: .05em;
   text-transform: uppercase;
 }
@@ -174,7 +204,7 @@ a {
   color: #fff;
   background: rgba(255, 255, 255, .1);
   font: inherit;
-  font-weight: 750;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   display: inline-flex;
@@ -245,7 +275,7 @@ a {
   color: #3b5d53;
   background: transparent;
   font: inherit;
-  font-weight: 750;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -430,7 +460,7 @@ a {
 .psra-report-chart-page > header span {
   color: #087456;
   font-size: 10px;
-  font-weight: 850;
+  font-weight: 600;
   letter-spacing: .12em;
 }
 
@@ -459,7 +489,7 @@ a {
   gap: 6px;
   color: #38594f;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .psra-chart-legend i {
@@ -516,7 +546,7 @@ a {
   min-width: 0;
   color: #fff;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 600;
   transition: width .25s ease;
 }
 
@@ -679,7 +709,7 @@ a {
   color: #3b5d53;
   background: transparent;
   font: inherit;
-  font-weight: 750;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -706,7 +736,7 @@ a {
   gap: 7px;
   color: #5d706a;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -730,7 +760,7 @@ a {
 .psra-school-display span {
   color: #5d706a;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -745,7 +775,7 @@ a {
   color: #183c32;
   background: #f4f8f6;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .psra-locked {
@@ -784,7 +814,7 @@ a {
 .psra-summary-grid span {
   color: #6f817b;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -823,7 +853,7 @@ a {
   border-radius: 50%;
   color: #fff;
   background: #0b7657;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .psra-permission-banner > div {
@@ -887,7 +917,7 @@ a {
   color: #0a6c4f;
   background: #e4f3ed;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .psra-student-list button > span:nth-child(2),
@@ -932,7 +962,7 @@ a {
 .psra-entry-head span {
   color: #c1ded3;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1012,7 +1042,7 @@ a {
   color: #173d32;
   background: transparent;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .psra-paper-grid label > div > span {
@@ -1039,7 +1069,7 @@ a {
 .psra-entry-footer span {
   color: #788a84;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -1142,7 +1172,7 @@ a {
   color: var(--green);
   padding: 8px 14px;
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -1284,7 +1314,7 @@ a {
   background: transparent;
   color: var(--green);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
   text-align: left;
   cursor: pointer;
@@ -1301,7 +1331,7 @@ a {
 
 .upkk-status {
   color: #111827;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upkk-status-progress {
@@ -1340,7 +1370,7 @@ a {
   color: var(--green);
   cursor: pointer;
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   min-width: 150px;
   padding: 8px 14px;
   text-transform: uppercase;
@@ -1411,7 +1441,7 @@ a {
   padding: 0 6px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .khalifah-attendance-list {
@@ -1444,7 +1474,7 @@ a {
   color: var(--text);
   cursor: pointer;
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   padding: 0;
   text-align: left;
 }
@@ -1475,7 +1505,7 @@ a {
 
 .khalifah-good,
 .khalifah-guide {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .khalifah-good {
@@ -1549,7 +1579,7 @@ a {
   background: #eef4ff;
   color: var(--blue);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -1605,7 +1635,7 @@ a {
   margin-bottom: 3px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upkk-section-head strong {
@@ -1637,27 +1667,27 @@ a {
 .upkk-group-code-cell {
   width: 52px;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
 }
 
 .upkk-group-title-cell {
   width: 160px;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
   border-right: 1px solid #e3ece5;
 }
 
 .upkk-item-code-cell {
   width: 72px;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upkk-item-label-cell {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upkk-score-cell {
@@ -1679,7 +1709,7 @@ a {
 .upkk-message-ok,
 .upkk-message-error {
   margin: 12px 0 0;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upkk-message-ok {
@@ -1971,7 +2001,7 @@ a {
   margin: 0 0 6px;
   color: var(--green);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -1999,7 +2029,7 @@ h1 {
   border-radius: 999px;
   background: var(--card);
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .user-badge {
@@ -2046,7 +2076,7 @@ h1 {
   margin-top: 4px;
   color: var(--green);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .user-profile-link:hover {
@@ -2061,7 +2091,7 @@ h1 {
   border-radius: 8px;
   background: #edf7ee;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -2074,7 +2104,7 @@ h1 {
   background: #fff8dc;
   color: #7a560c;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -2087,7 +2117,7 @@ h1 {
   background: #fff8dc;
   color: #7a560c;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -2330,7 +2360,7 @@ h1 {
   margin-bottom: 4px;
   color: var(--green);
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .summary-card p,
@@ -2351,7 +2381,7 @@ h1 {
   background: transparent;
   color: var(--green);
   font-size: 42px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
 }
@@ -2414,13 +2444,13 @@ h1 {
 .zone-mini-list button span {
   color: var(--green);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .zone-mini-list button strong {
   color: var(--green);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .year-stats {
@@ -2537,7 +2567,7 @@ table {
   background: transparent;
   color: var(--green);
   font: inherit;
-  font-weight: 900;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -2600,7 +2630,7 @@ table {
 
 .class-year-total-row {
   background: #f4fbf5;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .class-year-total-row td {
@@ -2698,7 +2728,7 @@ th {
   border-radius: 8px;
   background: #fff4cc;
   color: #76520a;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .rank-item strong,
@@ -2725,7 +2755,7 @@ th {
 .rank-score span {
   display: block;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .school-gps-card {
@@ -2767,7 +2797,7 @@ th {
   display: block;
   margin-bottom: 8px;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .insight-empty {
@@ -3018,7 +3048,7 @@ th {
 
 .grade-chip small {
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .form-grid {
@@ -3047,7 +3077,7 @@ th {
 .class-form-grid label > span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .class-form-grid .form-actions {
@@ -3077,7 +3107,7 @@ th {
   border-radius: 6px;
   background: transparent;
   color: #486074;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -3136,7 +3166,7 @@ th {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .teacher-assignment-toolbar select,
@@ -3174,7 +3204,7 @@ th {
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -3192,7 +3222,7 @@ th {
 .subject-slot-label span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .teacher-assignment-table th,
@@ -3239,7 +3269,7 @@ th {
 .subject-component-teachers label span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .subject-component-teachers {
@@ -3291,7 +3321,7 @@ th {
   background: #f7fcf8;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .subject-slot-summary strong {
@@ -3321,7 +3351,7 @@ th {
   border-radius: 8px;
   background: #eef4ff;
   color: #1f5cff;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
@@ -3459,7 +3489,7 @@ th {
 .teacher-status-toolbar span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .teacher-status-toolbar select,
@@ -3597,7 +3627,7 @@ th {
   background: transparent;
   color: var(--green);
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   text-align: right;
   cursor: pointer;
 }
@@ -3693,7 +3723,7 @@ th {
 .student-breakdown-row b {
   color: #03623c;
   text-align: right;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .student-year-list {
@@ -3794,7 +3824,7 @@ th {
   margin: 0;
   color: #062f1d;
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -3806,7 +3836,7 @@ th {
 .student-category-left > .school-count-button strong {
   color: var(--green);
   font-size: 36px;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.1;
 }
 
@@ -3831,7 +3861,7 @@ th {
 .student-category-zones .school-count-button b {
   color: #03623c;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .student-category-zones {
@@ -3869,7 +3899,7 @@ label {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 input,
@@ -3943,7 +3973,7 @@ textarea {
   border-radius: 8px;
   background: var(--green);
   color: white;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -3994,7 +4024,7 @@ textarea {
   border-radius: 8px;
   background: #b91c1c;
   color: white;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -4094,7 +4124,7 @@ textarea {
 .access-choice-card span {
   color: var(--green);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .access-choice-card strong {
@@ -4111,7 +4141,7 @@ textarea {
   gap: 12px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .login-divider::before,
@@ -4130,7 +4160,7 @@ textarea {
   justify-self: end;
   color: var(--green);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .forgot-link:hover {
@@ -4193,13 +4223,13 @@ textarea {
 .form-message {
   margin: 0;
   color: #be123c;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .form-success {
   margin: 0;
   color: var(--green);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mark-input {
@@ -4233,7 +4263,7 @@ textarea {
   margin-top: 2px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mark-entry-table td {
@@ -4252,7 +4282,7 @@ textarea {
 
 .mark-total-cell {
   color: var(--green);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -4303,7 +4333,7 @@ textarea {
   gap: 10px;
   align-items: center;
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .promotion-check-all small {
@@ -4398,7 +4428,7 @@ textarea {
   align-items: center;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -4427,7 +4457,7 @@ textarea {
 
 .promotion-bulk-select {
   min-width: 220px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .promotion-target-label {
@@ -4440,7 +4470,7 @@ textarea {
   background: #f5fbf7;
   color: #064e3b;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .promotion-status {
@@ -4450,7 +4480,7 @@ textarea {
   padding: 6px 10px;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .status-naik-tahun {
@@ -4596,7 +4626,7 @@ textarea {
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -4618,7 +4648,7 @@ textarea {
   color: #006b3b;
   font-size: 13px;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .sort-header-button.active span {
@@ -4652,7 +4682,7 @@ textarea {
 
 .student-sort-separator {
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .class-mark-report .student-name-col strong {
@@ -4830,7 +4860,7 @@ textarea {
 
 .pbd-score {
   min-width: 60px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .pbd-score-excellent {
@@ -4855,7 +4885,7 @@ textarea {
 .pbd-total-row td {
   border-top: 2px solid #7fbf95;
   background: #f0faf3;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .report-signature-block {
@@ -4905,7 +4935,7 @@ textarea {
   gap: 6px;
   color: #51657a;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .subject-report-controls select {
@@ -4944,7 +4974,7 @@ textarea {
   margin-bottom: 4px;
   color: #51657a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -4981,7 +5011,7 @@ textarea {
   background: #e8f4eb;
   color: #073b28;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -5001,13 +5031,13 @@ textarea {
 .subject-pass-cell {
   background: rgba(22, 242, 173, 0.16);
   color: #035c37;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .subject-fail-cell {
   background: #ffd7d7;
   color: #8a1414;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .subject-report-summary {
@@ -5175,7 +5205,7 @@ textarea {
   padding: 0 6px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .access-checks-toolbar {
@@ -5190,7 +5220,7 @@ textarea {
   background: linear-gradient(135deg, #f6fbf5 0%, #fff8de 100%);
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .access-checks-toolbar button {
@@ -5201,7 +5231,7 @@ textarea {
   background: #ffffff;
   color: var(--green);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -5382,7 +5412,7 @@ textarea {
   padding: 6px 10px;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .status-aktif {
@@ -5425,7 +5455,7 @@ textarea {
 
 .module-access-search > span {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -5468,7 +5498,7 @@ textarea {
   background: #fbfefb;
   color: #123c2a;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .module-checkbox input {
@@ -5517,7 +5547,7 @@ textarea {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .takwim-scope-bar input,
@@ -5552,7 +5582,7 @@ textarea {
   display: block;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .takwim-summary strong {
@@ -5610,7 +5640,7 @@ textarea {
   padding: 9px 10px;
   color: #06351f;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -5658,7 +5688,7 @@ textarea {
   background: #fff;
   color: #08291a;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -5668,7 +5698,7 @@ textarea {
   color: var(--muted);
   font-size: 11px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .takwim-impact-grid {
@@ -5729,7 +5759,7 @@ textarea {
     rgba(255, 255, 255, 0.8);
   color: #123c2a;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .module-context-note strong {
@@ -5780,7 +5810,7 @@ textarea {
 .timetable-scope-summary span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .timetable-scope-summary strong {
@@ -5893,7 +5923,7 @@ textarea {
 
 .timetable-slot-table input[type='time'] {
   max-width: 150px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .timetable-slot-table .button {
@@ -5938,7 +5968,7 @@ textarea {
   width: 96px;
   padding: 5px 8px;
   text-align: center;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .timetable-requirement-table select {
@@ -5958,7 +5988,7 @@ textarea {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .timetable-requirement-list .compact-head {
@@ -5974,7 +6004,7 @@ textarea {
 .numeric-cell {
   text-align: center;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .timetable-break-row {
@@ -5983,7 +6013,7 @@ textarea {
 
 .timetable-break-row td {
   color: #6b4b08;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .module-form-grid {
@@ -6009,7 +6039,7 @@ textarea {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .module-wide-field {
@@ -6084,7 +6114,7 @@ textarea {
 .component-mark-card-head p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .component-mark-card-head strong {
@@ -6109,7 +6139,7 @@ textarea {
   align-items: center;
   gap: 10px;
   color: #123c2a;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .component-mark-rows input {
@@ -6119,7 +6149,7 @@ textarea {
   border-radius: 8px;
   background: #fff;
   text-align: center;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .timetable-view-tabs {
@@ -6136,7 +6166,7 @@ textarea {
   border-radius: 8px;
   background: #f4f8f3;
   color: #34506b;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -6158,7 +6188,7 @@ textarea {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .compact-table th,
@@ -6209,7 +6239,7 @@ textarea {
   background: #e8f4eb;
   color: #0d3323;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -6218,7 +6248,7 @@ textarea {
   background: #f7fbf7;
   color: #0d3323;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .timetable-matrix td strong {
@@ -6298,7 +6328,7 @@ textarea {
   background: #fff4cc;
   color: #6b4b08;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -6367,7 +6397,7 @@ textarea {
   margin-bottom: 12px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .attendance-legend span {
@@ -6460,7 +6490,7 @@ textarea {
   height: 22px;
   color: var(--green);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .attendance-takwim-note {
@@ -6475,7 +6505,7 @@ textarea {
   background: #fff8df;
   color: #6b4b08;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .attendance-takwim-note span {
@@ -6490,7 +6520,7 @@ textarea {
   background: transparent;
   color: #006b3a;
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
@@ -6508,7 +6538,7 @@ textarea {
   min-width: 42px;
   height: 28px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .attendance-empty {
@@ -6546,7 +6576,7 @@ textarea {
 
 .attendance-matrix tfoot td {
   background: #f4fbf5;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .attendance-daily-form {
@@ -6564,7 +6594,7 @@ textarea {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .attendance-edit-table th:first-child,
@@ -6647,7 +6677,7 @@ textarea {
   color: #123c2a;
   text-align: center;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .student-month-grid span {
@@ -6666,7 +6696,7 @@ textarea {
 
 .student-month-grid em {
   text-align: center;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .calendar-empty {
@@ -7776,7 +7806,7 @@ button:disabled {
     padding: 8px 10px;
     border-radius: 9px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .nav-logout {
@@ -7956,5 +7986,346 @@ button:disabled {
 
   .completion-button strong {
     font-size: 24px;
+  }
+}
+
+/* Professional UI foundation */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: inherit;
+  font-family: inherit;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+p {
+  line-height: 1.55;
+}
+
+.app-shell {
+  grid-template-columns: 228px minmax(0, 1fr);
+}
+
+.sidebar {
+  padding: 18px 12px;
+  background: linear-gradient(180deg, var(--nav), #08281f);
+}
+
+.brand {
+  gap: 10px;
+  padding: 0 8px 16px;
+  margin-bottom: 14px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.brand small {
+  color: #b8c8c1;
+}
+
+.nav a,
+.nav-menu-trigger,
+.nav-logout {
+  min-height: 38px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  color: #d7e3de;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.nav-submenu a {
+  min-height: 32px;
+  padding: 7px 9px;
+  color: #c4d5ce;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nav-submenu a::before {
+  width: 4px;
+  height: 4px;
+  background: #8fb6a6;
+}
+
+.nav a:hover,
+.nav a.active,
+.nav-menu-trigger:hover,
+.nav-menu-trigger.active,
+.nav-group-link:hover,
+.nav-group-link.active {
+  background: rgba(30, 112, 84, 0.45);
+}
+
+.topbar {
+  padding: 20px 28px;
+  border-bottom-color: var(--line);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-sm);
+}
+
+.main > :not(.topbar) {
+  margin-left: 28px;
+  margin-right: 28px;
+}
+
+h1 {
+  font-size: 25px;
+}
+
+.page-subtitle {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.eyebrow {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.user-badge {
+  border-color: var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-badge strong,
+.user-badge button,
+.user-badge-link,
+.user-switch-link,
+.user-profile-link {
+  font-weight: 600;
+}
+
+.card,
+.metric,
+.panel,
+.school-summary-card,
+.leaderboard-card,
+.psra-report-panel,
+.psra-report-chart-page,
+.psra-report-metrics > div {
+  border-color: var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel {
+  padding: 22px;
+}
+
+.metric strong,
+.psra-report-metrics strong {
+  color: var(--ink);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+label,
+.psra-report-filters label,
+.psra-inline-filters label,
+.psra-class-filter,
+.psra-filter-bar label,
+.psra-school-display span {
+  color: #52635d;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+input,
+select,
+textarea,
+.psra-report-filters select,
+.psra-inline-filters select,
+.psra-class-filter select,
+.psra-filter-bar select {
+  min-height: 42px;
+  border-color: #ccd9d4;
+  border-radius: 9px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid rgba(8, 122, 91, 0.14);
+  border-color: var(--green);
+}
+
+button,
+.button,
+.danger-button,
+.soft-action-button,
+.table-action {
+  font-weight: 600;
+}
+
+.button {
+  border-radius: 9px;
+  background: var(--green);
+  box-shadow: var(--shadow-sm);
+}
+
+.button:hover:not(:disabled),
+.button:focus-visible:not(:disabled) {
+  background: var(--green-strong);
+}
+
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  border-bottom-color: var(--line);
+}
+
+th {
+  color: #33443e;
+  background: #eef3f1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+tbody tr:hover {
+  background: #f8faf9;
+}
+
+.psra-report-shell {
+  color: var(--ink);
+}
+
+.psra-report-heading {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, #0b5945, var(--green));
+  box-shadow: var(--shadow-md);
+}
+
+.psra-report-heading span,
+.psra-report-metrics span,
+.psra-report-filters label,
+.psra-inline-filters label,
+.psra-class-filter,
+.psra-report-chart-page > header span {
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  text-transform: none;
+}
+
+.psra-report-tabs,
+.psra-session-tabs {
+  background: #e9f1ed;
+}
+
+.psra-report-tabs button,
+.psra-session-tabs button {
+  font-weight: 600;
+}
+
+.psra-report-tabs button.active,
+.psra-session-tabs button.active {
+  background: var(--green);
+  box-shadow: 0 3px 9px rgba(8, 122, 91, 0.16);
+}
+
+.psra-report-table thead th {
+  color: #31453d;
+  background: #e8f1ed;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  text-transform: none;
+}
+
+.psra-report-table tbody th {
+  color: #2c4139;
+  background: #f6f9f8;
+  font-weight: 600;
+}
+
+.psra-report-chart-page {
+  background: linear-gradient(180deg, #f4f8f6, #fff 34%);
+}
+
+.psra-chart-legend span,
+.psra-stacked-row > strong,
+.psra-grade-bar-row > strong,
+.psra-stacked-row > b,
+.psra-grade-bar-row > b {
+  font-weight: 600;
+}
+
+.form-message,
+.form-success,
+.empty-state,
+.empty {
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 14px 16px 16px;
+  }
+
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .user-badge {
+    width: 100%;
+    max-width: none;
+    justify-content: space-between;
+  }
+
+  .main > :not(.topbar) {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 16px 18px;
+  }
+
+  .main > :not(.topbar) {
+    margin-left: 16px;
+    margin-right: 16px;
   }
 }
