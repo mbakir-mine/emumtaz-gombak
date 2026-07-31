@@ -195,7 +195,7 @@ export function visibleNavItems(
   allowedNav?: string[] | null,
   enabledModules?: OptionalSchoolModuleKey[] | null,
 ) {
-  const allowedSet = role !== 'OWNER' && allowedNav && allowedNav.length > 0 ? new Set(allowedNav) : null;
+  const allowedSet = role !== 'OWNER' && Array.isArray(allowedNav) ? new Set(allowedNav) : null;
   const moduleSet = enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return navItems.filter((item) => {
     if (item.hidden) return false;

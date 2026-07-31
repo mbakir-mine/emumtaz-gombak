@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { refresh, revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { navItems } from '@/lib/access';
@@ -249,7 +249,7 @@ export async function updateUserStatus(
     updates.zon = zon;
   }
 
-  updates.allowed_nav = allowedNav.length > 0 ? allowedNav : null;
+  updates.allowed_nav = allowedNav;
 
   let activationMessage = '';
   let activationUser: UserForProvision | null = null;
@@ -288,6 +288,7 @@ export async function updateUserStatus(
   revalidatePath('/guru');
   revalidatePath('/');
   const emailMessage = activationUser ? await activationEmailMessage(activationUser, shouldSendEmail) : '';
+  refresh();
   return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}${emailMessage}` };
 }
 

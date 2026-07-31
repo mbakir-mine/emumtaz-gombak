@@ -63,6 +63,12 @@ export default async function PenggunaProfilPage({
 
             <div className="profile-form-wrap">
               <UserStatusForm
+                key={[
+                  user.role,
+                  user.zon ?? '',
+                  user.status,
+                  ...(user.allowed_nav ?? ['DEFAULT']),
+                ].join('|')}
                 userId={user.id}
                 currentRole={user.role}
                 currentZon={user.zon}

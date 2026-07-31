@@ -37,6 +37,10 @@ function getRoleAccess(role: string) {
   return defaultAllowedNavForRole(role as UserRole);
 }
 
+function getSavedAccess(role: string, allowedNav?: string[] | null) {
+  return Array.isArray(allowedNav) ? allowedNav : getRoleAccess(role);
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
@@ -64,9 +68,8 @@ export default function UserStatusForm({
 }) {
   const [role, setRole] = useState(currentRole);
   const [zone, setZone] = useState(currentZon ?? '');
-  const [selectedAccess, setSelectedAccess] = useState<string[]>(
-    currentAllowedNav && currentAllowedNav.length > 0 ? currentAllowedNav : getRoleAccess(currentRole),
-  );
+  const [status, setStatus] = useState(currentStatus);
+  const [selectedAccess, setSelectedAccess] = useState<string[]>(getSavedAccess(currentRole, currentAllowedNav));
   const [state, action] = useActionState(updateUserStatus, initialState);
 
   function handleRoleChange(nextRole: string) {
@@ -119,7 +122,12 @@ export default function UserStatusForm({
       ) : (
         <input name="zon" type="hidden" value="" />
       )}
-      <select name="status" defaultValue={currentStatus} aria-label="Status pengguna">
+      <select
+        name="status"
+        value={status}
+        onChange={(event) => setStatus(event.target.value)}
+        aria-label="Status pengguna"
+      >
         {statusOptions.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
