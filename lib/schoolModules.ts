@@ -56,6 +56,13 @@ export const optionalSchoolModules = [
     description: 'Borang UPKK Amali Solat, PCHI dan Al-Quran untuk murid Tahun 5.',
   },
   {
+    key: 'PERCUBAAN_PSRA',
+    navKey: 'psraTrial',
+    label: 'Percubaan PSRA',
+    shortLabel: 'PSRA',
+    description: 'Dua peperiksaan Percubaan PSRA dengan lima kertas ujian untuk murid Tahun 6.',
+  },
+  {
     key: 'KHALIFAH_MUDA',
     navKey: 'khalifahMuda',
     label: 'IHAB',

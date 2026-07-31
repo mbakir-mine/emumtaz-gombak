@@ -47,7 +47,7 @@ export async function updateSchoolModuleAccess(
       return {
         ok: false,
         message:
-          'Jadual/constraint modul sekolah belum dikemaskini. Jalankan SQL 037_khalifah_muda_module.sql di Supabase dahulu.',
+          'Jadual/constraint modul sekolah belum dikemaskini. Jalankan SQL 040_percubaan_psra.sql di Supabase dahulu.',
       };
     }
 

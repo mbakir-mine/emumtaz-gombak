@@ -69,6 +69,13 @@ export const navItems: NavItem[] = [
     moduleKey: 'PENILAIAN_UPKK',
   },
   {
+    key: 'psraTrial',
+    label: 'Percubaan PSRA',
+    href: '/percubaan-psra',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'PERCUBAAN_PSRA',
+  },
+  {
     key: 'khalifahMuda',
     label: 'IHAB',
     href: '/khalifah-muda',

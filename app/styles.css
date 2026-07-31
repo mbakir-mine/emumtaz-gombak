@@ -118,6 +118,465 @@ a {
   transition: transform 0.16s ease, opacity 0.16s ease;
 }
 
+/* Percubaan PSRA */
+.psra-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.psra-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 28px 30px;
+  border-radius: 22px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(236, 191, 91, 0.2), transparent 31%),
+    linear-gradient(120deg, #073e2e, #087053);
+  box-shadow: 0 20px 42px rgba(6, 75, 54, 0.16);
+}
+
+.psra-hero::after {
+  content: "";
+  position: absolute;
+  right: -72px;
+  top: -110px;
+  width: 310px;
+  height: 310px;
+  border: 46px solid rgba(255, 255, 255, 0.045);
+  border-radius: 50%;
+}
+
+.psra-hero > div {
+  position: relative;
+  z-index: 1;
+}
+
+.psra-kicker {
+  color: #f1ce7a;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+
+.psra-hero h2 {
+  margin: 9px 0 7px;
+  font-size: clamp(25px, 3vw, 35px);
+  letter-spacing: -0.04em;
+}
+
+.psra-hero p {
+  margin: 0;
+  color: #c9e1d8;
+  font-size: 13px;
+}
+
+.psra-session-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  background: rgba(1, 43, 31, 0.38);
+}
+
+.psra-session-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border: 0;
+  border-radius: 10px;
+  color: #c1dcd2;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.psra-session-tabs button span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: #f1ce7a;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 9px;
+}
+
+.psra-session-tabs button.active {
+  color: #173b31;
+  background: #fff;
+}
+
+.psra-session-tabs button.active span {
+  color: #fff;
+  background: #0b6e52;
+}
+
+.psra-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(160px, 0.75fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #dfe9e5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.psra-filter-bar label,
+.psra-paper-grid label {
+  display: grid;
+  gap: 7px;
+  color: #5d706a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.psra-filter-bar select {
+  min-width: 0;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d8e4df;
+  border-radius: 10px;
+  color: #183c32;
+  background: #fbfcfc;
+}
+
+.psra-locked {
+  padding: 32px;
+  border-color: #f0d99c;
+  background: #fffaf0;
+  text-align: center;
+}
+
+.psra-locked strong {
+  color: #7c5918;
+  font-size: 18px;
+}
+
+.psra-locked p {
+  margin-bottom: 0;
+  color: #816f4c;
+}
+
+.psra-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.psra-summary-grid > div {
+  display: grid;
+  gap: 5px;
+  padding: 19px 20px;
+  border: 1px solid #dfe9e5;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(20, 72, 56, 0.045);
+}
+
+.psra-summary-grid span {
+  color: #6f817b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.psra-summary-grid strong {
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.psra-summary-grid small {
+  color: #91a09b;
+}
+
+.psra-message {
+  margin: 0;
+  padding: 12px 15px;
+  border-radius: 11px;
+}
+
+.psra-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.55fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.psra-student-panel,
+.psra-entry-panel {
+  overflow: hidden;
+}
+
+.psra-student-list {
+  max-height: 590px;
+  overflow-y: auto;
+  padding: 7px 11px 13px;
+}
+
+.psra-student-list > button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 9px;
+  border: 0;
+  border-bottom: 1px solid #edf2f0;
+  color: #183c32;
+  background: #fff;
+  text-align: left;
+}
+
+.psra-student-list > button:hover,
+.psra-student-list > button.active {
+  border-radius: 10px;
+  background: #edf8f3;
+}
+
+.psra-student-number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  color: #0a6c4f;
+  background: #e4f3ed;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.psra-student-list button > span:nth-child(2),
+.psra-student-score {
+  display: grid;
+  gap: 4px;
+}
+
+.psra-student-list strong {
+  font-size: 12px;
+}
+
+.psra-student-list small {
+  color: #80918b;
+  font-size: 9px;
+}
+
+.psra-student-score {
+  justify-items: end;
+}
+
+.psra-entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 21px 23px;
+  color: #fff;
+  background: linear-gradient(115deg, #0a6048, #0b7657);
+}
+
+.psra-entry-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.psra-entry-head h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.psra-entry-head span {
+  color: #c1ded3;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.psra-entry-head > div:last-child {
+  justify-items: end;
+}
+
+.psra-entry-head > div:last-child strong {
+  font-size: 20px;
+}
+
+.psra-entry-head > div:last-child span {
+  color: #f1ce7a;
+}
+
+.psra-paper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  padding: 22px;
+}
+
+.psra-paper-grid label > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.psra-paper-grid label b {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  color: #0b6c50;
+  background: #e8f5f0;
+  font-size: 9px;
+}
+
+.psra-paper-grid label > div {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d8e5df;
+  border-radius: 10px;
+  background: #fbfcfc;
+  overflow: hidden;
+}
+
+.psra-paper-grid input {
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  outline: 0;
+  color: #173d32;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.psra-paper-grid label > div > span {
+  padding-right: 11px;
+  color: #8b9d96;
+  white-space: nowrap;
+}
+
+.psra-entry-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 26px;
+  padding: 17px 22px;
+  border-top: 1px solid #e5edea;
+  background: #f7faf8;
+}
+
+.psra-entry-footer > div {
+  display: grid;
+  gap: 3px;
+}
+
+.psra-entry-footer span {
+  color: #788a84;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.psra-entry-footer strong {
+  font-size: 19px;
+}
+
+.psra-entry-footer small {
+  color: #0b6d51;
+  font-size: 10px;
+}
+
+.psra-grade-panel {
+  overflow: hidden;
+}
+
+.psra-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.psra-grade-grid > div {
+  display: grid;
+  gap: 5px;
+  padding: 16px 20px;
+  border-right: 1px solid #e7eeeb;
+}
+
+.psra-grade-grid > div:last-child {
+  border-right: 0;
+}
+
+.psra-grade-grid span,
+.psra-grade-grid small {
+  color: #80918b;
+  font-size: 9px;
+}
+
+.psra-grade-grid strong {
+  font-size: 13px;
+}
+
+@media (max-width: 1000px) {
+  .psra-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .psra-summary-grid,
+  .psra-grade-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .psra-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .psra-hero {
+    padding: 23px 20px;
+  }
+
+  .psra-session-tabs {
+    width: 100%;
+  }
+
+  .psra-session-tabs button {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 7px;
+    font-size: 9px;
+  }
+
+  .psra-filter-bar,
+  .psra-summary-grid,
+  .psra-paper-grid,
+  .psra-grade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .psra-entry-head,
+  .psra-entry-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .psra-entry-head > div:last-child {
+    justify-items: start;
+  }
+}
+
 .upkk-assessment-shell {
   display: grid;
   gap: 14px;
