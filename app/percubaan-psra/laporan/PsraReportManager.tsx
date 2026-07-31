@@ -260,28 +260,23 @@ export default function PsraReportManager({
     () => completeStudents.filter((item) => item.student.class_id === selectedClassId),
     [completeStudents, selectedClassId],
   );
+  const yearSixStudentRows = useMemo(() => {
+    const resultsByStudent = new Map(completeStudents.map((item) => [item.student.id, item]));
+    return visibleStudents
+      .map((student) => ({
+        student,
+        classRecord: student.class_id ? classById.get(student.class_id) : undefined,
+        marks: marksByStudent.get(student.id),
+        result: resultsByStudent.get(student.id),
+      }))
+      .sort((a, b) => {
+        const classOrder = (a.classRecord?.nama_kelas ?? '').localeCompare(b.classRecord?.nama_kelas ?? '');
+        return classOrder || a.student.nama_murid.localeCompare(b.student.nama_murid);
+      });
+  }, [classById, completeStudents, marksByStudent, visibleStudents]);
   const gps = average(completeStudents.map((item) => item.gpm));
   const schoolAverage = average(completeStudents.map((item) => item.percentage));
   const mumtazCount = completeStudents.filter((item) => item.grade === 'Mumtaz').length;
-
-  const classSummaries = useMemo(
-    () =>
-      yearSixClasses.map((classRecord) => {
-        const candidates = visibleStudents.filter((item) => item.class_id === classRecord.id);
-        const results = completeStudents.filter((item) => item.student.class_id === classRecord.id);
-        const gpk = average(results.map((item) => item.gpm));
-        return {
-          classRecord,
-          candidates: candidates.length,
-          complete: results.length,
-          average: average(results.map((item) => item.percentage)),
-          gpk,
-          mumtaz: results.filter((item) => item.grade === 'Mumtaz').length,
-          musaadah: results.filter((item) => item.grade === 'Musaadah').length,
-        };
-      }),
-    [completeStudents, visibleStudents, yearSixClasses],
-  );
 
   const subjectSummaries = useMemo(
     () =>
@@ -373,16 +368,32 @@ export default function PsraReportManager({
           </section>
 
           {reportType === 'darjah' ? (
-            <ReportSection title="Laporan Darjah Tahun 6" subtitle={`Percubaan PSRA ${session} · ${selectedYear}`}>
-              <ReportTable headers={['Kelas', 'Calon', 'Lengkap', 'Purata %', 'GPK', 'Gred Purata', 'Mumtaz', 'Musaadah']}>
-                {classSummaries.map((item) => (
-                  <tr key={item.classRecord.id}>
-                    <th>{item.classRecord.nama_kelas}</th><td>{item.candidates}</td><td>{item.complete}</td>
-                    <td>{number(item.average, 1)}</td><td>{number(item.gpk)}</td><td>{pointGrade(item.gpk)}</td>
-                    <td>{item.mumtaz}</td><td>{item.musaadah}</td>
+            <ReportSection
+              title="Laporan Keseluruhan Darjah 6"
+              subtitle={`Gabungan semua kelas Tahun 6 · Percubaan PSRA ${session} · ${selectedYear}`}
+            >
+              <ReportTable headers={['Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
+                {yearSixStudentRows.map((item) => (
+                  <tr key={item.student.id}>
+                    <th>{item.student.nama_murid}<small>{item.student.mykid}</small></th>
+                    <td>{item.classRecord?.nama_kelas ?? '—'}</td>
+                    {PSRA_PAPERS.map((paper) => (
+                      <td key={paper.subjectCode}>{item.marks?.get(paper.subjectCode) ?? '—'}</td>
+                    ))}
+                    <td>{item.result ? `${item.result.total}/500` : 'Belum lengkap'}</td>
+                    <td>{item.result ? number(item.result.percentage, 1) : '—'}</td>
+                    <td>{item.result ? number(item.result.gpm) : '—'}</td>
+                    <td>{item.result?.grade ?? '—'}</td>
                   </tr>
                 ))}
               </ReportTable>
+              <p className="psra-report-footnote">
+                Jumlah keseluruhan: <strong>{visibleStudents.length} murid</strong> daripada {yearSixClasses.length} kelas
+                {' · '}
+                Lengkap: <strong>{completeStudents.length}</strong>
+                {' · '}
+                GPS: <strong>{number(gps)}</strong>
+              </p>
             </ReportSection>
           ) : null}
 
