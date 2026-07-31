@@ -1,8 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import type { ClassRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
-import { PSRA_PAPERS, psraGrade, psraTotal, type PsraPaperKey, type PsraTrialRecord } from '@/lib/psra';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  ClassRecord,
+  School,
+  SchoolModuleAccess,
+  StudentRecord,
+  TeacherClassAssignment,
+  TeacherSubjectAssignment,
+} from '@/lib/data';
+import {
+  PSRA_PAPERS,
+  psraGrade,
+  type PsraPaperKey,
+  type PsraPaperMarkRecord,
+} from '@/lib/psra';
 import { supabase } from '@/lib/supabase';
 import { useAccessProfile } from '../ui/AuthGate';
 
@@ -11,6 +23,8 @@ type Props = {
   moduleAccesses: SchoolModuleAccess[];
   classes: ClassRecord[];
   students: StudentRecord[];
+  classAssignments: TeacherClassAssignment[];
+  subjectAssignments: TeacherSubjectAssignment[];
 };
 
 type ScoreDraft = Record<PsraPaperKey, string>;
@@ -27,13 +41,6 @@ function isActive(status: string | null | undefined) {
   return (status ?? '').toUpperCase() === 'AKTIF';
 }
 
-function scoreDraft(record: PsraTrialRecord | null): ScoreDraft {
-  if (!record) return blankDraft();
-  return Object.fromEntries(
-    PSRA_PAPERS.map((paper) => [paper.key, String(record[paper.key])]),
-  ) as ScoreDraft;
-}
-
 function scoreNumber(value: string) {
   const number = Number(value.replace(',', '.'));
   return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
@@ -43,13 +50,39 @@ function displayNumber(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, '');
 }
 
-export default function PsraTrialManager({ schools, moduleAccesses, classes, students }: Props) {
+export default function PsraTrialManager({
+  schools,
+  moduleAccesses,
+  classes,
+  students,
+  classAssignments,
+  subjectAssignments,
+}: Props) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
+  const canManageAll = profile?.role === 'OWNER' || profile?.role === 'ADMIN_SEKOLAH';
+  const assignedClassIds = useMemo(
+    () => new Set(classAssignments.filter((item) => item.user_id === profile?.id).map((item) => item.class_id)),
+    [classAssignments, profile?.id],
+  );
+  const assignedSubjectsByClass = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    subjectAssignments
+      .filter((item) => item.user_id === profile?.id)
+      .forEach((item) => {
+        const codes = map.get(item.class_id) ?? new Set<string>();
+        codes.add(item.kod_subjek);
+        map.set(item.class_id, codes);
+      });
+    return map;
+  }, [profile?.id, subjectAssignments]);
+  const assignedSubjectClassIds = useMemo(
+    () => new Set([...assignedSubjectsByClass.keys()]),
+    [assignedSubjectsByClass],
+  );
+
   const selectableSchools = useMemo(() => {
-    if (profile?.role === 'OWNER') {
-      return schools.filter((school) => isActive(school.status));
-    }
+    if (profile?.role === 'OWNER') return schools.filter((school) => isActive(school.status));
     return schools.filter((school) => school.kod_sekolah === profile?.kod_sekolah);
   }, [profile?.kod_sekolah, profile?.role, schools]);
 
@@ -64,7 +97,7 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [session, setSession] = useState<1 | 2>(1);
-  const [records, setRecords] = useState<PsraTrialRecord[]>([]);
+  const [records, setRecords] = useState<PsraPaperMarkRecord[]>([]);
   const [draft, setDraft] = useState<ScoreDraft>(blankDraft);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
@@ -92,10 +125,18 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
             classRecord.kod_sekolah === selectedSchool &&
             Number(classRecord.tahun_akademik) === selectedYear &&
             Number(classRecord.tahun) === 6 &&
-            isActive(classRecord.status),
+            isActive(classRecord.status) &&
+            (canManageAll || assignedClassIds.has(classRecord.id) || assignedSubjectClassIds.has(classRecord.id)),
         )
         .sort((a, b) => a.nama_kelas.localeCompare(b.nama_kelas)),
-    [classes, selectedSchool, selectedYear],
+    [
+      assignedClassIds,
+      assignedSubjectClassIds,
+      canManageAll,
+      classes,
+      selectedSchool,
+      selectedYear,
+    ],
   );
 
   useEffect(() => {
@@ -123,97 +164,147 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
     }
   }, [selectedStudentId, studentsInClass]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadRecords = useCallback(async () => {
+    setRecords([]);
+    if (!supabase || !hasModuleAccess || !selectedSchool || !selectedClassId) return;
+    const { data, error } = await supabase
+      .from('psra_trial_paper_marks')
+      .select('*')
+      .eq('kod_sekolah', selectedSchool)
+      .eq('tahun_akademik', selectedYear)
+      .eq('class_id', selectedClassId)
+      .eq('sesi', session)
+      .order('updated_at', { ascending: false });
 
-    async function loadRecords() {
-      setRecords([]);
-      if (!supabase || !hasModuleAccess || !selectedSchool || !selectedClassId) return;
-      const { data, error } = await supabase
-        .from('psra_trial_marks')
-        .select('*')
-        .eq('kod_sekolah', selectedSchool)
-        .eq('tahun_akademik', selectedYear)
-        .eq('class_id', selectedClassId)
-        .eq('sesi', session)
-        .order('updated_at', { ascending: false });
-
-      if (cancelled) return;
-      if (error) {
-        setMessage(
-          error.message.includes('psra_trial_marks')
-            ? 'Jadual PSRA belum tersedia. Jalankan SQL 040_percubaan_psra.sql di Supabase.'
-            : `Gagal memuatkan markah: ${error.message}`,
-        );
-        return;
-      }
-      setRecords((data ?? []) as PsraTrialRecord[]);
+    if (error) {
+      setMessage(
+        error.message.includes('psra_trial_paper_marks')
+          ? 'Struktur tugasan guru PSRA belum tersedia. Jalankan SQL 041_psra_teacher_entry.sql di Supabase.'
+          : `Gagal memuatkan markah: ${error.message}`,
+      );
+      return;
     }
-
-    void loadRecords();
-    return () => {
-      cancelled = true;
-    };
+    setRecords((data ?? []) as PsraPaperMarkRecord[]);
   }, [hasModuleAccess, selectedClassId, selectedSchool, selectedYear, session]);
 
-  const recordByStudent = useMemo(
-    () => new Map(records.map((record) => [record.student_id, record])),
+  useEffect(() => {
+    void loadRecords();
+  }, [loadRecords]);
+
+  const paperRecordMap = useMemo(
+    () => new Map(records.map((record) => [`${record.student_id}|${record.paper_code}`, record])),
     [records],
   );
-  const selectedRecord = recordByStudent.get(selectedStudentId) ?? null;
+  const selectedSubjectCodes = assignedSubjectsByClass.get(selectedClassId) ?? new Set<string>();
+  const isClassTeacher = assignedClassIds.has(selectedClassId);
+  const editablePapers = useMemo(
+    () =>
+      PSRA_PAPERS.filter(
+        (paper) => canManageAll || isClassTeacher || selectedSubjectCodes.has(paper.subjectCode),
+      ),
+    [canManageAll, isClassTeacher, selectedSubjectCodes],
+  );
+  const editablePaperCodes = useMemo(
+    () => new Set(editablePapers.map((paper) => paper.subjectCode)),
+    [editablePapers],
+  );
 
   useEffect(() => {
-    setDraft(scoreDraft(selectedRecord));
-  }, [selectedRecord, selectedStudentId, session]);
-
-  const numericScores = useMemo(
-    () =>
+    setDraft(
       Object.fromEntries(
-        PSRA_PAPERS.map((paper) => [paper.key, scoreNumber(draft[paper.key])]),
-      ) as Record<PsraPaperKey, number>,
-    [draft],
+        PSRA_PAPERS.map((paper) => {
+          const record = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);
+          return [paper.key, record ? displayNumber(Number(record.markah)) : ''];
+        }),
+      ) as ScoreDraft,
+    );
+  }, [paperRecordMap, selectedStudentId, session]);
+
+  const selectedPaperRecords = PSRA_PAPERS.map((paper) =>
+    paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`),
+  ).filter(Boolean) as PsraPaperMarkRecord[];
+  const selectedTotal = PSRA_PAPERS.reduce((sum, paper) => {
+    const existing = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);
+    const value = editablePaperCodes.has(paper.subjectCode) ? draft[paper.key] : existing?.markah;
+    return sum + (value === '' || value === undefined ? 0 : scoreNumber(String(value)));
+  }, 0);
+  const selectedComplete = selectedPaperRecords.length === PSRA_PAPERS.length;
+  const selectedPercentage = selectedTotal / PSRA_PAPERS.length;
+
+  const studentSummaries = useMemo(
+    () =>
+      studentsInClass.map((student) => {
+        const marks = PSRA_PAPERS.map((paper) =>
+          paperRecordMap.get(`${student.id}|${paper.subjectCode}`),
+        ).filter(Boolean) as PsraPaperMarkRecord[];
+        const total = marks.reduce((sum, mark) => sum + Number(mark.markah), 0);
+        return {
+          student,
+          count: marks.length,
+          total,
+          percentage: total / PSRA_PAPERS.length,
+          complete: marks.length === PSRA_PAPERS.length,
+        };
+      }),
+    [paperRecordMap, studentsInClass],
   );
-  const total = psraTotal(numericScores);
-  const percentage = total / 5;
-  const completed = records.length;
-  const average = completed
-    ? records.reduce((sum, record) => sum + Number(record.peratus), 0) / completed
+  const completedStudents = studentSummaries.filter((item) => item.complete);
+  const average = completedStudents.length
+    ? completedStudents.reduce((sum, item) => sum + item.percentage, 0) / completedStudents.length
     : 0;
-  const mumtaz = records.filter((record) => record.gred === 'Mumtaz').length;
+  const mumtaz = completedStudents.filter((item) => item.percentage >= 90).length;
 
   async function saveMarks() {
     if (!supabase || !selectedStudentId || !selectedClassId || !selectedSchool) return;
-    if (PSRA_PAPERS.some((paper) => draft[paper.key].trim() === '')) {
-      setMessage('Lengkapkan markah bagi semua lima kertas ujian.');
+    const client = supabase;
+    if (!editablePapers.length) {
+      setMessage('Akaun ini belum ditugaskan sebagai guru kelas atau guru subjek bagi kelas ini.');
+      return;
+    }
+    if (editablePapers.some((paper) => draft[paper.key].trim() === '')) {
+      setMessage('Lengkapkan markah bagi semua kertas yang ditugaskan kepada anda.');
       return;
     }
 
     setPending(true);
     setMessage('');
-    const payload = {
-      kod_sekolah: selectedSchool,
-      tahun_akademik: selectedYear,
-      class_id: selectedClassId,
-      student_id: selectedStudentId,
-      sesi: session,
-      ...numericScores,
-      updated_at: new Date().toISOString(),
-    };
-    const { data, error } = await supabase
-      .from('psra_trial_marks')
-      .upsert(payload, { onConflict: 'tahun_akademik,student_id,sesi' })
-      .select('*')
-      .single();
-
+    const results = await Promise.all(
+      editablePapers.map(async (paper) => {
+        const existing = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);
+        if (existing) {
+          return await client
+            .from('psra_trial_paper_marks')
+            .update({ markah: scoreNumber(draft[paper.key]), updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+        }
+        return await client.from('psra_trial_paper_marks').insert({
+          kod_sekolah: selectedSchool,
+          tahun_akademik: selectedYear,
+          class_id: selectedClassId,
+          student_id: selectedStudentId,
+          sesi: session,
+          paper_code: paper.subjectCode,
+          markah: scoreNumber(draft[paper.key]),
+        });
+      }),
+    );
+    const error = results.find((result) => result.error)?.error;
     if (error) {
       setMessage(`Gagal menyimpan markah: ${error.message}`);
     } else {
-      const saved = data as PsraTrialRecord;
-      setRecords((current) => [saved, ...current.filter((record) => record.student_id !== saved.student_id)]);
-      setMessage('Markah Percubaan PSRA berjaya disimpan.');
+      setMessage(`${editablePapers.length} kertas PSRA berjaya disimpan.`);
+      await loadRecords();
     }
     setPending(false);
   }
+
+  const permissionLabel = canManageAll
+    ? 'Pentadbir sekolah · Semua kelas dan kertas'
+    : isClassTeacher
+      ? 'Guru kelas · Semua 5 kertas bagi kelas ini'
+      : editablePapers.length
+        ? `Guru subjek · ${editablePapers.map((paper) => paper.label).join(', ')}`
+        : 'Tiada tugasan bagi kelas ini';
 
   if (!selectableSchools.length) {
     return <section className="panel"><p className="empty">Tiada sekolah yang boleh diakses oleh akaun ini.</p></section>;
@@ -277,13 +368,21 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
           <p>Sekolah ini perlu diaktifkan melalui Tetapan → Akses Modul Sekolah.</p>
         </section>
       ) : yearSixClasses.length === 0 ? (
-        <section className="panel"><p className="empty">Tiada kelas Tahun 6 yang aktif bagi tahun akademik ini.</p></section>
+        <section className="panel psra-locked">
+          <strong>Tiada kelas Tahun 6 dalam tugasan anda</strong>
+          <p>Admin sekolah perlu menetapkan anda sebagai guru kelas atau guru subjek melalui menu Guru Kelas & Subjek.</p>
+        </section>
       ) : (
         <>
+          <div className="psra-permission-banner">
+            <span aria-hidden="true">✓</span>
+            <div><strong>Kebenaran kemasukan markah</strong><small>{permissionLabel}</small></div>
+          </div>
+
           <section className="psra-summary-grid">
             <div><span>Calon Tahun 6</span><strong>{studentsInClass.length}</strong><small>murid berdaftar</small></div>
-            <div><span>Markah Lengkap</span><strong>{completed}</strong><small>daripada {studentsInClass.length} calon</small></div>
-            <div><span>Purata Kelas</span><strong>{average.toFixed(1)}%</strong><small>{psraGrade(average)}</small></div>
+            <div><span>Markah Lengkap</span><strong>{completedStudents.length}</strong><small>semua 5 kertas</small></div>
+            <div><span>Purata Kelas</span><strong>{average.toFixed(1)}%</strong><small>{completedStudents.length ? psraGrade(average) : 'Belum lengkap'}</small></div>
             <div><span>Pencapaian Mumtaz</span><strong>{mumtaz}</strong><small>90% dan ke atas</small></div>
           </section>
 
@@ -296,24 +395,21 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
                 <span>{studentsInClass.length} murid</span>
               </div>
               <div className="psra-student-list">
-                {studentsInClass.map((student, index) => {
-                  const record = recordByStudent.get(student.id);
-                  return (
-                    <button
-                      type="button"
-                      key={student.id}
-                      className={selectedStudentId === student.id ? 'active' : ''}
-                      onClick={() => setSelectedStudentId(student.id)}
-                    >
-                      <span className="psra-student-number">{index + 1}</span>
-                      <span><strong>{student.nama_murid}</strong><small>{student.mykid}</small></span>
-                      <span className="psra-student-score">
-                        <strong>{record ? `${displayNumber(record.jumlah)}/500` : 'Belum diisi'}</strong>
-                        <small>{record?.gred ?? '-'}</small>
-                      </span>
-                    </button>
-                  );
-                })}
+                {studentSummaries.map(({ student, count, total, complete }, index) => (
+                  <button
+                    type="button"
+                    key={student.id}
+                    className={selectedStudentId === student.id ? 'active' : ''}
+                    onClick={() => setSelectedStudentId(student.id)}
+                  >
+                    <span className="psra-student-number">{index + 1}</span>
+                    <span><strong>{student.nama_murid}</strong><small>{student.mykid}</small></span>
+                    <span className="psra-student-score">
+                      <strong>{count ? `${displayNumber(total)}/500` : 'Belum diisi'}</strong>
+                      <small>{complete ? psraGrade(total / 5) : `${count}/5 kertas`}</small>
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -323,46 +419,53 @@ export default function PsraTrialManager({ schools, moduleAccesses, classes, stu
                   <span>Percubaan PSRA {session}</span>
                   <h3>{studentsInClass.find((student) => student.id === selectedStudentId)?.nama_murid ?? 'Pilih murid'}</h3>
                 </div>
-                <div><strong>{displayNumber(total)} / 500</strong><span>{percentage.toFixed(1)}% · {psraGrade(percentage)}</span></div>
+                <div>
+                  <strong>{displayNumber(selectedTotal)} / 500</strong>
+                  <span>{selectedComplete ? `${selectedPercentage.toFixed(1)}% · ${psraGrade(selectedPercentage)}` : `${selectedPaperRecords.length}/5 kertas lengkap`}</span>
+                </div>
               </div>
               <div className="psra-paper-grid">
-                {PSRA_PAPERS.map((paper, index) => (
-                  <label key={paper.key}>
-                    <span><b>0{index + 1}</b>{paper.label}</span>
-                    <div>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.5"
-                        inputMode="decimal"
-                        value={draft[paper.key]}
-                        onChange={(event) =>
-                          setDraft((current) => ({ ...current, [paper.key]: event.target.value }))
-                        }
-                        onBlur={(event) => {
-                          if (!event.target.value.trim()) return;
-                          setDraft((current) => ({
-                            ...current,
-                            [paper.key]: displayNumber(scoreNumber(event.target.value)),
-                          }));
-                        }}
-                      />
-                      <span>/ 100</span>
-                    </div>
-                  </label>
-                ))}
+                {PSRA_PAPERS.map((paper, index) => {
+                  const editable = editablePaperCodes.has(paper.subjectCode);
+                  return (
+                    <label className={editable ? '' : 'psra-paper-locked'} key={paper.key}>
+                      <span><b>0{index + 1}</b>{paper.label}{!editable && <em>Guru lain</em>}</span>
+                      <div>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          inputMode="decimal"
+                          value={draft[paper.key]}
+                          disabled={!editable}
+                          onChange={(event) =>
+                            setDraft((current) => ({ ...current, [paper.key]: event.target.value }))
+                          }
+                          onBlur={(event) => {
+                            if (!event.target.value.trim()) return;
+                            setDraft((current) => ({
+                              ...current,
+                              [paper.key]: displayNumber(scoreNumber(event.target.value)),
+                            }));
+                          }}
+                        />
+                        <span>/ 100</span>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
               <div className="psra-entry-footer">
-                <div><span>Jumlah</span><strong>{displayNumber(total)}<small>/500</small></strong></div>
-                <div><span>Gred</span><strong>{psraGrade(percentage)}</strong></div>
+                <div><span>Jumlah Semasa</span><strong>{displayNumber(selectedTotal)}<small>/500</small></strong></div>
+                <div><span>Status</span><strong>{selectedComplete ? psraGrade(selectedPercentage) : `${selectedPaperRecords.length}/5 lengkap`}</strong></div>
                 <button
                   className="button"
                   type="button"
-                  disabled={pending || !selectedStudentId}
+                  disabled={pending || !selectedStudentId || editablePapers.length === 0}
                   onClick={() => void saveMarks()}
                 >
-                  {pending ? 'Menyimpan…' : 'Simpan Markah'}
+                  {pending ? 'Menyimpan…' : `Simpan ${editablePapers.length} Kertas`}
                 </button>
               </div>
             </div>

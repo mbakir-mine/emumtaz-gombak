@@ -306,6 +306,42 @@ a {
   border-radius: 11px;
 }
 
+.psra-permission-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  border: 1px solid #cbe4da;
+  border-radius: 12px;
+  color: #174d3e;
+  background: #edf8f3;
+}
+
+.psra-permission-banner > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  background: #0b7657;
+  font-weight: 900;
+}
+
+.psra-permission-banner > div {
+  display: grid;
+  gap: 3px;
+}
+
+.psra-permission-banner strong {
+  font-size: 12px;
+}
+
+.psra-permission-banner small {
+  color: #607c72;
+  font-size: 10px;
+}
+
 .psra-layout {
   display: grid;
   grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.55fr);
@@ -426,6 +462,27 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.psra-paper-grid label em {
+  margin-left: auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #7b8581;
+  background: #edf1ef;
+  font-size: 8px;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+.psra-paper-grid .psra-paper-locked {
+  opacity: 0.62;
+}
+
+.psra-paper-grid input:disabled {
+  color: #6f7d78;
+  cursor: not-allowed;
+  background: #eef2f0;
 }
 
 .psra-paper-grid label b {

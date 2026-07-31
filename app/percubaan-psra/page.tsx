@@ -1,16 +1,25 @@
 import AppFrame from '../ui/AppFrame';
-import { getClasses, getSchoolModuleAccesses, getSchools, getStudents } from '@/lib/data';
+import {
+  getClasses,
+  getSchoolModuleAccesses,
+  getSchools,
+  getStudents,
+  getTeacherClassAssignments,
+  getTeacherSubjectAssignments,
+} from '@/lib/data';
 import PsraTrialManager from './PsraTrialManager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PercubaanPsraPage() {
-  const [schools, moduleAccesses, classes, students] = await Promise.all([
+  const [schools, moduleAccesses, classes, students, classAssignments, subjectAssignments] = await Promise.all([
     getSchools(),
     getSchoolModuleAccesses(),
     getClasses(),
     getStudents(),
+    getTeacherClassAssignments(),
+    getTeacherSubjectAssignments(),
   ]);
 
   return (
@@ -24,6 +33,8 @@ export default async function PercubaanPsraPage() {
         moduleAccesses={moduleAccesses}
         classes={classes}
         students={students}
+        classAssignments={classAssignments}
+        subjectAssignments={subjectAssignments}
       />
     </AppFrame>
   );
