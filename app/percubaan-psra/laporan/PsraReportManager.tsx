@@ -44,6 +44,13 @@ const REPORT_TABS: { key: ReportType; label: string }[] = [
 ];
 
 const GRADE_NAMES = ['Mumtaz', 'Jayyid Jiddan', 'Jayyid', 'Maqbul', 'Musaadah'];
+const GRADE_COLORS: Record<string, string> = {
+  Mumtaz: '#087456',
+  'Jayyid Jiddan': '#46a978',
+  Jayyid: '#e2b238',
+  Maqbul: '#e78338',
+  Musaadah: '#c84d4d',
+};
 
 function isActive(status: string | null | undefined) {
   return (status ?? '').toUpperCase() === 'AKTIF';
@@ -453,6 +460,15 @@ export default function PsraReportManager({
                   </tr>
                 ))}
               </ReportTable>
+              <SubjectGradeChart
+                title="Graf Taburan Gred Mengikut Mata Pelajaran"
+                subtitle={`${selectedSchoolName} · Percubaan PSRA ${session} · ${selectedYear}`}
+                rows={subjectSummaries.map((item) => ({
+                  label: item.paper.label,
+                  counts: item.counts,
+                  total: item.values.length,
+                }))}
+              />
             </ReportSection>
           ) : null}
 
@@ -480,6 +496,11 @@ export default function PsraReportManager({
                 {' · '}
                 GPS: <strong>{number(gps)}</strong>
               </p>
+              <OverallGradeChart
+                title="Graf Bilangan Gred Keseluruhan"
+                subtitle={`${selectedSchoolName} · Percubaan PSRA ${session} · ${selectedYear} · Gabungan lima mata pelajaran`}
+                counts={overallGradeCounts}
+              />
             </ReportSection>
           ) : null}
         </>
@@ -494,6 +515,92 @@ function ReportSection({ title, subtitle, children }: { title: string; subtitle:
 
 function ReportTable({ headers, children }: { headers: string[]; children: ReactNode }) {
   return <div className="psra-report-table-wrap"><table className="psra-report-table"><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;
+}
+
+function ChartLegend() {
+  return (
+    <div className="psra-chart-legend" aria-label="Petunjuk gred">
+      {GRADE_NAMES.map((grade) => (
+        <span key={grade}><i style={{ backgroundColor: GRADE_COLORS[grade] }} />{grade}</span>
+      ))}
+    </div>
+  );
+}
+
+function SubjectGradeChart({
+  title,
+  subtitle,
+  rows,
+}: {
+  title: string;
+  subtitle: string;
+  rows: { label: string; counts: Record<string, number>; total: number }[];
+}) {
+  const maximum = Math.max(1, ...rows.map((row) => row.total));
+  return (
+    <section className="psra-report-chart-page" aria-label={title}>
+      <header><span>GRAF LAPORAN</span><h3>{title}</h3><p>{subtitle}</p></header>
+      <ChartLegend />
+      <div className="psra-stacked-chart">
+        {rows.map((row) => (
+          <div className="psra-stacked-row" key={row.label}>
+            <strong>{row.label}</strong>
+            <div className="psra-chart-track">
+              {GRADE_NAMES.map((grade) => {
+                const count = row.counts[grade] ?? 0;
+                return count ? (
+                  <span
+                    key={grade}
+                    title={`${grade}: ${count}`}
+                    style={{ width: `${(count / maximum) * 100}%`, backgroundColor: GRADE_COLORS[grade] }}
+                  >
+                    {count}
+                  </span>
+                ) : null;
+              })}
+              {!row.total ? <em>Tiada markah direkodkan</em> : null}
+            </div>
+            <b>{row.total}</b>
+          </div>
+        ))}
+      </div>
+      <div className="psra-chart-scale"><span>0 murid</span><span>Maksimum {maximum} murid</span></div>
+    </section>
+  );
+}
+
+function OverallGradeChart({
+  title,
+  subtitle,
+  counts,
+}: {
+  title: string;
+  subtitle: string;
+  counts: Record<string, number>;
+}) {
+  const maximum = Math.max(1, ...GRADE_NAMES.map((grade) => counts[grade] ?? 0));
+  return (
+    <section className="psra-report-chart-page" aria-label={title}>
+      <header><span>GRAF LAPORAN</span><h3>{title}</h3><p>{subtitle}</p></header>
+      <div className="psra-grade-bar-chart">
+        {GRADE_NAMES.map((grade) => {
+          const count = counts[grade] ?? 0;
+          return (
+            <div className="psra-grade-bar-row" key={grade}>
+              <strong>{grade}</strong>
+              <div className="psra-chart-track">
+                <span style={{ width: `${(count / maximum) * 100}%`, backgroundColor: GRADE_COLORS[grade] }}>
+                  {count ? count : ''}
+                </span>
+              </div>
+              <b>{count}</b>
+            </div>
+          );
+        })}
+      </div>
+      <div className="psra-chart-scale"><span>0 murid</span><span>Maksimum {maximum} murid</span></div>
+    </section>
+  );
 }
 
 function InlineFilters({

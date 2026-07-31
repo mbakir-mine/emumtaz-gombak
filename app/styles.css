@@ -399,6 +399,132 @@ a {
   font-size: 18px;
 }
 
+.psra-report-chart-page {
+  margin-top: 24px;
+  padding: 26px;
+  border: 1px solid #d8e6e0;
+  border-radius: 15px;
+  background:
+    linear-gradient(180deg, rgba(232, 245, 239, .75), rgba(255, 255, 255, .96) 30%),
+    #fff;
+}
+
+.psra-report-chart-page > header {
+  margin-bottom: 20px;
+}
+
+.psra-report-chart-page > header span {
+  color: #087456;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.psra-report-chart-page > header h3 {
+  margin: 5px 0;
+  font-size: 22px;
+}
+
+.psra-report-chart-page > header p {
+  font-size: 13px;
+}
+
+.psra-chart-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .86);
+}
+
+.psra-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #38594f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.psra-chart-legend i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.psra-stacked-chart,
+.psra-grade-bar-chart {
+  display: grid;
+  gap: 18px;
+  padding: 10px 0;
+}
+
+.psra-stacked-row,
+.psra-grade-bar-row {
+  display: grid;
+  grid-template-columns: minmax(145px, 210px) minmax(280px, 1fr) 46px;
+  gap: 13px;
+  align-items: center;
+}
+
+.psra-stacked-row > strong,
+.psra-grade-bar-row > strong {
+  color: #16483b;
+  font-size: 12px;
+  text-align: right;
+}
+
+.psra-stacked-row > b,
+.psra-grade-bar-row > b {
+  color: #123e33;
+  font-size: 14px;
+  text-align: center;
+}
+
+.psra-chart-track {
+  display: flex;
+  align-items: stretch;
+  height: 38px;
+  border: 1px solid #d9e5e0;
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent calc(20% - 1px), rgba(70, 105, 94, .12) 20%),
+    #f6faf8;
+  overflow: hidden;
+}
+
+.psra-chart-track > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  transition: width .25s ease;
+}
+
+.psra-chart-track > em {
+  align-self: center;
+  padding-left: 12px;
+  color: #8aa098;
+  font-size: 11px;
+}
+
+.psra-grade-bar-row .psra-chart-track > span {
+  border-radius: 6px;
+}
+
+.psra-chart-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 59px 0 223px;
+  color: #789087;
+  font-size: 10px;
+}
+
 @media (max-width: 900px) {
   .psra-report-heading {
     align-items: flex-start;
@@ -408,6 +534,16 @@ a {
   .psra-report-filters,
   .psra-report-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .psra-stacked-row,
+  .psra-grade-bar-row {
+    grid-template-columns: 120px minmax(240px, 1fr) 36px;
+  }
+
+  .psra-chart-scale {
+    margin-left: 133px;
+    margin-right: 49px;
   }
 }
 
@@ -431,6 +567,17 @@ a {
   .psra-permission-banner a {
     width: 100%;
     margin-left: 0;
+  }
+
+  .psra-report-chart-page {
+    padding: 18px 14px;
+    overflow-x: auto;
+  }
+
+  .psra-stacked-chart,
+  .psra-grade-bar-chart,
+  .psra-chart-scale {
+    min-width: 650px;
   }
 }
 
@@ -456,6 +603,28 @@ a {
   .psra-report-metrics > div {
     box-shadow: none;
     break-inside: avoid;
+  }
+
+  .psra-report-panel {
+    break-inside: auto;
+  }
+
+  .psra-report-chart-page {
+    page-break-before: always;
+    break-before: page;
+    min-height: 245mm;
+    margin: 0;
+    padding: 14mm 10mm;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+  }
+
+  .psra-chart-track,
+  .psra-chart-track > span,
+  .psra-chart-legend i {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
 
