@@ -301,6 +301,16 @@ export default function PsraReportManager({
       }),
     [isSubjectOnly, records, subjectCodesByClass],
   );
+  const overallGradeCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        GRADE_NAMES.map((grade) => [
+          grade,
+          completeStudents.filter((item) => item.grade === grade).length,
+        ]),
+      ) as Record<string, number>,
+    [completeStudents],
+  );
 
   const selectedIndividual = completeStudents.find((item) => item.student.id === selectedStudentId);
   const selectedStudent = studentsInSelectedClass.find((item) => item.id === selectedStudentId);
@@ -418,26 +428,47 @@ export default function PsraReportManager({
           ) : null}
 
           {reportType === 'subjek' ? (
-            <ReportSection title="Laporan Mata Pelajaran" subtitle="GPMP ialah purata mata gred bagi semua markah yang telah direkodkan.">
-              <ReportTable headers={['Mata Pelajaran', 'Bil. Markah', 'Purata %', 'Lulus', '% Lulus', 'GPMP', 'Gred Purata']}>
+            <ReportSection
+              title="Laporan Mata Pelajaran"
+              subtitle="Bilangan murid mengikut gred bagi setiap mata pelajaran serta Gred Purata Mata Pelajaran (GPMP)."
+            >
+              <ReportTable headers={['Mata Pelajaran', ...GRADE_NAMES, 'Jumlah Murid', 'GPMP']}>
                 {subjectSummaries.map((item) => (
-                  <tr key={item.paper.subjectCode}><th>{item.paper.label}</th><td>{item.values.length}</td><td>{number(item.average, 1)}</td>
-                    <td>{item.pass}</td><td>{item.values.length ? number((item.pass / item.values.length) * 100, 1) : '—'}</td>
-                    <td>{number(item.gpmp)}</td><td>{pointGrade(item.gpmp)}</td></tr>
+                  <tr key={item.paper.subjectCode}>
+                    <th>{item.paper.label}</th>
+                    {GRADE_NAMES.map((grade) => <td key={grade}>{item.counts[grade]}</td>)}
+                    <td>{item.values.length}</td>
+                    <td>{number(item.gpmp)}</td>
+                  </tr>
                 ))}
               </ReportTable>
             </ReportSection>
           ) : null}
 
           {reportType === 'gred' ? (
-            <ReportSection title="Laporan Bilangan Gred" subtitle="Taburan pencapaian bagi setiap mata pelajaran.">
-              <ReportTable headers={['Mata Pelajaran', ...GRADE_NAMES, 'Jumlah', 'GPMP']}>
-                {subjectSummaries.map((item) => (
-                  <tr key={item.paper.subjectCode}><th>{item.paper.label}</th>
-                    {GRADE_NAMES.map((grade) => <td key={grade}>{item.counts[grade]}</td>)}
-                    <td>{item.values.length}</td><td>{number(item.gpmp)}</td></tr>
+            <ReportSection
+              title="Laporan Bilangan Gred Keseluruhan"
+              subtitle="Gred keseluruhan dikira daripada jumlah lima mata pelajaran bagi setiap calon (markah penuh 500)."
+            >
+              <ReportTable headers={['Gred Keseluruhan', 'Julat Markah', 'Bilangan Murid', 'Peratus Calon Lengkap']}>
+                {GRADE_NAMES.map((grade, index) => (
+                  <tr key={grade}>
+                    <th>{grade}</th>
+                    <td>{['450–500', '375–<450', '300–<375', '200–<300', '0–<200'][index]}</td>
+                    <td>{overallGradeCounts[grade]}</td>
+                    <td>
+                      {completeStudents.length
+                        ? `${number((overallGradeCounts[grade] / completeStudents.length) * 100, 1)}%`
+                        : '—'}
+                    </td>
+                  </tr>
                 ))}
               </ReportTable>
+              <p className="psra-report-footnote">
+                Jumlah calon lengkap: <strong>{completeStudents.length}</strong>
+                {' · '}
+                GPS: <strong>{number(gps)}</strong>
+              </p>
             </ReportSection>
           ) : null}
         </>
