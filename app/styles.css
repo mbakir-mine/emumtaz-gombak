@@ -634,99 +634,32 @@ a {
   gap: 18px;
 }
 
-.psra-hero {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  padding: 28px 30px;
-  border-radius: 22px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 90% 0%, rgba(236, 191, 91, 0.2), transparent 31%),
-    linear-gradient(120deg, #073e2e, #087053);
-  box-shadow: 0 20px 42px rgba(6, 75, 54, 0.16);
-}
-
-.psra-hero::after {
-  content: "";
-  position: absolute;
-  right: -72px;
-  top: -110px;
-  width: 310px;
-  height: 310px;
-  border: 46px solid rgba(255, 255, 255, 0.045);
-  border-radius: 50%;
-}
-
-.psra-hero > div {
-  position: relative;
-  z-index: 1;
-}
-
-.psra-kicker {
-  color: #f1ce7a;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-}
-
-.psra-hero h2 {
-  margin: 9px 0 7px;
-  font-size: clamp(25px, 3vw, 35px);
-  letter-spacing: -0.04em;
-}
-
-.psra-hero p {
-  margin: 0;
-  color: #c9e1d8;
-  font-size: 13px;
-}
-
 .psra-session-tabs {
   display: flex;
-  flex: 0 0 auto;
-  gap: 4px;
-  padding: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 14px;
-  background: rgba(1, 43, 31, 0.38);
+  gap: 7px;
+  padding: 6px;
+  border-radius: 13px;
+  background: #e8f2ed;
+  overflow-x: auto;
 }
 
 .psra-session-tabs button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 13px;
+  min-height: 42px;
+  padding: 0 19px;
   border: 0;
-  border-radius: 10px;
-  color: #c1dcd2;
+  border-radius: 9px;
+  color: #3b5d53;
   background: transparent;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.psra-session-tabs button span {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  color: #f1ce7a;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 9px;
+  font: inherit;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .psra-session-tabs button.active {
-  color: #173b31;
-  background: #fff;
-}
-
-.psra-session-tabs button.active span {
   color: #fff;
-  background: #0b6e52;
+  background: #087456;
+  box-shadow: 0 5px 13px rgba(8, 116, 86, 0.18);
 }
 
 .psra-filter-bar {
@@ -1095,11 +1028,6 @@ a {
 }
 
 @media (max-width: 1000px) {
-  .psra-hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .psra-summary-grid,
   .psra-grade-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1111,10 +1039,6 @@ a {
 }
 
 @media (max-width: 680px) {
-  .psra-hero {
-    padding: 23px 20px;
-  }
-
   .psra-session-tabs {
     width: 100%;
   }
@@ -1122,8 +1046,8 @@ a {
   .psra-session-tabs button {
     flex: 1;
     justify-content: center;
-    padding: 9px 7px;
-    font-size: 9px;
+    padding: 0 12px;
+    font-size: 12px;
   }
 
   .psra-filter-bar,

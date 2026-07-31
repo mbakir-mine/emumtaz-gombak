@@ -314,28 +314,20 @@ export default function PsraTrialManager({
 
   return (
     <div className="psra-shell">
-      <section className="psra-hero">
-        <div>
-          <span className="psra-kicker">PENILAIAN SEKOLAH RENDAH AGAMA</span>
-          <h2>Percubaan PSRA Tahun 6</h2>
-          <p>Dua sesi peperiksaan, lima kertas ujian dan jumlah keseluruhan 500 markah.</p>
-        </div>
-        <div className="psra-session-tabs" role="tablist" aria-label="Pilih sesi Percubaan PSRA">
-          {[1, 2].map((item) => (
-            <button
-              key={item}
-              type="button"
-              role="tab"
-              aria-selected={session === item}
-              className={session === item ? 'active' : ''}
-              onClick={() => setSession(item as 1 | 2)}
-            >
-              <span>0{item}</span>
-              Percubaan PSRA {item}
-            </button>
-          ))}
-        </div>
-      </section>
+      <nav className="psra-session-tabs" role="tablist" aria-label="Pilih sesi Percubaan PSRA">
+        {[1, 2].map((item) => (
+          <button
+            key={item}
+            type="button"
+            role="tab"
+            aria-selected={session === item}
+            className={session === item ? 'active' : ''}
+            onClick={() => setSession(item as 1 | 2)}
+          >
+            Percubaan PSRA {item}
+          </button>
+        ))}
+      </nav>
 
       <section className="psra-filter-bar">
         <label>
