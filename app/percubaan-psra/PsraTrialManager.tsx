@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   ClassRecord,
@@ -374,10 +375,11 @@ export default function PsraTrialManager({
         </section>
       ) : (
         <>
-          <div className="psra-permission-banner">
-            <span aria-hidden="true">✓</span>
-            <div><strong>Kebenaran kemasukan markah</strong><small>{permissionLabel}</small></div>
-          </div>
+           <div className="psra-permission-banner">
+             <span aria-hidden="true">✓</span>
+             <div><strong>Kebenaran kemasukan markah</strong><small>{permissionLabel}</small></div>
+             <Link href="/percubaan-psra/laporan">Buka Laporan PSRA</Link>
+           </div>
 
           <section className="psra-summary-grid">
             <div><span>Calon Tahun 6</span><strong>{studentsInClass.length}</strong><small>murid berdaftar</small></div>

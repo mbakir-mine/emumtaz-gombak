@@ -118,6 +118,13 @@ export const navItems: NavItem[] = [
     roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS'],
     moduleKey: 'PELAPORAN_PBD',
   },
+  {
+    key: 'reportPsra',
+    label: 'Laporan Percubaan PSRA',
+    href: '/percubaan-psra/laporan',
+    roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'PERCUBAAN_PSRA',
+  },
   { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'schoolModules', label: 'Akses Modul Sekolah', href: '/modul-sekolah', roles: ['OWNER'] },
