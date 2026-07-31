@@ -16,6 +16,7 @@ import {
   type PsraPaperKey,
   type PsraPaperMarkRecord,
 } from '@/lib/psra';
+import { cleanMykid } from '@/lib/mykid';
 import { supabase } from '@/lib/supabase';
 import { useAccessProfile } from '../ui/AuthGate';
 
@@ -405,7 +406,7 @@ export default function PsraTrialManager({
                     onClick={() => setSelectedStudentId(student.id)}
                   >
                     <span className="psra-student-number">{index + 1}</span>
-                    <span><strong>{student.nama_murid}</strong><small>{student.mykid}</small></span>
+                    <span><strong>{student.nama_murid}</strong><small>{cleanMykid(student.mykid)}</small></span>
                     <span className="psra-student-score">
                       <strong>{count ? `${displayNumber(total)}/500` : 'Belum diisi'}</strong>
                       <small>{complete ? psraGrade(total / 5) : `${count}/5 kertas`}</small>

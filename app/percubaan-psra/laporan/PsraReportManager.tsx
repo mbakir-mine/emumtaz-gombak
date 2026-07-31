@@ -12,6 +12,7 @@ import type {
   TeacherSubjectAssignment,
 } from '@/lib/data';
 import { PSRA_PAPERS, psraGrade, type PsraPaperMarkRecord } from '@/lib/psra';
+import { cleanMykid } from '@/lib/mykid';
 import { supabase } from '@/lib/supabase';
 import { useAccessProfile } from '../../ui/AuthGate';
 
@@ -382,7 +383,7 @@ export default function PsraReportManager({
               <ReportTable headers={['Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
                 {yearSixStudentRows.map((item) => (
                   <tr key={item.student.id}>
-                    <th>{item.student.nama_murid}<small>{item.student.mykid}</small></th>
+                    <th>{item.student.nama_murid}<small>{cleanMykid(item.student.mykid)}</small></th>
                     <td>{item.classRecord?.nama_kelas ?? '—'}</td>
                     {PSRA_PAPERS.map((paper) => (
                       <td key={paper.subjectCode}>{item.marks?.get(paper.subjectCode) ?? '—'}</td>
@@ -410,7 +411,7 @@ export default function PsraReportManager({
               <ReportTable headers={['Murid', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
                 {selectedClassResults.map((item) => (
                   <tr key={item.student.id}>
-                    <th>{item.student.nama_murid}<small>{item.student.mykid}</small></th>
+                    <th>{item.student.nama_murid}<small>{cleanMykid(item.student.mykid)}</small></th>
                     {PSRA_PAPERS.map((paper) => <td key={paper.subjectCode}>{item.marks.get(paper.subjectCode)}</td>)}
                     <td>{item.total}/500</td><td>{number(item.percentage, 1)}</td><td>{number(item.gpm)}</td><td>{item.grade}</td>
                   </tr>
@@ -432,7 +433,7 @@ export default function PsraReportManager({
               </div>
               {selectedStudent ? (
                 <div className="psra-individual-card">
-                  <header><div><span>Nama Murid</span><strong>{selectedStudent.nama_murid}</strong><small>{selectedStudent.mykid}</small></div>
+                  <header><div><span>Nama Murid</span><strong>{selectedStudent.nama_murid}</strong><small>{cleanMykid(selectedStudent.mykid)}</small></div>
                     <div><span>GPM</span><strong>{selectedIndividual ? number(selectedIndividual.gpm) : 'Belum lengkap'}</strong><small>{selectedIndividual?.grade ?? '—'}</small></div></header>
                   <ReportTable headers={['Mata Pelajaran', 'Markah', 'Gred', 'Mata Gred']}>
                     {PSRA_PAPERS.map((paper) => {
