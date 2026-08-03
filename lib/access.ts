@@ -8,6 +8,7 @@ export type AccessProfile = {
   nama: string;
   role: UserRole;
   kod_sekolah: string | null;
+  daerah: string | null;
   zon: string | null;
   status: string;
   allowed_nav?: string[] | null;
@@ -157,6 +158,7 @@ export function uniqueAccessProfiles(profiles: AccessProfile[]) {
       profile.email.toLowerCase(),
       profile.role,
       profile.kod_sekolah ?? '',
+      profile.daerah ?? '',
       profile.zon ?? '',
       profile.status,
     ].join('|');

@@ -21,6 +21,18 @@ type MetricItem = {
   breakdown?: Array<{ label: string; value: number }>;
 };
 
+const SELANGOR_DISTRICTS = [
+  'GOMBAK',
+  'HULU LANGAT',
+  'HULU SELANGOR',
+  'KLANG',
+  'KUALA LANGAT',
+  'KUALA SELANGOR',
+  'PETALING',
+  'SABAK BERNAM',
+  'SEPANG',
+];
+
 function zoneLabel(zon: string | null | undefined) {
   if (!zon) return 'Zon belum ditetapkan';
   return `Zon ${zon.charAt(0) + zon.slice(1).toLowerCase()}`;
@@ -105,7 +117,24 @@ function metricsForRole(counts: SetupCounts, role?: string): MetricItem[] {
   ];
 }
 
-function scopedCountsForProfile(counts: SetupCounts, insights: DashboardInsights, profile: ReturnType<typeof useAccessProfile>) {
+function scopedCountsForProfile(
+  counts: SetupCounts,
+  insights: DashboardInsights,
+  profile: ReturnType<typeof useAccessProfile>,
+  selectedDistrict: string | null,
+) {
+  const emptyDistrictCounts: SetupCounts = {
+    schools: 0,
+    users: 0,
+    subjects: counts.subjects,
+    exams: counts.exams,
+    classes: 0,
+    students: 0,
+    marks: 0,
+    schoolCategories: {},
+    studentGender: { lelaki: 0, perempuan: 0 },
+    classesByYear: {},
+  };
   if (!profile) return counts;
   if (profile.role === 'ADMIN_ZON' && profile.zon) {
     return insights.scopeCounts.zones[profile.zon] ?? counts;
@@ -113,8 +142,11 @@ function scopedCountsForProfile(counts: SetupCounts, insights: DashboardInsights
   if (profile.role === 'ADMIN_SEKOLAH' && profile.kod_sekolah) {
     return insights.scopeCounts.schools[profile.kod_sekolah] ?? counts;
   }
-  if (profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH') {
-    return insights.scopeCounts.all;
+  if (profile.role === 'OWNER') {
+    return selectedDistrict ? insights.scopeCounts.districts[selectedDistrict] ?? emptyDistrictCounts : insights.scopeCounts.all;
+  }
+  if (profile.role === 'ADMIN_DAERAH') {
+    return insights.scopeCounts.districts[profile.daerah?.toUpperCase() ?? 'GOMBAK'] ?? counts;
   }
   return counts;
 }
@@ -368,16 +400,22 @@ function CompletionChart({
         const done = rows.filter((row) => row.complete).length;
         return { label: `T${tahun}`, total, done };
       })
-    : ['BARAT', 'TENGAH', 'TIMUR'].map((zon) => {
-        const rows = schools.filter((row) => row.zon === zon);
-        const total = rows.length;
-        const done = rows.filter((row) => row.complete).length;
-        return { label: zon.charAt(0) + zon.slice(1).toLowerCase(), total, done };
-      });
+    : [
+        {
+          label: 'Sekolah lengkap',
+          total: schools.length,
+          done: schools.filter((row) => row.complete).length,
+        },
+        {
+          label: 'Belum lengkap',
+          total: schools.length,
+          done: schools.filter((row) => !row.complete).length,
+        },
+      ];
 
   return (
     <div className="completion-chart">
-      <h3>{isSchoolAdmin ? 'Status Ikut Tahun' : 'Status Ikut Zon'}</h3>
+      <h3>{isSchoolAdmin ? 'Status Ikut Tahun' : 'Status Ikut Sekolah'}</h3>
       <div className="chart-bars">
         {chartRows.map((row) => {
           const percent = row.total > 0 ? Math.round((row.done / row.total) * 100) : 0;
@@ -567,22 +605,205 @@ function TeacherDashboard({
   );
 }
 
+function ExamDashboardTabs({
+  active,
+  onChange,
+}: {
+  active: 'ringkasan' | 'status' | 'prestasi' | 'kedudukan';
+  onChange: (value: 'ringkasan' | 'status' | 'prestasi' | 'kedudukan') => void;
+}) {
+  const tabs = [
+    ['ringkasan', 'Ringkasan'],
+    ['status', 'Status Penghantaran'],
+    ['prestasi', 'Prestasi'],
+    ['kedudukan', 'Kedudukan'],
+  ] as const;
+
+  return (
+    <div className="exam-dashboard-tabs" role="tablist" aria-label="Paparan dashboard peperiksaan">
+      {tabs.map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="tab"
+          aria-selected={active === value}
+          className={active === value ? 'active' : ''}
+          onClick={() => onChange(value)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ExamSelector({
+  examOptions,
+  selectedKey,
+}: {
+  examOptions: Array<{ key: string; label: string }>;
+  selectedKey: string | null;
+}) {
+  return (
+    <div className="exam-selector-bar">
+      <div>
+        <span className="eyebrow">ANALISIS PEPERIKSAAN</span>
+        <strong>Pilih peperiksaan</strong>
+      </div>
+      <select
+        value={selectedKey ?? ''}
+        aria-label="Pilih peperiksaan untuk dianalisis"
+        onChange={(event) => {
+          const value = event.target.value;
+          window.location.href = value ? `/?exam=${encodeURIComponent(value)}` : '/';
+        }}
+      >
+        {examOptions.length === 0 ? <option value="">Belum ada peperiksaan</option> : null}
+        {examOptions.map((exam) => <option key={exam.key} value={exam.key}>{exam.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function ExamActionKpis({
+  latestExamLabel,
+  schools,
+  classes,
+  bestSchool,
+}: {
+  latestExamLabel: string;
+  schools: MarkCompletionSchool[];
+  classes: MarkCompletionClass[];
+  bestSchool?: DashboardSchoolRank;
+}) {
+  const rows = schools.length > 0 ? schools : classes;
+  const completed = rows.filter((row) => row.complete).length;
+  const pending = rows.filter((row) => !row.complete).length;
+  const completion = rows.length > 0 ? Math.round((completed / rows.length) * 100) : 0;
+
+  return (
+    <div className="exam-action-kpis">
+      <div className="exam-action-kpi exam-action-kpi--exam">
+        <span>Peperiksaan semasa</span>
+        <strong>{latestExamLabel}</strong>
+        <small>Data yang sedang dianalisis</small>
+      </div>
+      <div className="exam-action-kpi exam-action-kpi--done">
+        <span>Lengkap dihantar</span>
+        <strong>{completed}</strong>
+        <small>{completion}% daripada keseluruhan</small>
+      </div>
+      <div className="exam-action-kpi exam-action-kpi--pending">
+        <span>Perlu tindakan</span>
+        <strong>{pending}</strong>
+        <small>Belum selesai atau belum lengkap</small>
+      </div>
+      <div className="exam-action-kpi exam-action-kpi--best">
+        <span>Prestasi tertinggi</span>
+        <strong>{bestSchool ? formatNumber(bestSchool.purata) : '-'}</strong>
+        <small>{bestSchool?.nama_sekolah ?? 'Belum ada data markah'}</small>
+      </div>
+    </div>
+  );
+}
+
+function OwnerStateDashboard({
+  insights,
+  selectedDistrict,
+  view,
+}: {
+  insights: DashboardInsights;
+  selectedDistrict: string | null;
+  view: 'ringkasan' | 'status' | 'prestasi' | 'kedudukan';
+}) {
+  const districts = selectedDistrict ? [selectedDistrict] : SELANGOR_DISTRICTS;
+  const rows = districts.map((district) => {
+    const counts = insights.scopeCounts.districts[district] ?? {
+      schools: 0, users: 0, subjects: 0, exams: 0, classes: 0, students: 0, marks: 0,
+      schoolCategories: {}, studentGender: { lelaki: 0, perempuan: 0 }, classesByYear: {},
+    };
+    const completion = insights.completionSchools.filter((item) => item.daerah.toUpperCase() === district);
+    const complete = completion.filter((item) => item.complete).length;
+    const performance = insights.schoolRanks.filter((item) => item.daerah.toUpperCase() === district);
+    const average = performance.length ? performance.reduce((sum, item) => sum + (item.purata ?? 0), 0) / performance.length : null;
+    return { district, counts, complete, pending: Math.max(completion.length - complete, 0), completion: completion.length ? Math.round((complete / completion.length) * 100) : 0, average, performanceCount: performance.length };
+  });
+  const allCounts = insights.scopeCounts.all;
+  const totalComplete = rows.reduce((sum, row) => sum + row.complete, 0);
+  const totalPending = rows.reduce((sum, row) => sum + row.pending, 0);
+  const performanceRows = rows.filter((row) => row.average !== null).sort((a, b) => (b.average ?? -1) - (a.average ?? -1));
+  const attentionRows = [...rows].sort((a, b) => a.completion - b.completion || a.district.localeCompare(b.district));
+  const tabTitle = view === 'status' ? 'Status penghantaran mengikut daerah' : view === 'prestasi' ? 'Prestasi daerah Selangor' : view === 'kedudukan' ? 'Kedudukan daerah' : 'Ringkasan negeri Selangor';
+
+  return (
+    <section className="owner-dashboard-wrap">
+      <div className="owner-dashboard-banner">
+        <div><span className="eyebrow">PAPAN PEMILIK SISTEM</span><h2>Dashboard UPI Selangor</h2><p>Pusat pemantauan keseluruhan sekolah, penghantaran markah dan pencapaian daerah.</p></div>
+        <div className="owner-banner-exam"><small>Peperiksaan dipilih</small><strong>{insights.latestExamLabel}</strong><span>9 daerah dalam Selangor</span></div>
+      </div>
+
+      <div className="owner-kpi-grid">
+        <div className="owner-kpi"><span>Jumlah sekolah</span><strong>{allCounts.schools}</strong><small>Seluruh Selangor</small></div>
+        <div className="owner-kpi"><span>Jumlah calon</span><strong>{allCounts.students}</strong><small>Murid aktif</small></div>
+        <div className="owner-kpi owner-kpi--good"><span>Penghantaran lengkap</span><strong>{totalComplete}</strong><small>{totalComplete + totalPending ? Math.round((totalComplete / (totalComplete + totalPending)) * 100) : 0}% daripada sekolah</small></div>
+        <div className="owner-kpi owner-kpi--warning"><span>Perlu tindakan</span><strong>{totalPending}</strong><small>Sekolah belum lengkap</small></div>
+      </div>
+
+      <div className="owner-dashboard-grid">
+        <section className="panel owner-district-panel">
+          <div className="panel-head"><div><h2>{tabTitle}</h2><p className="table-note">Perbandingan prestasi dan status {insights.latestExamLabel}.</p></div><span>{rows.length} daerah</span></div>
+          <div className="owner-district-table"><div className="owner-table-row owner-table-head"><span>Daerah</span><span>Sekolah</span><span>Calon</span><span>Lengkap</span><span>Purata</span></div>{rows.map((row) => <div className="owner-table-row" key={row.district}><strong>{row.district}</strong><span>{row.counts.schools}</span><span>{row.counts.students}</span><span><b>{row.completion}%</b><i className="owner-progress"><em style={{ width: `${row.completion}%` }} /></i></span><span>{row.average === null ? '-' : row.average.toFixed(2)}</span></div>)}</div>
+        </section>
+
+        <section className="panel owner-alert-panel">
+          <div className="panel-head"><div><h2>Perlu perhatian segera</h2><p className="table-note">Daerah dengan penghantaran paling rendah.</p></div></div>
+          <div className="owner-alert-list">{attentionRows.slice(0, 5).map((row) => <div key={row.district}><span><strong>{row.district}</strong><small>{row.pending} sekolah belum lengkap</small></span><b>{row.completion}%</b></div>)}</div>
+        </section>
+      </div>
+
+      <div className="owner-dashboard-grid">
+        <section className="panel owner-chart-panel"><div className="panel-head"><div><h2>Purata prestasi daerah</h2><p className="table-note">Daerah yang telah mempunyai data markah.</p></div></div><div className="owner-bars">{performanceRows.length ? performanceRows.map((row) => <div className="owner-bar-row" key={row.district}><span>{row.district}</span><div><i style={{ width: `${Math.min(Math.max((row.average ?? 0), 0), 100)}%` }} /></div><b>{row.average?.toFixed(2)}</b></div>) : <InsightEmpty text="Belum ada data prestasi daerah." />}</div></section>
+        <section className="panel owner-chart-panel"><div className="panel-head"><div><h2>Ringkasan sistem</h2><p className="table-note">Maklumat asas yang perlu dipantau pemilik.</p></div></div><div className="owner-fact-list"><div><span>Kelas aktif</span><strong>{allCounts.classes}</strong></div><div><span>Guru / pengguna</span><strong>{allCounts.users}</strong></div><div><span>Mata pelajaran</span><strong>{allCounts.subjects}</strong></div><div><span>Peperiksaan</span><strong>{allCounts.exams}</strong></div></div></section>
+      </div>
+    </section>
+  );
+}
+
 export default function DashboardContent({ counts, insights }: { counts: SetupCounts; insights: DashboardInsights }) {
   const profile = useAccessProfile();
+  const [schoolCategory, setSchoolCategory] = useState('SEMUA');
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const [dashboardView, setDashboardView] = useState<'ringkasan' | 'status' | 'prestasi' | 'kedudukan'>('ringkasan');
   const isTeacher = profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK';
   const teacherClasses = insights.teacherClasses.filter((item) => item.user_id === profile?.id);
   const teacherSubjects = insights.teacherSubjects.filter((item) => item.user_id === profile?.id);
-  const scopedCounts = scopedCountsForProfile(counts, insights, profile);
+  const scopedCounts = scopedCountsForProfile(counts, insights, profile, selectedDistrict);
   const metrics = metricsForRole(scopedCounts, profile?.role);
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
+  const dashboardDistrict = profile?.role === 'ADMIN_DAERAH'
+    ? profile.daerah?.toUpperCase() ?? 'GOMBAK'
+    : selectedDistrict;
   const scopedSchoolRanks = insights.schoolRanks.filter((row) => {
+    if (dashboardDistrict && row.daerah?.toUpperCase?.() !== dashboardDistrict) return false;
     if (isZoneAdmin) return row.zon === profile?.zon;
     if (isSchoolAdmin) return row.kod_sekolah === profile?.kod_sekolah;
     return true;
   });
+  const categorySchoolRanks = schoolCategory === 'SEMUA'
+    ? scopedSchoolRanks
+    : scopedSchoolRanks.filter((row) => row.kategori.toUpperCase() === schoolCategory);
   const schoolOwnRank = scopedSchoolRanks.find((row) => row.kod_sekolah === profile?.kod_sekolah);
   const schoolClassRanks = insights.classRanks.filter((row) => row.kod_sekolah === profile?.kod_sekolah);
+  const districtCompletionSchools = insights.completionSchools.filter((row) => {
+    if (dashboardDistrict && row.daerah?.toUpperCase?.() !== dashboardDistrict) return false;
+    return true;
+  });
+  const districtCompletionClasses = insights.completionClasses.filter((row) => {
+    if (!dashboardDistrict) return true;
+    return insights.completionSchools.some((school) => school.kod_sekolah === row.kod_sekolah && school.daerah?.toUpperCase?.() === dashboardDistrict);
+  });
+  const bestSchool = categorySchoolRanks[0];
   return (
     <>
       {profile?.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
@@ -596,52 +817,132 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         />
       ) : (
         <>
-      <div className="metric-grid dashboard-metrics">
-        {metrics.map((metric) => (
-          <div className="metric dashboard-metric" key={metric.label}>
-            <div>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              {metric.note && <small>{metric.note}</small>}
-            </div>
-            <div className="metric-side">
-              {metric.breakdown && (
-                <div className="metric-breakdown">
-                  {metric.breakdown.map((item) => (
-                    <span key={item.label}>
-                      <em>{item.label}</em>
-                      <i>:</i>
-                      <b>{item.value}</b>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {!metric.breakdown && <span className="metric-accent" />}
-            </div>
-          </div>
-        ))}
-      </div>
+      <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} />
+      {profile?.role !== 'OWNER' && <>
+        <ExamDashboardTabs active={dashboardView} onChange={setDashboardView} />
+        <ExamActionKpis
+          latestExamLabel={insights.latestExamLabel}
+          schools={isSchoolAdmin ? [] : districtCompletionSchools}
+          classes={isSchoolAdmin ? districtCompletionClasses : []}
+          bestSchool={bestSchool}
+        />
 
-      <div className="dashboard-feature-grid">
-        {isSchoolAdmin ? (
-          <SchoolFocus schoolRank={schoolOwnRank} classRanks={schoolClassRanks} />
-        ) : (
-          <SchoolLeaderboard
-            rows={scopedSchoolRanks}
-            title={isZoneAdmin ? `5 Sekolah Terbaik ${zoneLabel(profile?.zon)}` : '5 Sekolah Terbaik Daerah'}
-            subtitle={`Mengikut kategori sekolah berdasarkan ${insights.latestExamLabel}.`}
+        <div className="metric-grid dashboard-metrics">
+          {metrics.map((metric) => (
+            <div className="metric dashboard-metric" key={metric.label}>
+              <div>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                {metric.note && <small>{metric.note}</small>}
+              </div>
+              <div className="metric-side">
+                {metric.breakdown && (
+                  <div className="metric-breakdown">
+                    {metric.breakdown.map((item) => (
+                      <span key={item.label}>
+                        <em>{item.label}</em>
+                        <i>:</i>
+                        <b>{item.value}</b>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {!metric.breakdown && <span className="metric-accent" />}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
+
+      {profile?.role === 'OWNER' ? (
+        <div className="category-tabs dashboard-category-tabs dashboard-district-tabs" role="tablist" aria-label="Daerah Selangor">
+          {['SEMUA', ...SELANGOR_DISTRICTS].map((district) => (
+            <button
+              key={district}
+              type="button"
+              className={`category-tab${(district === 'SEMUA' ? !selectedDistrict : selectedDistrict === district) ? ' active' : ''}`}
+              onClick={() => setSelectedDistrict(district === 'SEMUA' ? null : district)}
+            >
+              {district === 'SEMUA' ? 'Semua Selangor' : district}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="category-tabs dashboard-category-tabs" role="tablist" aria-label="Kategori sekolah dashboard">
+          {['SEMUA', 'SRAI', 'SRA', 'KAFAI', 'SRI'].map((category) => (
+            <button
+              key={category}
+              type="button"
+              className={`category-tab${schoolCategory === category ? ' active' : ''}`}
+              onClick={() => setSchoolCategory(category)}
+            >
+              {category === 'SEMUA' ? 'Semua Sekolah' : category}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {profile?.role === 'OWNER' ? (
+        <OwnerStateDashboard insights={insights} selectedDistrict={selectedDistrict} view={dashboardView} />
+      ) : <>
+      {dashboardView !== 'status' && dashboardView !== 'kedudukan' && (
+        <div className="dashboard-feature-grid">
+          {isSchoolAdmin ? (
+            <SchoolFocus schoolRank={schoolOwnRank} classRanks={schoolClassRanks} />
+          ) : (
+            <SchoolLeaderboard
+              rows={categorySchoolRanks}
+              title={isZoneAdmin ? `5 Sekolah Terbaik ${zoneLabel(profile?.zon)}` : '5 Sekolah Terbaik Daerah'}
+              subtitle={`Mengikut kategori sekolah berdasarkan ${insights.latestExamLabel}.`}
+            />
+          )}
+
+          <MarkCompletionPanel
+            role={profile?.role}
+            zon={profile?.zon}
+            kodSekolah={profile?.kod_sekolah}
+            latestExamLabel={insights.latestExamLabel}
+            schools={districtCompletionSchools}
+            classes={districtCompletionClasses}
           />
-        )}
+        </div>
+      )}
 
+      {dashboardView === 'status' && (
         <MarkCompletionPanel
           role={profile?.role}
           zon={profile?.zon}
           kodSekolah={profile?.kod_sekolah}
           latestExamLabel={insights.latestExamLabel}
-          schools={insights.completionSchools}
-          classes={insights.completionClasses}
+          schools={districtCompletionSchools}
+          classes={districtCompletionClasses}
         />
-      </div>
+      )}
+
+      {dashboardView === 'prestasi' && (
+        <div className="dashboard-feature-grid dashboard-feature-grid--single">
+          {isSchoolAdmin ? (
+            <SchoolFocus schoolRank={schoolOwnRank} classRanks={schoolClassRanks} />
+          ) : (
+            <SchoolLeaderboard
+              rows={categorySchoolRanks}
+              title="Prestasi sekolah"
+              subtitle={`Purata dan GPS sekolah berdasarkan ${insights.latestExamLabel}.`}
+            />
+          )}
+        </div>
+      )}
+
+      {dashboardView === 'kedudukan' && (
+        <div className="dashboard-feature-grid dashboard-feature-grid--single">
+          <SchoolLeaderboard
+            rows={categorySchoolRanks}
+            title={isZoneAdmin ? `Kedudukan sekolah ${zoneLabel(profile?.zon)}` : 'Kedudukan sekolah'}
+            subtitle={`Senarai prestasi terbaik berdasarkan ${insights.latestExamLabel}.`}
+          />
+        </div>
+      )}
+      </>}
         </>
       )}
 

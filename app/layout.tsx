@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './styles.css';
+import './compact-ui.css';
 
 export const metadata: Metadata = {
   title: 'e-Mumtaz Gombak',

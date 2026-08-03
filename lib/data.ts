@@ -28,6 +28,7 @@ export type SetupCounts = {
 
 export type DashboardScopeCounts = {
   all: SetupCounts;
+  districts: Record<string, SetupCounts>;
   zones: Record<string, SetupCounts>;
   schools: Record<string, SetupCounts>;
 };
@@ -265,6 +266,7 @@ export type UserRecord = {
   nama: string;
   role: string;
   kod_sekolah: string | null;
+  daerah: string | null;
   zon: string | null;
   status: string;
   allowed_nav?: string[] | null;
@@ -368,6 +370,7 @@ export type DashboardSchoolRank = {
   nama_sekolah: string;
   kategori: string;
   zon: string | null;
+  daerah: string;
   jumlah_murid: number;
   purata: number | null;
   gps: number | null;
@@ -392,6 +395,7 @@ export type MarkCompletionSchool = {
   nama_sekolah: string;
   kategori: string;
   zon: string | null;
+  daerah: string;
   expected: number;
   completed: number;
   percent: number;
@@ -437,6 +441,8 @@ export type TeacherDashboardSubject = {
 
 export type DashboardInsights = {
   latestExamLabel: string;
+  latestExamKey: string | null;
+  examOptions: Array<{ key: string; label: string }>;
   schoolRanks: DashboardSchoolRank[];
   classRanks: DashboardClassRank[];
   completionSchools: MarkCompletionSchool[];
@@ -761,12 +767,18 @@ function buildDashboardScopeCounts({
   exams: ExamRecord[];
 }): DashboardScopeCounts {
   const all = emptySetupCounts(subjects.length, exams.length);
+  const districts: Record<string, SetupCounts> = {};
   const zones: Record<string, SetupCounts> = {};
   const schoolCounts: Record<string, SetupCounts> = {};
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
 
   schools.forEach((school) => {
     addSchoolToCounts(all, school);
+    const district = (school.daerah || '').toUpperCase();
+    if (district) {
+      districts[district] = districts[district] ?? emptySetupCounts(subjects.length, exams.length);
+      addSchoolToCounts(districts[district], school);
+    }
     schoolCounts[school.kod_sekolah] = emptySetupCounts(subjects.length, exams.length);
     addSchoolToCounts(schoolCounts[school.kod_sekolah], school);
 
@@ -790,6 +802,11 @@ function buildDashboardScopeCounts({
       zones[zon].classes += 1;
       zones[zon].classesByYear[classRecord.tahun] = (zones[zon].classesByYear[classRecord.tahun] ?? 0) + 1;
     }
+    const district = schoolMap.get(classRecord.kod_sekolah)?.daerah?.toUpperCase();
+    if (district && districts[district]) {
+      districts[district].classes += 1;
+      districts[district].classesByYear[classRecord.tahun] = (districts[district].classesByYear[classRecord.tahun] ?? 0) + 1;
+    }
   });
 
   students.forEach((student) => {
@@ -799,6 +816,8 @@ function buildDashboardScopeCounts({
 
     const zon = schoolMap.get(student.kod_sekolah)?.zon;
     if (zon && zones[zon]) addStudentToCounts(zones[zon], student);
+    const district = schoolMap.get(student.kod_sekolah)?.daerah?.toUpperCase();
+    if (district && districts[district]) addStudentToCounts(districts[district], student);
   });
 
   marks.forEach((mark) => {
@@ -808,6 +827,8 @@ function buildDashboardScopeCounts({
 
     const zon = schoolMap.get(mark.kod_sekolah)?.zon;
     if (zon && zones[zon]) zones[zon].marks += 1;
+    const district = schoolMap.get(mark.kod_sekolah)?.daerah?.toUpperCase();
+    if (district && districts[district]) districts[district].marks += 1;
   });
 
   users.forEach((user) => {
@@ -822,9 +843,11 @@ function buildDashboardScopeCounts({
       const zon = schoolMap.get(user.kod_sekolah)?.zon;
       if (zon && zones[zon]) zones[zon].users += 1;
     }
+    const district = user.kod_sekolah ? schoolMap.get(user.kod_sekolah)?.daerah?.toUpperCase() : undefined;
+    if (district && districts[district]) districts[district].users += 1;
   });
 
-  return { all, zones, schools: schoolCounts };
+  return { all, districts, zones, schools: schoolCounts };
 }
 
 function gradePointFromAverage(purata: number | null | undefined) {
@@ -1087,7 +1110,7 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
     .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
     .neq('role', 'OWNER')
     .order('role')
@@ -1102,7 +1125,7 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
     .order('status')
     .order('kod_sekolah')
     .order('role')
@@ -1116,7 +1139,7 @@ export async function getAppUserById(id: string): Promise<UserRecord | null> {
   if (!supabase || !id) return null;
   const { data, error } = await supabase
     .from('app_users')
-    .select('id,auth_user_id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+    .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
     .eq('id', id)
     .maybeSingle();
 
@@ -1508,7 +1531,7 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
   return data ?? [];
 }
 
-export async function getDashboardInsights(): Promise<DashboardInsights> {
+export async function getDashboardInsights(selectedExamKey?: string): Promise<DashboardInsights> {
   const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students, users] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -1532,13 +1555,24 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
   });
 
   const latestExam = latestRelevantExam(exams);
-  const key = latestExam
+  const defaultKey = latestExam
     ? `${latestExam.tahun_akademik}-${latestExam.kod_peperiksaan}`
     : latestExamKey([...schoolSummaries, ...studentSummaries]);
+  const availableExamKeys = new Set(exams.map((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}`));
+  const key = selectedExamKey && availableExamKeys.has(selectedExamKey) ? selectedExamKey : defaultKey;
+  const selectedExam = exams.find((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}` === key) ?? latestExam;
+  const examOptions = [...new Map(
+    exams.map((exam) => [
+      `${exam.tahun_akademik}-${exam.kod_peperiksaan}`,
+      { key: `${exam.tahun_akademik}-${exam.kod_peperiksaan}`, label: `${exam.kod_peperiksaan} ${exam.tahun_akademik}` },
+    ]),
+  ).values()];
 
   if (!key) {
     return {
       latestExamLabel: 'Belum ada markah',
+      latestExamKey: key,
+      examOptions,
       schoolRanks: [],
       classRanks: [],
       completionSchools: [],
@@ -1551,7 +1585,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
 
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
   const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
-  const marks = latestExam ? await fetchMarksByExamInBatches(latestExam.id) : [];
+  const marks = selectedExam ? await fetchMarksByExamInBatches(selectedExam.id) : [];
   const scopeCounts = buildDashboardScopeCounts({
     schools,
     classes,
@@ -1580,6 +1614,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
         nama_sekolah: school?.nama_sekolah ?? summary.kod_sekolah,
         kategori: school?.kategori ?? '-',
         zon: school?.zon ?? null,
+        daerah: school?.daerah ?? '',
         jumlah_murid: summary.jumlah_murid,
         purata: summary.purata_sekolah,
         gps: gradePointFromAverage(summary.purata_sekolah),
@@ -1641,7 +1676,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
   const classCompletionMap = new Map<string, MarkCompletionClass>();
 
   classes
-    .filter((classRecord) => !latestExam || classRecord.tahun_akademik === latestExam.tahun_akademik)
+    .filter((classRecord) => !selectedExam || classRecord.tahun_akademik === selectedExam.tahun_akademik)
     .forEach((classRecord) => {
     const requiredSubjects = rulesByTahun.get(classRecord.tahun) ?? [];
     const classStudents = students.filter(
@@ -1682,6 +1717,7 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
       nama_sekolah: school.nama_sekolah,
       kategori: school.kategori,
       zon: school.zon,
+      daerah: school.daerah,
       expected,
       completed,
       percent,
@@ -1692,6 +1728,8 @@ export async function getDashboardInsights(): Promise<DashboardInsights> {
   const [tahun, exam] = key.split('-');
   return {
     latestExamLabel: `${exam} ${tahun}`,
+    latestExamKey: key,
+    examOptions,
     schoolRanks,
     classRanks,
     completionSchools: [...schoolCompletionMap.values()].sort((a, b) => a.kod_sekolah.localeCompare(b.kod_sekolah)),

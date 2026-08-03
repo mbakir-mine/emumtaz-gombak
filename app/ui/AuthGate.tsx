@@ -66,7 +66,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           Promise.resolve(
             supabase
               .from('app_users')
-              .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
+              .select('id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav,must_change_password')
               .or(profileFilter)
               .eq('status', 'AKTIF')
               .limit(10),
@@ -82,7 +82,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             Promise.resolve(
               supabase
                 .from('app_users')
-                .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
+                .select('id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
                 .or(profileFilter)
                 .eq('status', 'AKTIF')
                 .limit(10),
