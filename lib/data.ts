@@ -442,7 +442,7 @@ export type TeacherDashboardSubject = {
 export type DashboardInsights = {
   latestExamLabel: string;
   latestExamKey: string | null;
-  examOptions: Array<{ key: string; label: string }>;
+  examOptions: Array<{ key: string; label: string; group: 'utama' | 'psra' }>;
   schoolRanks: DashboardSchoolRank[];
   classRanks: DashboardClassRank[];
   completionSchools: MarkCompletionSchool[];
@@ -450,6 +450,14 @@ export type DashboardInsights = {
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
   scopeCounts: DashboardScopeCounts;
+  psraSelection: { year: number; session: 1 | 2 } | null;
+  psraSchools: Array<{
+    kod_sekolah: string;
+    nama_sekolah: string;
+    daerah: string;
+    zon: string | null;
+    candidateIds: string[];
+  }>;
 };
 
 export type MarkDetailRecord = {
@@ -1558,15 +1566,84 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
   const defaultKey = latestExam
     ? `${latestExam.tahun_akademik}-${latestExam.kod_peperiksaan}`
     : latestExamKey([...schoolSummaries, ...studentSummaries]);
-  const availableExamKeys = new Set(exams.map((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}`));
-  const key = selectedExamKey && availableExamKeys.has(selectedExamKey) ? selectedExamKey : defaultKey;
+  const currentYear = new Date().getFullYear();
+  const standardExams = exams.filter((exam) => isStandardExamCode(exam.kod_peperiksaan));
+  const availableExamKeys = new Set(standardExams.map((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}`));
+  const psraMatch = selectedExamKey?.match(/^PSRA-(\d{4})-([12])$/);
+  const psraSelection = psraMatch
+    ? { year: Number(psraMatch[1]), session: Number(psraMatch[2]) as 1 | 2 }
+    : null;
+  const key = psraSelection
+    ? selectedExamKey ?? null
+    : selectedExamKey && availableExamKeys.has(selectedExamKey)
+      ? selectedExamKey
+      : defaultKey;
   const selectedExam = exams.find((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}` === key) ?? latestExam;
-  const examOptions = [...new Map(
-    exams.map((exam) => [
+  const mainExamOptions = [...new Map(
+    standardExams.map((exam) => [
       `${exam.tahun_akademik}-${exam.kod_peperiksaan}`,
-      { key: `${exam.tahun_akademik}-${exam.kod_peperiksaan}`, label: `${exam.kod_peperiksaan} ${exam.tahun_akademik}` },
+      {
+        key: `${exam.tahun_akademik}-${exam.kod_peperiksaan}`,
+        label: `${exam.kod_peperiksaan} ${exam.tahun_akademik}`,
+        group: 'utama' as const,
+      },
     ]),
   ).values()];
+  const examOptions = [
+    ...mainExamOptions,
+    {
+      key: `PSRA-${currentYear}-1`,
+      label: `Percubaan PSRA 1 ${currentYear}`,
+      group: 'psra' as const,
+    },
+    {
+      key: `PSRA-${currentYear}-2`,
+      label: `Percubaan PSRA 2 ${currentYear}`,
+      group: 'psra' as const,
+    },
+  ];
+
+  if (psraSelection) {
+    const classById = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
+    const candidateIdsBySchool = new Map<string, string[]>();
+    students.forEach((student) => {
+      const classRecord = student.class_id ? classById.get(student.class_id) : undefined;
+      if (
+        student.status !== 'AKTIF' ||
+        !classRecord ||
+        classRecord.status !== 'AKTIF' ||
+        classRecord.tahun !== 6 ||
+        classRecord.tahun_akademik !== psraSelection.year
+      ) return;
+      const candidateIds = candidateIdsBySchool.get(student.kod_sekolah) ?? [];
+      candidateIds.push(student.id);
+      candidateIdsBySchool.set(student.kod_sekolah, candidateIds);
+    });
+    const psraSchools = schools
+      .map((school) => ({
+        kod_sekolah: school.kod_sekolah,
+        nama_sekolah: school.nama_sekolah,
+        daerah: school.daerah,
+        zon: school.zon,
+        candidateIds: candidateIdsBySchool.get(school.kod_sekolah) ?? [],
+      }))
+      .filter((school) => school.candidateIds.length > 0);
+
+    return {
+      latestExamLabel: `Percubaan PSRA ${psraSelection.session} ${psraSelection.year}`,
+      latestExamKey: key,
+      examOptions,
+      schoolRanks: [],
+      classRanks: [],
+      completionSchools: [],
+      completionClasses: [],
+      teacherClasses: teacherDashboard.teacherClasses,
+      teacherSubjects: teacherDashboard.teacherSubjects,
+      scopeCounts: baseScopeCounts,
+      psraSelection,
+      psraSchools,
+    };
+  }
 
   if (!key) {
     return {
@@ -1580,6 +1657,8 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
       teacherClasses: teacherDashboard.teacherClasses,
       teacherSubjects: teacherDashboard.teacherSubjects,
       scopeCounts: baseScopeCounts,
+      psraSelection: null,
+      psraSchools: [],
     };
   }
 
@@ -1739,6 +1818,8 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     teacherClasses: teacherDashboard.teacherClasses,
     teacherSubjects: teacherDashboard.teacherSubjects,
     scopeCounts,
+    psraSelection: null,
+    psraSchools: [],
   };
 }
 

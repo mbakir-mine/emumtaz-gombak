@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   DashboardClassRank,
   DashboardInsights,
@@ -13,6 +13,8 @@ import type {
 } from '@/lib/data';
 import { useAccessProfile } from './ui/AuthGate';
 import { schoolCategoryRank } from '@/lib/schoolCategories';
+import { PSRA_PAPERS, type PsraPaperMarkRecord } from '@/lib/psra';
+import { supabase } from '@/lib/supabase';
 
 type MetricItem = {
   label: string;
@@ -641,9 +643,12 @@ function ExamSelector({
   examOptions,
   selectedKey,
 }: {
-  examOptions: Array<{ key: string; label: string }>;
+  examOptions: Array<{ key: string; label: string; group: 'utama' | 'psra' }>;
   selectedKey: string | null;
 }) {
+  const mainOptions = examOptions.filter((exam) => exam.group === 'utama');
+  const psraOptions = examOptions.filter((exam) => exam.group === 'psra');
+
   return (
     <div className="exam-selector-bar">
       <div>
@@ -659,7 +664,16 @@ function ExamSelector({
         }}
       >
         {examOptions.length === 0 ? <option value="">Belum ada peperiksaan</option> : null}
-        {examOptions.map((exam) => <option key={exam.key} value={exam.key}>{exam.label}</option>)}
+        {mainOptions.length > 0 ? (
+          <optgroup label="Peperiksaan Utama">
+            {mainOptions.map((exam) => <option key={exam.key} value={exam.key}>{exam.label}</option>)}
+          </optgroup>
+        ) : null}
+        {psraOptions.length > 0 ? (
+          <optgroup label="Modul Percubaan PSRA">
+            {psraOptions.map((exam) => <option key={exam.key} value={exam.key}>{exam.label}</option>)}
+          </optgroup>
+        ) : null}
       </select>
     </div>
   );
@@ -704,6 +718,264 @@ function ExamActionKpis({
         <small>{bestSchool?.nama_sekolah ?? 'Belum ada data markah'}</small>
       </div>
     </div>
+  );
+}
+
+type PsraSchoolDashboardRow = {
+  key: string;
+  label: string;
+  schools: number;
+  candidates: number;
+  completeCandidates: number;
+  completedSchools: number;
+  enteredMarks: number;
+  expectedMarks: number;
+  completion: number;
+  average: number | null;
+};
+
+function PsraDashboard({
+  insights,
+  selectedDistrict,
+  role,
+  profileDistrict,
+  profileZone,
+  profileSchool,
+}: {
+  insights: DashboardInsights;
+  selectedDistrict: string | null;
+  role?: string;
+  profileDistrict?: string | null;
+  profileZone?: string | null;
+  profileSchool?: string | null;
+}) {
+  const selection = insights.psraSelection;
+  const [records, setRecords] = useState<PsraPaperMarkRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecords() {
+      if (!supabase || !selection) {
+        setLoading(false);
+        setErrorMessage('Sambungan data Percubaan PSRA tidak tersedia.');
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage('');
+      const rows: PsraPaperMarkRecord[] = [];
+      const pageSize = 1000;
+
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from('psra_trial_paper_marks')
+          .select('id,kod_sekolah,tahun_akademik,class_id,student_id,sesi,paper_code,markah,entered_by,updated_by,updated_at')
+          .eq('tahun_akademik', selection.year)
+          .eq('sesi', selection.session)
+          .order('id')
+          .range(from, from + pageSize - 1);
+
+        if (cancelled) return;
+        if (error) {
+          setErrorMessage(`Data Percubaan PSRA tidak dapat dimuatkan: ${error.message}`);
+          setRecords([]);
+          setLoading(false);
+          return;
+        }
+
+        const batch = (data ?? []) as PsraPaperMarkRecord[];
+        rows.push(...batch);
+        if (batch.length < pageSize) break;
+      }
+
+      if (!cancelled) {
+        setRecords(rows);
+        setLoading(false);
+      }
+    }
+
+    void loadRecords();
+    return () => {
+      cancelled = true;
+    };
+  }, [selection]);
+
+  const schoolRows = useMemo(() => {
+    const marksByStudent = new Map<string, Map<string, number>>();
+    records.forEach((record) => {
+      const marks = marksByStudent.get(record.student_id) ?? new Map<string, number>();
+      marks.set(record.paper_code, Number(record.markah));
+      marksByStudent.set(record.student_id, marks);
+    });
+
+    return insights.psraSchools
+      .filter((school) => {
+        if (selectedDistrict && school.daerah.toUpperCase() !== selectedDistrict) return false;
+        if (role === 'ADMIN_DAERAH' && school.daerah.toUpperCase() !== profileDistrict?.toUpperCase()) return false;
+        if (role === 'ADMIN_ZON' && school.zon !== profileZone) return false;
+        if (role === 'ADMIN_SEKOLAH' && school.kod_sekolah !== profileSchool) return false;
+        return true;
+      })
+      .map((school) => {
+        let enteredMarks = 0;
+        let completeCandidates = 0;
+        const completeAverages: number[] = [];
+
+        school.candidateIds.forEach((studentId) => {
+          const marks = marksByStudent.get(studentId);
+          if (!marks) return;
+          enteredMarks += PSRA_PAPERS.filter((paper) => marks.has(paper.subjectCode)).length;
+          if (PSRA_PAPERS.every((paper) => marks.has(paper.subjectCode))) {
+            const total = PSRA_PAPERS.reduce((sum, paper) => sum + Number(marks.get(paper.subjectCode) ?? 0), 0);
+            completeAverages.push(total / PSRA_PAPERS.length);
+            completeCandidates += 1;
+          }
+        });
+
+        const expectedMarks = school.candidateIds.length * PSRA_PAPERS.length;
+        const completion = expectedMarks > 0 ? Math.min(Math.round((enteredMarks / expectedMarks) * 100), 100) : 0;
+        return {
+          ...school,
+          candidates: school.candidateIds.length,
+          completeCandidates,
+          enteredMarks,
+          expectedMarks,
+          completion,
+          average: completeAverages.length
+            ? completeAverages.reduce((sum, value) => sum + value, 0) / completeAverages.length
+            : null,
+        };
+      });
+  }, [insights.psraSchools, profileDistrict, profileSchool, profileZone, records, role, selectedDistrict]);
+
+  const rows = useMemo<PsraSchoolDashboardRow[]>(() => {
+    if (role !== 'OWNER') {
+      return schoolRows.map((school) => ({
+        key: school.kod_sekolah,
+        label: school.nama_sekolah,
+        schools: 1,
+        candidates: school.candidates,
+        completeCandidates: school.completeCandidates,
+        completedSchools: school.completion === 100 ? 1 : 0,
+        enteredMarks: school.enteredMarks,
+        expectedMarks: school.expectedMarks,
+        completion: school.completion,
+        average: school.average,
+      }));
+    }
+
+    const districts = selectedDistrict ? [selectedDistrict] : SELANGOR_DISTRICTS;
+    return districts.map((district) => {
+      const districtSchools = schoolRows.filter((school) => school.daerah.toUpperCase() === district);
+      const candidates = districtSchools.reduce((sum, school) => sum + school.candidates, 0);
+      const completeCandidates = districtSchools.reduce((sum, school) => sum + school.completeCandidates, 0);
+      const enteredMarks = districtSchools.reduce((sum, school) => sum + school.enteredMarks, 0);
+      const expectedMarks = districtSchools.reduce((sum, school) => sum + school.expectedMarks, 0);
+      const weightedTotal = districtSchools.reduce(
+        (sum, school) => sum + (school.average ?? 0) * school.completeCandidates,
+        0,
+      );
+      return {
+        key: district,
+        label: district,
+        schools: districtSchools.length,
+        candidates,
+        completeCandidates,
+        completedSchools: districtSchools.filter((school) => school.completion === 100).length,
+        enteredMarks,
+        expectedMarks,
+        completion: expectedMarks > 0 ? Math.min(Math.round((enteredMarks / expectedMarks) * 100), 100) : 0,
+        average: completeCandidates > 0 ? weightedTotal / completeCandidates : null,
+      };
+    });
+  }, [role, schoolRows, selectedDistrict]);
+
+  const totalSchools = rows.reduce((sum, row) => sum + row.schools, 0);
+  const totalCandidates = rows.reduce((sum, row) => sum + row.candidates, 0);
+  const totalComplete = rows.reduce((sum, row) => sum + row.completeCandidates, 0);
+  const totalEntered = rows.reduce((sum, row) => sum + row.enteredMarks, 0);
+  const totalExpected = rows.reduce((sum, row) => sum + row.expectedMarks, 0);
+  const attentionRows = [...rows].sort((a, b) => a.completion - b.completion || a.label.localeCompare(b.label));
+  const performanceRows = rows.filter((row) => row.average !== null).sort((a, b) => (b.average ?? 0) - (a.average ?? 0));
+  const rowHeading = role === 'OWNER' ? 'Daerah' : 'Sekolah';
+
+  return (
+    <section className="owner-dashboard-wrap">
+      <div className="owner-dashboard-banner">
+        <div>
+          <span className="eyebrow">MODUL PERCUBAAN PSRA</span>
+          <h2>Dashboard Percubaan PSRA {selection?.session}</h2>
+          <p>Pemantauan pengisian lima kertas Percubaan PSRA bagi calon Tahun 6.</p>
+        </div>
+        <div className="owner-banner-exam">
+          <small>Penilaian dipilih</small>
+          <strong>{insights.latestExamLabel}</strong>
+          <span>{totalSchools} sekolah mempunyai calon</span>
+        </div>
+      </div>
+
+      <div className="owner-kpi-grid">
+        <div className="owner-kpi"><span>Sekolah terlibat</span><strong>{totalSchools}</strong><small>Mempunyai calon Tahun 6</small></div>
+        <div className="owner-kpi"><span>Jumlah calon</span><strong>{totalCandidates}</strong><small>Calon aktif Tahun 6</small></div>
+        <div className="owner-kpi owner-kpi--good"><span>Calon lengkap</span><strong>{totalComplete}</strong><small>Lengkap semua lima kertas</small></div>
+        <div className="owner-kpi owner-kpi--warning"><span>Belum lengkap</span><strong>{Math.max(totalCandidates - totalComplete, 0)}</strong><small>Calon yang perlu tindakan</small></div>
+      </div>
+
+      {loading ? <div className="panel"><p className="empty">Memuatkan data Percubaan PSRA...</p></div> : null}
+      {errorMessage ? <div className="panel"><p className="empty">{errorMessage}</p></div> : null}
+
+      {!loading && !errorMessage ? (
+        <>
+          <div className="owner-dashboard-grid">
+            <section className="panel owner-district-panel">
+              <div className="panel-head"><div><h2>Ringkasan {rowHeading.toLowerCase()}</h2><p className="table-note">Kelengkapan pengisian dan purata calon yang lengkap.</p></div><span>{rows.length} rekod</span></div>
+              <div className="owner-district-table">
+                <div className="owner-table-row owner-table-head"><span>{rowHeading}</span><span>Sekolah</span><span>Calon</span><span>Pengisian</span><span>Purata</span></div>
+                {rows.map((row) => (
+                  <div className="owner-table-row" key={row.key}>
+                    <strong>{row.label}</strong><span>{row.schools}</span><span>{row.candidates}</span>
+                    <span><b>{row.completion}%</b><i className="owner-progress"><em style={{ width: `${row.completion}%` }} /></i></span>
+                    <span>{row.average === null ? '-' : row.average.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel owner-alert-panel">
+              <div className="panel-head"><div><h2>Perlu perhatian segera</h2><p className="table-note">Pengisian lima kertas paling rendah.</p></div></div>
+              <div className="owner-alert-list">
+                {attentionRows.slice(0, 5).map((row) => (
+                  <div key={row.key}><span><strong>{row.label}</strong><small>{row.completeCandidates} daripada {row.candidates} calon lengkap</small></span><b>{row.completion}%</b></div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="owner-dashboard-grid">
+            <section className="panel owner-chart-panel">
+              <div className="panel-head"><div><h2>Purata prestasi PSRA</h2><p className="table-note">Berdasarkan calon yang lengkap semua lima kertas.</p></div></div>
+              <div className="owner-bars">
+                {performanceRows.length ? performanceRows.map((row) => (
+                  <div className="owner-bar-row" key={row.key}><span>{row.label}</span><div><i style={{ width: `${Math.min(Math.max(row.average ?? 0, 0), 100)}%` }} /></div><b>{row.average?.toFixed(2)}</b></div>
+                )) : <InsightEmpty text="Belum ada calon dengan lima kertas lengkap." />}
+              </div>
+            </section>
+            <section className="panel owner-chart-panel">
+              <div className="panel-head"><div><h2>Ringkasan pengisian</h2><p className="table-note">Status rekod untuk sesi yang dipilih.</p></div></div>
+              <div className="owner-fact-list">
+                <div><span>Tahun akademik</span><strong>{selection?.year ?? '-'}</strong></div>
+                <div><span>Sesi percubaan</span><strong>{selection?.session ?? '-'}</strong></div>
+                <div><span>Kertas dinilai</span><strong>{PSRA_PAPERS.length}</strong></div>
+                <div><span>Markah diisi</span><strong>{totalEntered}/{totalExpected}</strong></div>
+              </div>
+            </section>
+          </div>
+        </>
+      ) : null}
+    </section>
   );
 }
 
@@ -804,6 +1076,38 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
     return insights.completionSchools.some((school) => school.kod_sekolah === row.kod_sekolah && school.daerah?.toUpperCase?.() === dashboardDistrict);
   });
   const bestSchool = categorySchoolRanks[0];
+
+  if (profile && !isTeacher && insights.psraSelection) {
+    return (
+      <>
+        {profile.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
+        <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} />
+        {profile.role === 'OWNER' ? (
+          <div className="category-tabs dashboard-category-tabs dashboard-district-tabs" role="tablist" aria-label="Daerah Selangor">
+            {['SEMUA', ...SELANGOR_DISTRICTS].map((district) => (
+              <button
+                key={district}
+                type="button"
+                className={`category-tab${(district === 'SEMUA' ? !selectedDistrict : selectedDistrict === district) ? ' active' : ''}`}
+                onClick={() => setSelectedDistrict(district === 'SEMUA' ? null : district)}
+              >
+                {district === 'SEMUA' ? 'Semua Selangor' : district}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <PsraDashboard
+          insights={insights}
+          selectedDistrict={selectedDistrict}
+          role={profile.role}
+          profileDistrict={profile.daerah}
+          profileZone={profile.zon}
+          profileSchool={profile.kod_sekolah}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       {profile?.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
