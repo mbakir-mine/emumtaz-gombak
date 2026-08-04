@@ -642,12 +642,14 @@ function ExamDashboardTabs({
 function ExamSelector({
   examOptions,
   selectedKey,
+  showPsra,
 }: {
   examOptions: Array<{ key: string; label: string; group: 'utama' | 'psra' }>;
   selectedKey: string | null;
+  showPsra: boolean;
 }) {
   const mainOptions = examOptions.filter((exam) => exam.group === 'utama');
-  const psraOptions = examOptions.filter((exam) => exam.group === 'psra');
+  const psraOptions = showPsra ? examOptions.filter((exam) => exam.group === 'psra') : [];
 
   return (
     <div className="exam-selector-bar">
@@ -670,7 +672,7 @@ function ExamSelector({
           </optgroup>
         ) : null}
         {psraOptions.length > 0 ? (
-          <optgroup label="Modul Percubaan PSRA">
+          <optgroup label="Percubaan PSRA">
             {psraOptions.map((exam) => <option key={exam.key} value={exam.key}>{exam.label}</option>)}
           </optgroup>
         ) : null}
@@ -906,7 +908,7 @@ function PsraDashboard({
     <section className="owner-dashboard-wrap">
       <div className="owner-dashboard-banner">
         <div>
-          <span className="eyebrow">MODUL PERCUBAAN PSRA</span>
+          <span className="eyebrow">PERCUBAAN PSRA</span>
           <h2>Dashboard Percubaan PSRA {selection?.session}</h2>
           <p>Pemantauan pengisian lima kertas Percubaan PSRA bagi calon Tahun 6.</p>
         </div>
@@ -1076,12 +1078,34 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
     return insights.completionSchools.some((school) => school.kod_sekolah === row.kod_sekolah && school.daerah?.toUpperCase?.() === dashboardDistrict);
   });
   const bestSchool = categorySchoolRanks[0];
+  const districtHasPsraAccess = profile?.role === 'ADMIN_DAERAH' && insights.psraAvailableDistricts.includes(
+    profile.daerah?.toUpperCase() ?? '',
+  );
+  const canViewPsra = profile?.role === 'OWNER' || districtHasPsraAccess || Boolean(
+    profile?.enabled_modules?.includes('PERCUBAAN_PSRA'),
+  );
+
+  useEffect(() => {
+    if (profile && insights.psraSelection && !canViewPsra) {
+      window.location.replace('/');
+    }
+  }, [canViewPsra, insights.psraSelection, profile]);
+
+  if (profile && insights.psraSelection && !canViewPsra) {
+    return (
+      <>
+        {profile.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
+        <ExamSelector examOptions={insights.examOptions} selectedKey={null} showPsra={false} />
+        <div className="panel"><p className="empty">Percubaan PSRA belum dibenarkan untuk sekolah atau daerah ini.</p></div>
+      </>
+    );
+  }
 
   if (profile && !isTeacher && insights.psraSelection) {
     return (
       <>
         {profile.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}
-        <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} />
+        <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} showPsra={canViewPsra} />
         {profile.role === 'OWNER' ? (
           <div className="category-tabs dashboard-category-tabs dashboard-district-tabs" role="tablist" aria-label="Daerah Selangor">
             {['SEMUA', ...SELANGOR_DISTRICTS].map((district) => (
@@ -1121,7 +1145,7 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         />
       ) : (
         <>
-      <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} />
+      <ExamSelector examOptions={insights.examOptions} selectedKey={insights.latestExamKey} showPsra={canViewPsra} />
       {profile?.role !== 'OWNER' && <>
         <ExamDashboardTabs active={dashboardView} onChange={setDashboardView} />
         <ExamActionKpis

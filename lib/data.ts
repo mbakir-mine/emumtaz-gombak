@@ -451,6 +451,7 @@ export type DashboardInsights = {
   teacherSubjects: TeacherDashboardSubject[];
   scopeCounts: DashboardScopeCounts;
   psraSelection: { year: number; session: 1 | 2 } | null;
+  psraAvailableDistricts: string[];
   psraSchools: Array<{
     kod_sekolah: string;
     nama_sekolah: string;
@@ -1540,7 +1541,7 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
 }
 
 export async function getDashboardInsights(selectedExamKey?: string): Promise<DashboardInsights> {
-  const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students, users] = await Promise.all([
+  const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students, users, moduleAccesses] = await Promise.all([
     getSchools(),
     getClasses(),
     getExams(),
@@ -1550,6 +1551,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     fetchStudentSummariesInBatches(),
     fetchStudentsInBatches(),
     getSchoolUsers(),
+    getSchoolModuleAccesses(),
   ]);
   const teacherDashboard = await getTeacherDashboardRows(schools, classes, students, subjects);
   const baseScopeCounts = buildDashboardScopeCounts({
@@ -1561,6 +1563,16 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     subjects,
     exams,
   });
+  const enabledPsraSchools = new Set(
+    moduleAccesses
+      .filter((access) => access.module_key === 'PERCUBAAN_PSRA' && access.enabled)
+      .map((access) => access.kod_sekolah),
+  );
+  const psraAvailableDistricts = [...new Set(
+    schools
+      .filter((school) => enabledPsraSchools.has(school.kod_sekolah) && school.daerah)
+      .map((school) => school.daerah.toUpperCase()),
+  )];
 
   const latestExam = latestRelevantExam(exams);
   const defaultKey = latestExam
@@ -1627,7 +1639,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
         zon: school.zon,
         candidateIds: candidateIdsBySchool.get(school.kod_sekolah) ?? [],
       }))
-      .filter((school) => school.candidateIds.length > 0);
+      .filter((school) => enabledPsraSchools.has(school.kod_sekolah) && school.candidateIds.length > 0);
 
     return {
       latestExamLabel: `Percubaan PSRA ${psraSelection.session} ${psraSelection.year}`,
@@ -1641,6 +1653,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
       teacherSubjects: teacherDashboard.teacherSubjects,
       scopeCounts: baseScopeCounts,
       psraSelection,
+      psraAvailableDistricts,
       psraSchools,
     };
   }
@@ -1658,6 +1671,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
       teacherSubjects: teacherDashboard.teacherSubjects,
       scopeCounts: baseScopeCounts,
       psraSelection: null,
+      psraAvailableDistricts,
       psraSchools: [],
     };
   }
@@ -1819,6 +1833,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     teacherSubjects: teacherDashboard.teacherSubjects,
     scopeCounts,
     psraSelection: null,
+    psraAvailableDistricts,
     psraSchools: [],
   };
 }
