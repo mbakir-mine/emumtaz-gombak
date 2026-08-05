@@ -24,13 +24,13 @@ export default function ChangePasswordForm() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setMessage('Password baru mesti sekurang-kurangnya 6 aksara.');
+    if (newPassword.length < 8) {
+      setMessage('Kata laluan baharu mesti sekurang-kurangnya 8 aksara.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setMessage('Pengesahan password baru tidak sama.');
+      setMessage('Pengesahan kata laluan baharu tidak sama.');
       return;
     }
 
@@ -52,7 +52,7 @@ export default function ChangePasswordForm() {
 
     if (verifyError) {
       setLoading(false);
-      setMessage('Password semasa tidak tepat.');
+      setMessage('Kata laluan semasa tidak tepat.');
       return;
     }
 
@@ -60,9 +60,11 @@ export default function ChangePasswordForm() {
 
     if (error) {
       setLoading(false);
-      setMessage(`Gagal tukar password: ${error.message}`);
+      setMessage(`Gagal menukar kata laluan: ${error.message}`);
       return;
     }
+
+    await supabase.auth.signOut({ scope: 'others' });
 
     let flagUpdateFailed = false;
     if (user?.id) {
@@ -84,47 +86,47 @@ export default function ChangePasswordForm() {
     setNewPassword('');
     setConfirmPassword('');
     if (flagUpdateFailed) {
-      setMessage('Password berjaya ditukar, tetapi status wajib tukar password gagal dikemaskini. Sila maklumkan Pentadbir Utama.');
+      setMessage('Kata laluan berjaya ditukar, tetapi status wajib tukar kata laluan gagal dikemaskini. Sila maklumkan Pentadbir Utama.');
       return;
     }
 
     setSuccess(true);
-    setMessage('Password berjaya ditukar.');
+    setMessage('Kata laluan berjaya ditukar. Sesi lain telah ditamatkan.');
     router.replace('/');
   }
 
   return (
     <form className="form-grid password-form" onSubmit={handleSubmit}>
       <PasswordField
-        label="Password Semasa"
+        label="Kata Laluan Semasa"
         value={currentPassword}
         onChange={setCurrentPassword}
-        placeholder="Masukkan password semasa"
+        placeholder="Masukkan kata laluan semasa"
         required
         autoComplete="current-password"
       />
 
       <PasswordField
-        label="Password Baru"
+        label="Kata Laluan Baharu"
         value={newPassword}
         onChange={setNewPassword}
-        placeholder="Minimum 6 aksara"
+        placeholder="Minimum 8 aksara"
         required
         autoComplete="new-password"
       />
 
       <PasswordField
-        label="Sahkan Password Baru"
+        label="Sahkan Kata Laluan Baharu"
         value={confirmPassword}
         onChange={setConfirmPassword}
-        placeholder="Ulang password baru"
+        placeholder="Ulang kata laluan baharu"
         required
         autoComplete="new-password"
       />
 
       <div className="form-actions">
         <button className="button" type="submit" disabled={loading}>
-          {loading ? 'Menyimpan...' : 'Tukar Password'}
+          {loading ? 'Menyimpan...' : 'Tukar Kata Laluan'}
         </button>
         {message && <p className={success ? 'form-success' : 'form-message'}>{message}</p>}
       </div>

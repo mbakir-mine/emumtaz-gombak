@@ -1,5 +1,3 @@
-import { temporaryUserPassword } from './authProvisioning';
-
 type ActivationEmailProfile = {
   email: string;
   nama: string;
@@ -21,7 +19,7 @@ function accessLabel(profile: ActivationEmailProfile) {
   return 'Daerah Gombak';
 }
 
-function emailText(profile: ActivationEmailProfile) {
+function emailText(profile: ActivationEmailProfile, temporaryPassword?: string) {
   const loginUrl = appLoginUrl();
 
   return [
@@ -30,12 +28,14 @@ function emailText(profile: ActivationEmailProfile) {
     'Akaun e-Mumtaz Gombak anda telah diaktifkan.',
     '',
     `Email login: ${profile.email}`,
-    `Password sementara: ${temporaryUserPassword}`,
+    temporaryPassword ? `Kata laluan sementara: ${temporaryPassword}` : 'Kata laluan: Gunakan kata laluan sedia ada.',
     `Peranan: ${profile.role}`,
     `Akses: ${accessLabel(profile)}`,
     loginUrl ? `Pautan login: ${loginUrl}` : '',
     '',
-    'Sila login menggunakan password sementara ini. Selepas login pertama, sistem akan meminta anda menukar password.',
+    temporaryPassword
+      ? 'Sila log masuk menggunakan kata laluan sementara ini. Sistem akan meminta anda menukarnya selepas log masuk.'
+      : 'Jika anda terlupa kata laluan, gunakan pautan Lupa Kata Laluan pada halaman log masuk.',
     '',
     'Terima kasih.',
     'e-Mumtaz Gombak',
@@ -44,7 +44,7 @@ function emailText(profile: ActivationEmailProfile) {
     .join('\n');
 }
 
-function emailHtml(profile: ActivationEmailProfile) {
+function emailHtml(profile: ActivationEmailProfile, temporaryPassword?: string) {
   const loginUrl = appLoginUrl();
 
   return `
@@ -57,10 +57,14 @@ function emailHtml(profile: ActivationEmailProfile) {
           <td style="padding: 6px 14px 6px 0; color: #52637a;">Email login</td>
           <td style="padding: 6px 0;"><strong>${profile.email}</strong></td>
         </tr>
-        <tr>
-          <td style="padding: 6px 14px 6px 0; color: #52637a;">Password sementara</td>
-          <td style="padding: 6px 0;"><strong>${temporaryUserPassword}</strong></td>
-        </tr>
+        ${
+          temporaryPassword
+            ? `<tr>
+          <td style="padding: 6px 14px 6px 0; color: #52637a;">Kata laluan sementara</td>
+          <td style="padding: 6px 0;"><strong>${temporaryPassword}</strong></td>
+        </tr>`
+            : ''
+        }
         <tr>
           <td style="padding: 6px 14px 6px 0; color: #52637a;">Peranan</td>
           <td style="padding: 6px 0;">${profile.role}</td>
@@ -75,13 +79,17 @@ function emailHtml(profile: ActivationEmailProfile) {
           ? `<p><a href="${loginUrl}" style="display: inline-block; padding: 10px 16px; background: #08743b; color: #fff; text-decoration: none; border-radius: 8px;">Login e-Mumtaz</a></p>`
           : ''
       }
-      <p>Sila login menggunakan password sementara ini. Selepas login pertama, sistem akan meminta anda menukar password.</p>
+      <p>${
+        temporaryPassword
+          ? 'Sila log masuk menggunakan kata laluan sementara ini. Sistem akan meminta anda menukarnya selepas log masuk.'
+          : 'Gunakan kata laluan sedia ada. Jika terlupa, pilih Lupa Kata Laluan pada halaman log masuk.'
+      }</p>
       <p>Terima kasih.<br />e-Mumtaz Gombak</p>
     </div>
   `;
 }
 
-export async function sendActivationEmail(profile: ActivationEmailProfile) {
+export async function sendActivationEmail(profile: ActivationEmailProfile, temporaryPassword?: string) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMUMTAZ_EMAIL_FROM;
 
@@ -102,8 +110,8 @@ export async function sendActivationEmail(profile: ActivationEmailProfile) {
       from,
       to: [profile.email],
       subject: 'Akaun e-Mumtaz Gombak telah diaktifkan',
-      text: emailText(profile),
-      html: emailHtml(profile),
+      text: emailText(profile, temporaryPassword),
+      html: emailHtml(profile, temporaryPassword),
     }),
   });
 

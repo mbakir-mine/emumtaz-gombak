@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState } from 'react';
 import type { School, UserRecord } from '@/lib/data';
-import { bulkUpdateUserStatusOnly, ensureUserLogin, updateUserStatusOnly } from './actions';
+import { bulkUpdateUserStatusOnly, updateUserStatusOnly } from './actions';
 
 const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
 const bulkStatusInitialState = {
@@ -84,20 +84,12 @@ function UserStatusSelect({ user }: { user: UserRecord }) {
 }
 
 function EnsureLoginButton({ user }: { user: UserRecord }) {
-  const [state, action] = useActionState(ensureUserLogin, bulkStatusInitialState);
-
   if (user.role === 'OWNER' || user.status !== 'AKTIF') return null;
 
   return (
-    <form action={action} className="inline-action-form">
-      <input type="hidden" name="id" value={user.id} />
-      <button className="button secondary table-action" type="submit">
-        Sedia Login
-      </button>
-      {state.message && (
-        <small className={state.ok ? 'form-success' : 'form-message'}>{compactActionMessage(state.message)}</small>
-      )}
-    </form>
+    <Link className="button secondary table-action" href={`/pengguna/${user.id}`}>
+      Urus Login
+    </Link>
   );
 }
 

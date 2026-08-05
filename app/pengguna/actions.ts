@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { navItems } from '@/lib/access';
 import { sendActivationEmail } from '@/lib/activationEmail';
 import {
-  ensureTemporaryAuthLogin,
   provisionAuthUser,
-  temporaryUserPassword,
+  resetAuthUserPassword,
+  verifyOwnerAccessToken,
   type AuthProvisionProfile,
 } from '@/lib/authProvisioning';
 
@@ -33,7 +33,7 @@ type UserForProvision = AuthProvisionProfile & {
 async function prepareActivationUpdate(user: UserForProvision, targetStatus: string) {
   const updates: { status: string; auth_user_id?: string; must_change_password?: boolean } = { status: targetStatus };
 
-  if (targetStatus !== 'AKTIF') return { ok: true as const, updates, message: '' };
+  if (targetStatus !== 'AKTIF') return { ok: true as const, updates, message: '', temporaryPassword: undefined };
 
   const provision = await provisionAuthUser(user);
   if (!provision.ok) return provision;
@@ -46,16 +46,15 @@ async function prepareActivationUpdate(user: UserForProvision, targetStatus: str
   return {
     ok: true as const,
     updates,
-    message: provision.created
-      ? ` Akaun login dicipta. Password sementara: ${temporaryUserPassword}.`
-      : ` ${provision.message}`,
+    message: ` ${provision.message}`,
+    temporaryPassword: provision.temporaryPassword,
   };
 }
 
-async function activationEmailMessage(user: UserForProvision, shouldSend: boolean) {
+async function activationEmailMessage(user: UserForProvision, shouldSend: boolean, temporaryPassword?: string) {
   if (!shouldSend) return '';
 
-  const email = await sendActivationEmail(user);
+  const email = await sendActivationEmail(user, temporaryPassword);
   return ` ${email.message}`;
 }
 
@@ -100,7 +99,7 @@ export async function updateUserStatusOnly(
   revalidatePath('/pengguna');
   revalidatePath('/guru');
   revalidatePath('/');
-  const emailMessage = await activationEmailMessage(typedUser, shouldSendEmail);
+  const emailMessage = await activationEmailMessage(typedUser, shouldSendEmail, activation.temporaryPassword);
   return { ok: true, message: `Status pengguna dikemaskini kepada ${status}.${activation.message}${emailMessage}` };
 }
 
@@ -161,7 +160,7 @@ export async function bulkUpdateUserStatusOnly(
       }
 
       if (shouldSendEmail) {
-        const email = await sendActivationEmail(user);
+        const email = await sendActivationEmail(user, activation.temporaryPassword);
         if (email.ok) emailedCount += 1;
         else emailWarning = email.message;
       }
@@ -175,7 +174,6 @@ export async function bulkUpdateUserStatusOnly(
       message:
         `${safeUsers.length} status pengguna berjaya dikemaskini kepada AKTIF. ` +
         `${createdCount} akaun login dicipta, ${linkedCount} akaun login sedia ada dipautkan. ` +
-        `Password sementara akaun baru: ${temporaryUserPassword}. ` +
         `${emailedCount} email aktivasi dihantar.` +
         (emailWarning ? ` ${emailWarning}` : ''),
     };
@@ -252,6 +250,7 @@ export async function updateUserStatus(
   updates.allowed_nav = allowedNav;
 
   let activationMessage = '';
+  let activationTemporaryPassword: string | undefined;
   let activationUser: UserForProvision | null = null;
   const shouldSendEmail = status === 'AKTIF' && user?.status !== 'AKTIF';
   if (status === 'AKTIF' && user) {
@@ -275,6 +274,7 @@ export async function updateUserStatus(
       updates.must_change_password = activation.updates.must_change_password;
     }
     activationMessage = activation.message;
+    activationTemporaryPassword = activation.temporaryPassword;
   }
 
   const { error } = await supabase.from('app_users').update(updates).eq('id', id);
@@ -287,23 +287,25 @@ export async function updateUserStatus(
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
-  const emailMessage = activationUser ? await activationEmailMessage(activationUser, shouldSendEmail) : '';
+  const emailMessage = activationUser
+    ? await activationEmailMessage(activationUser, shouldSendEmail, activationTemporaryPassword)
+    : '';
   refresh();
   return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}${emailMessage}` };
 }
 
-export async function ensureUserLogin(
+export async function resetUserPassword(
   _previousState: UserStatusActionState,
   formData: FormData,
 ): Promise<UserStatusActionState> {
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
+  const accessToken = String(formData.get('access_token') ?? '').trim();
+  if (!(await verifyOwnerAccessToken(accessToken))) {
+    return { ok: false, message: 'Sesi Pentadbir Utama tidak sah. Sila log masuk semula.' };
   }
 
+  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   const id = String(formData.get('id') ?? '').trim();
-  if (!id) {
-    return { ok: false, message: 'Pengguna tidak sah.' };
-  }
+  if (!id) return { ok: false, message: 'Pengguna tidak sah.' };
 
   const { data: user, error: userError } = await supabase
     .from('app_users')
@@ -311,41 +313,23 @@ export async function ensureUserLogin(
     .eq('id', id)
     .maybeSingle();
 
-  if (userError) {
-    return { ok: false, message: `Gagal semak pengguna: ${userError.message}` };
-  }
+  if (userError) return { ok: false, message: `Gagal menyemak pengguna: ${userError.message}` };
+  if (!user || user.role === 'OWNER') return { ok: false, message: 'Kata laluan pengguna ini tidak boleh direset.' };
+  if (user.status !== 'AKTIF') return { ok: false, message: 'Hanya pengguna aktif boleh menerima kata laluan sementara.' };
 
-  if (!user || user.role === 'OWNER') {
-    return { ok: false, message: 'Pengguna tidak boleh dikemaskini.' };
-  }
-
-  if (user.status !== 'AKTIF') {
-    return { ok: false, message: 'Aktifkan pengguna dahulu sebelum sediakan login.' };
-  }
-
-  const login = await ensureTemporaryAuthLogin(user as UserForProvision);
-  if (!login.ok) {
-    return { ok: false, message: login.message };
-  }
-
-  const { error } = await supabase
-    .from('app_users')
-    .update({
-      auth_user_id: login.authUserId,
-      must_change_password: true,
-    })
-    .eq('id', id);
-
-  if (error) {
-    return { ok: false, message: `Login berjaya disediakan, tetapi profil gagal dipautkan: ${error.message}` };
-  }
+  const reset = await resetAuthUserPassword(user as UserForProvision);
+  if (!reset.ok) return { ok: false, message: reset.message };
 
   revalidatePath('/pengguna');
   revalidatePath(`/pengguna/${id}`);
   revalidatePath('/guru');
   revalidatePath('/');
-  const email = await sendActivationEmail(user as UserForProvision);
-  return { ok: true, message: `${login.message} ${email.message}` };
+  return {
+    ok: true,
+    message:
+      `Kata laluan sementara: ${reset.temporaryPassword}. ` +
+      'Salin dan berikan kepada pengguna secara peribadi. Pengguna wajib menukarnya selepas log masuk.',
+  };
 }
 
 export async function deleteUserProfile(formData: FormData) {

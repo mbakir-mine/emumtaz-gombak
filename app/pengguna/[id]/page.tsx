@@ -4,6 +4,7 @@ import { getAppUserById, getSchools } from '@/lib/data';
 import { roleLabel } from '@/lib/access';
 import UserStatusForm from '../UserStatusForm';
 import DeleteUserButton from '../DeleteUserButton';
+import PasswordResetButton from '../PasswordResetButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -77,6 +78,20 @@ export default async function PenggunaProfilPage({
                 locked={user.role === 'OWNER'}
               />
             </div>
+
+            <section className="profile-form-wrap">
+              <div className="panel-head">
+                <div>
+                  <h2>Pemulihan Akaun</h2>
+                  <p className="table-note">Gunakan hanya jika pengguna tidak dapat menerima pautan pemulihan melalui email.</p>
+                </div>
+              </div>
+              <PasswordResetButton
+                userId={user.id}
+                userName={user.nama}
+                locked={user.role === 'OWNER' || user.status !== 'AKTIF'}
+              />
+            </section>
 
             <section className="danger-zone">
               <div>

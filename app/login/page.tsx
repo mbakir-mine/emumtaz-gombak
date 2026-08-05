@@ -44,14 +44,14 @@ export default function LoginPage() {
         <div className="login-brand">
           <div className="brand-mark">eM</div>
           <div>
-            <strong>e-Mumtaz Gombak</strong>
+            <strong>e-Mumtaz</strong>
             <span>Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI</span>
           </div>
         </div>
 
         <h1>Log Masuk</h1>
         <p className="login-copy">
-          Gunakan akaun admin atau guru yang telah disahkan.
+          Gunakan akaun pentadbir atau guru yang telah disahkan.
         </p>
 
         {!hasSupabaseEnv && (
@@ -74,8 +74,8 @@ export default function LoginPage() {
           </label>
 
           <PasswordField
-            label="Password"
-            placeholder="Masukkan password"
+            label="Kata Laluan"
+            placeholder="Masukkan kata laluan"
             value={password}
             onChange={setPassword}
             required
@@ -83,13 +83,13 @@ export default function LoginPage() {
           />
 
           <Link className="forgot-link" href="/lupa-password">
-            Lupa kata laluan?
+            Lupa Kata Laluan?
           </Link>
 
           {message && <p className="form-message">{message}</p>}
 
           <button className="button" type="submit" disabled={loading}>
-            {loading ? 'Sedang login...' : 'Login'}
+            {loading ? 'Sedang log masuk...' : 'Log Masuk'}
           </button>
 
           <div className="login-divider">

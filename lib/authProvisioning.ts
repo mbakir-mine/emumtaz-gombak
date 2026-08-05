@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { randomBytes, randomInt } from 'node:crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export const temporaryUserPassword = process.env.EMUMTAZ_TEMP_USER_PASSWORD || 'Emumtaz@12345678';
 
 export type AuthProvisionProfile = {
   id: string;
@@ -15,7 +14,7 @@ export type AuthProvisionProfile = {
   auth_user_id?: string | null;
 };
 
-type SupabaseAdminClient = any;
+type SupabaseAdminClient = NonNullable<ReturnType<typeof createSupabaseAdmin>>;
 
 export type AuthProvisionResult =
   | {
@@ -23,6 +22,19 @@ export type AuthProvisionResult =
       authUserId: string;
       created: boolean;
       message: string;
+      temporaryPassword?: string;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
+export type AuthPasswordResetResult =
+  | {
+      ok: true;
+      authUserId: string;
+      created: boolean;
+      temporaryPassword: string;
     }
   | {
       ok: false;
@@ -49,6 +61,39 @@ function createSupabaseAdmin() {
       persistSession: false,
     },
   });
+}
+
+function generateTemporaryPassword() {
+  return `Em@${randomInt(100000, 1000000)}${randomBytes(3).toString('hex')}`;
+}
+
+export async function verifyOwnerAccessToken(accessToken: string) {
+  if (!accessToken) return false;
+  const admin = createSupabaseAdmin();
+  if (!admin) return false;
+
+  const { data: authData, error: authError } = await admin.auth.getUser(accessToken);
+  if (authError || !authData.user) return false;
+
+  const { data: linkedOwner, error: linkedError } = await admin
+    .from('app_users')
+    .select('id')
+    .eq('auth_user_id', authData.user.id)
+    .eq('role', 'OWNER')
+    .eq('status', 'AKTIF')
+    .maybeSingle();
+  if (!linkedError && linkedOwner) return true;
+
+  if (!authData.user.email) return false;
+  const { data: emailOwner, error: emailError } = await admin
+    .from('app_users')
+    .select('id')
+    .ilike('email', authData.user.email)
+    .eq('role', 'OWNER')
+    .eq('status', 'AKTIF')
+    .maybeSingle();
+
+  return !emailError && Boolean(emailOwner);
 }
 
 async function findAuthUserByEmail(admin: SupabaseAdminClient, email: string) {
@@ -100,9 +145,11 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
     };
   }
 
+  const temporaryPassword = generateTemporaryPassword();
+
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    password: temporaryUserPassword,
+    password: temporaryPassword,
     email_confirm: true,
     user_metadata: {
       nama: profile.nama,
@@ -117,7 +164,8 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
       ok: true,
       authUserId: data.user.id,
       created: true,
-      message: `Akaun login berjaya dicipta. Password sementara: ${temporaryUserPassword}.`,
+      temporaryPassword,
+      message: `Akaun login berjaya dicipta. Kata laluan sementara: ${temporaryPassword}.`,
     };
   }
 
@@ -136,7 +184,7 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
         ok: true,
         authUserId: existing.user.id,
         created: false,
-        message: 'Akaun Auth sedia ada dipautkan. Gunakan password sedia ada atau reset password jika perlu.',
+        message: 'Akaun Auth sedia ada dipautkan. Gunakan kata laluan sedia ada atau lakukan pemulihan jika perlu.',
       };
     }
   }
@@ -147,9 +195,14 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
   };
 }
 
-async function updateAuthPassword(admin: SupabaseAdminClient, authUserId: string, profile: AuthProvisionProfile) {
+async function updateAuthPassword(
+  admin: SupabaseAdminClient,
+  authUserId: string,
+  profile: AuthProvisionProfile,
+  temporaryPassword: string,
+) {
   return await admin.auth.admin.updateUserById(authUserId, {
-    password: temporaryUserPassword,
+    password: temporaryPassword,
     email_confirm: true,
     user_metadata: {
       nama: profile.nama,
@@ -176,6 +229,7 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
 
   let authUserId = profile.auth_user_id ?? '';
   let created = false;
+  const temporaryPassword = generateTemporaryPassword();
 
   if (!authUserId) {
     const existing = await findAuthUserByEmail(admin, email);
@@ -189,7 +243,7 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
   if (!authUserId) {
     const createdUser = await admin.auth.admin.createUser({
       email,
-      password: temporaryUserPassword,
+      password: temporaryPassword,
       email_confirm: true,
       user_metadata: {
         nama: profile.nama,
@@ -209,12 +263,12 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
     authUserId = createdUser.data.user.id;
     created = true;
   } else {
-    const { error } = await updateAuthPassword(admin, authUserId, profile);
+    const { error } = await updateAuthPassword(admin, authUserId, profile, temporaryPassword);
 
     if (error) {
       return {
         ok: false,
-        message: `Gagal reset password sementara untuk ${email}: ${error.message}`,
+        message: `Gagal menetapkan kata laluan sementara untuk ${email}: ${error.message}`,
       };
     }
   }
@@ -223,6 +277,71 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
     ok: true,
     authUserId,
     created,
-    message: `Akaun login ${created ? 'dicipta' : 'disediakan semula'}. Password sementara: ${temporaryUserPassword}.`,
+    temporaryPassword,
+    message: `Akaun login ${created ? 'dicipta' : 'disediakan semula'}. Kata laluan sementara: ${temporaryPassword}.`,
   };
+}
+
+export async function resetAuthUserPassword(profile: AuthProvisionProfile): Promise<AuthPasswordResetResult> {
+  const email = profile.email.trim().toLowerCase();
+  if (!email) return { ok: false, message: 'Email pengguna tidak lengkap.' };
+
+  const admin = createSupabaseAdmin();
+  if (!admin) return { ok: false, message: missingServiceRoleMessage() };
+
+  let authUserId = profile.auth_user_id ?? '';
+  let created = false;
+
+  if (authUserId) {
+    const { data, error } = await admin.auth.admin.getUserById(authUserId);
+    if (error || !data.user) authUserId = '';
+  }
+
+  if (!authUserId) {
+    const existing = await findAuthUserByEmail(admin, email);
+    if (existing.error) {
+      return { ok: false, message: `Akaun Auth gagal disemak: ${existing.error.message}` };
+    }
+    authUserId = existing.user?.id ?? '';
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const metadata = {
+    nama: profile.nama,
+    role: profile.role,
+    kod_sekolah: profile.kod_sekolah ?? null,
+    zon: profile.zon ?? null,
+  };
+
+  if (authUserId) {
+    const { error } = await admin.auth.admin.updateUserById(authUserId, {
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: metadata,
+    });
+    if (error) return { ok: false, message: `Gagal menetapkan kata laluan sementara: ${error.message}` };
+  } else {
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: metadata,
+    });
+    if (error || !data.user) {
+      return { ok: false, message: `Gagal mencipta akaun Auth: ${error?.message ?? 'Ralat tidak diketahui.'}` };
+    }
+    authUserId = data.user.id;
+    created = true;
+  }
+
+  const { error: profileError } = await admin
+    .from('app_users')
+    .update({ auth_user_id: authUserId, must_change_password: true })
+    .eq('id', profile.id);
+  if (profileError) {
+    if (created) await admin.auth.admin.deleteUser(authUserId);
+    return { ok: false, message: `Kata laluan Auth dikemaskini tetapi profil gagal dipautkan: ${profileError.message}` };
+  }
+
+  return { ok: true, authUserId, created, temporaryPassword };
 }
