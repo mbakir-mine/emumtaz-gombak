@@ -264,15 +264,16 @@ export default function PsraTrialManager({
       setMessage('Akaun ini belum ditugaskan sebagai guru kelas atau guru subjek bagi kelas ini.');
       return;
     }
-    if (editablePapers.some((paper) => draft[paper.key].trim() === '')) {
-      setMessage('Lengkapkan markah bagi semua kertas yang ditugaskan kepada anda.');
+    const papersToSave = editablePapers.filter((paper) => draft[paper.key].trim() !== '');
+    if (!papersToSave.length) {
+      setMessage('Masukkan sekurang-kurangnya satu markah untuk disimpan.');
       return;
     }
 
     setPending(true);
     setMessage('');
     const results = await Promise.all(
-      editablePapers.map(async (paper) => {
+      papersToSave.map(async (paper) => {
         const existing = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);
         if (existing) {
           return await client
@@ -295,7 +296,7 @@ export default function PsraTrialManager({
     if (error) {
       setMessage(`Gagal menyimpan markah: ${error.message}`);
     } else {
-      setMessage(`${editablePapers.length} kertas PSRA berjaya disimpan.`);
+      setMessage(`${papersToSave.length} kertas PSRA berjaya disimpan.`);
       await loadRecords();
     }
     setPending(false);
