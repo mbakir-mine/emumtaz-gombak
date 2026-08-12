@@ -511,10 +511,20 @@ export default function PsraReportManager({
           ) : null}
 
           {reportType === 'subjek' ? (
-            <div className="psra-report-pair">
+            <div className="psra-report-pair psra-subject-print-report">
+              <header className="psra-subject-print-header">
+                <h2>{selectedSchoolRecord?.nama_sekolah ?? selectedSchool}</h2>
+                <p>
+                  {selectedSchoolRecord
+                    ? `${selectedSchoolRecord.kod_sekolah} · ${selectedSchoolRecord.daerah}${selectedSchoolRecord.zon ? ` · Zon ${selectedSchoolRecord.zon}` : ''}`
+                    : 'Alamat Sekolah'}
+                </p>
+                <h3>Laporan Mata Pelajaran Percubaan PSRA {session}</h3>
+              </header>
               <ReportSection
                 title="Laporan Mata Pelajaran"
                 subtitle="Bilangan murid mengikut gred bagi setiap mata pelajaran serta Gred Purata Mata Pelajaran (GPMP)."
+                className="psra-subject-print-table"
               >
                 <ReportTable headers={['Mata Pelajaran', ...GRADE_NAMES, 'Jumlah Murid', 'GPMP']}>
                   {subjectSummaries.map((item) => (
