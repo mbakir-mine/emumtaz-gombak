@@ -443,10 +443,98 @@ a {
   font-size: 18px;
 }
 
-.psra-individual-print {
-  padding: 34px;
+.psra-individual-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.psra-individual-list-box,
+.psra-individual-preview-box {
+  min-width: 0;
   border: 1px solid #d6e2dd;
   border-radius: 12px;
+  background: #fff;
+}
+
+.psra-individual-list-box {
+  padding: 16px;
+}
+
+.psra-individual-preview-box {
+  padding: 16px;
+}
+
+.psra-individual-box-header {
+  margin-bottom: 14px;
+}
+
+.psra-individual-box-header h4 {
+  margin: 0 0 4px;
+  color: #102f27;
+  font-size: 16px;
+}
+
+.psra-individual-box-header p {
+  margin: 0;
+  color: #6f877f;
+  font-size: 12px;
+}
+
+.psra-individual-list-box .psra-class-filter {
+  max-width: none;
+  margin-bottom: 14px;
+}
+
+.psra-individual-student-list {
+  display: grid;
+  gap: 8px;
+  max-height: 620px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.psra-individual-student-list button {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d6e2dd;
+  border-radius: 9px;
+  color: #14352d;
+  background: #fbfdfc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.psra-individual-student-list button:hover,
+.psra-individual-student-list button.active {
+  border-color: #087456;
+  background: #e9f5f1;
+}
+
+.psra-individual-student-list button.active {
+  box-shadow: inset 3px 0 #087456;
+}
+
+.psra-individual-student-list strong,
+.psra-individual-student-list span {
+  display: block;
+}
+
+.psra-individual-student-list strong {
+  font-size: 13px;
+}
+
+.psra-individual-student-list span {
+  margin-top: 4px;
+  color: #6f877f;
+  font-size: 11px;
+}
+
+.psra-individual-print {
+  padding: 34px;
+  border: 0;
+  border-radius: 0;
   color: #13231e;
   background: #fff;
 }
@@ -707,6 +795,10 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .psra-individual-layout {
+    grid-template-columns: 1fr;
+  }
+
   .psra-report-actions {
     width: 100%;
     flex-wrap: wrap;
@@ -794,12 +886,16 @@ a {
   }
 
   .psra-report-shell:has(.psra-individual-print) .psra-report-heading,
-  .psra-report-shell:has(.psra-individual-print) .psra-report-metrics {
+  .psra-report-shell:has(.psra-individual-print) .psra-report-metrics,
+  .psra-report-shell:has(.psra-individual-print) .psra-individual-list-box,
+  .psra-report-shell:has(.psra-individual-print) .psra-individual-box-header {
     display: none !important;
   }
 
   .psra-report-shell:has(.psra-individual-print),
-  .psra-report-shell:has(.psra-individual-print) .psra-report-panel {
+  .psra-report-shell:has(.psra-individual-print) .psra-report-panel,
+  .psra-report-shell:has(.psra-individual-print) .psra-individual-layout,
+  .psra-report-shell:has(.psra-individual-print) .psra-individual-preview-box {
     display: block;
     margin: 0 !important;
     padding: 0 !important;

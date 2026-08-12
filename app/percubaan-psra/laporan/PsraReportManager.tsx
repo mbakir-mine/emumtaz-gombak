@@ -436,24 +436,49 @@ export default function PsraReportManager({
 
           {reportType === 'individu' ? (
             <ReportSection title="Laporan Individu" subtitle="Prestasi calon bagi semua lima kertas.">
-              <div className="psra-inline-filters">
-                <InlineFilters classes={yearSixClasses} selectedClassId={selectedClassId} setSelectedClassId={setSelectedClassId} />
-                <label>Murid
-                  <select value={selectedStudentId} onChange={(event) => setSelectedStudentId(event.target.value)}>
-                    {studentsInSelectedClass.map((student) => <option key={student.id} value={student.id}>{student.nama_murid}</option>)}
-                  </select>
-                </label>
+              <div className="psra-individual-layout">
+                <aside className="psra-individual-list-box">
+                  <header className="psra-individual-box-header">
+                    <h4>Kotak 1: Senarai murid dalam kelas</h4>
+                    <p>Pilih kelas dan murid untuk paparan cetakan.</p>
+                  </header>
+                  <InlineFilters classes={yearSixClasses} selectedClassId={selectedClassId} setSelectedClassId={setSelectedClassId} />
+                  <div className="psra-individual-student-list" aria-label="Senarai murid dalam kelas">
+                    {studentsInSelectedClass.map((student) => {
+                      const item = completeStudents.find((record) => record.student.id === student.id);
+                      return (
+                        <button
+                          key={student.id}
+                          type="button"
+                          className={student.id === selectedStudentId ? 'active' : ''}
+                          onClick={() => setSelectedStudentId(student.id)}
+                        >
+                          <strong>{student.nama_murid}</strong>
+                          <span>{cleanMykid(student.mykid)} · {item ? item.grade : 'Belum lengkap'}</span>
+                        </button>
+                      );
+                    })}
+                    {!studentsInSelectedClass.length ? <p className="empty">Tiada murid untuk kelas ini.</p> : null}
+                  </div>
+                </aside>
+
+                <article className="psra-individual-preview-box">
+                  <header className="psra-individual-box-header">
+                    <h4>Kotak 2: Paparan Cetakan Laporan Individu</h4>
+                    <p>Tekan Cetak Laporan selepas memilih murid.</p>
+                  </header>
+                  {selectedStudent ? (
+                    <IndividualPsraPrint
+                      school={selectedSchoolRecord}
+                      title={`Keputusan Ujian Percubaan PSRA ${session}`}
+                      student={selectedStudent}
+                      classRecord={selectedIndividual?.classRecord ?? classById.get(selectedStudent.class_id ?? '')}
+                      marks={selectedStudentMarks}
+                      result={selectedIndividual}
+                    />
+                  ) : <div className="empty-state">Pilih murid untuk memaparkan laporan individu.</div>}
+                </article>
               </div>
-              {selectedStudent ? (
-                <IndividualPsraPrint
-                  school={selectedSchoolRecord}
-                  title={`Keputusan Ujian Percubaan PSRA ${session}`}
-                  student={selectedStudent}
-                  classRecord={selectedIndividual?.classRecord ?? classById.get(selectedStudent.class_id ?? '')}
-                  marks={selectedStudentMarks}
-                  result={selectedIndividual}
-                />
-              ) : <div className="empty-state">Tiada murid untuk kelas ini.</div>}
             </ReportSection>
           ) : null}
 
