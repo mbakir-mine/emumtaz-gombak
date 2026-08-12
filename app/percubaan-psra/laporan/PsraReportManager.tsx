@@ -32,7 +32,7 @@ type CompleteStudent = {
   marks: Map<string, number>;
   total: number;
   percentage: number;
-  gpm: number;
+  gpm: number | null;
   grade: string;
 };
 
@@ -246,9 +246,13 @@ export default function PsraReportManager({
   const completeStudents = useMemo<CompleteStudent[]>(
     () =>
       visibleStudents.flatMap((student) => {
-        const marks = marksByStudent.get(student.id);
+        const marks = marksByStudent.get(student.id) ?? new Map<string, number>();
         const classRecord = student.class_id ? classById.get(student.class_id) : undefined;
-        if (!marks || !classRecord || !PSRA_PAPERS.every((paper) => marks.has(paper.subjectCode))) return [];
+        if (!classRecord) return [];
+        const enteredValues = PSRA_PAPERS.flatMap((paper) => {
+          const mark = marks.get(paper.subjectCode);
+          return mark === undefined ? [] : [mark];
+        });
         const values = PSRA_PAPERS.map((paper) => marks.get(paper.subjectCode) ?? 0);
         const total = values.reduce((sum, value) => sum + value, 0);
         const percentage = total / PSRA_PAPERS.length;
@@ -258,8 +262,8 @@ export default function PsraReportManager({
           marks,
           total,
           percentage,
-          gpm: average(values.map(gradePoint)) ?? 0,
-          grade: psraGrade(percentage),
+          gpm: average(enteredValues.map(gradePoint)),
+          grade: enteredValues.length ? psraGrade(percentage) : 'Belum lengkap',
         }];
       }),
     [classById, marksByStudent, visibleStudents],
@@ -283,7 +287,7 @@ export default function PsraReportManager({
         return classOrder || a.student.nama_murid.localeCompare(b.student.nama_murid);
       });
   }, [classById, completeStudents, marksByStudent, visibleStudents]);
-  const gps = average(completeStudents.map((item) => item.gpm));
+  const gps = average(completeStudents.flatMap((item) => item.gpm === null ? [] : [item.gpm]));
   const schoolAverage = average(completeStudents.map((item) => item.percentage));
   const mumtazCount = completeStudents.filter((item) => item.grade === 'Mumtaz').length;
 
@@ -384,7 +388,7 @@ export default function PsraReportManager({
           <section className="psra-report-metrics">
             <div><span>Purata Sekolah</span><strong>{number(schoolAverage, 1)}%</strong><small>Markah purata</small></div>
             <div><span>GPS</span><strong>{number(gps)}</strong><small>{pointGrade(gps)}</small></div>
-            <div><span>Calon Lengkap</span><strong>{completeStudents.length}</strong><small>daripada {visibleStudents.length} calon</small></div>
+            <div><span>Calon Dipapar</span><strong>{completeStudents.length}</strong><small>daripada {visibleStudents.length} calon</small></div>
             <div><span>Pencapaian Mumtaz</span><strong>{mumtazCount}</strong><small>90% dan ke atas</small></div>
           </section>
 
@@ -396,7 +400,7 @@ export default function PsraReportManager({
               <ReportTable headers={['Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
                 {yearSixStudentRows.map((item) => (
                   <tr key={item.student.id}>
-                    <th>{item.student.nama_murid}<small>{cleanMykid(item.student.mykid)}</small></th>
+                    <th>{item.student.nama_murid}</th>
                     <td>{item.classRecord?.nama_kelas ?? '—'}</td>
                     {PSRA_PAPERS.map((paper) => (
                       <td key={paper.subjectCode}>{item.marks?.get(paper.subjectCode) ?? '—'}</td>
@@ -411,7 +415,7 @@ export default function PsraReportManager({
               <p className="psra-report-footnote">
                 Jumlah keseluruhan: <strong>{visibleStudents.length} murid</strong> daripada {yearSixClasses.length} kelas
                 {' · '}
-                Lengkap: <strong>{completeStudents.length}</strong>
+                Dipapar: <strong>{completeStudents.length}</strong>
                 {' · '}
                 GPS: <strong>{number(gps)}</strong>
               </p>
@@ -424,13 +428,13 @@ export default function PsraReportManager({
               <ReportTable headers={['Murid', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
                 {selectedClassResults.map((item) => (
                   <tr key={item.student.id}>
-                    <th>{item.student.nama_murid}<small>{cleanMykid(item.student.mykid)}</small></th>
-                    {PSRA_PAPERS.map((paper) => <td key={paper.subjectCode}>{item.marks.get(paper.subjectCode)}</td>)}
+                    <th>{item.student.nama_murid}</th>
+                    {PSRA_PAPERS.map((paper) => <td key={paper.subjectCode}>{item.marks.get(paper.subjectCode) ?? '—'}</td>)}
                     <td>{item.total}/500</td><td>{number(item.percentage, 1)}</td><td>{number(item.gpm)}</td><td>{item.grade}</td>
                   </tr>
                 ))}
               </ReportTable>
-              <p className="psra-report-footnote">GPK kelas: <strong>{number(average(selectedClassResults.map((item) => item.gpm)))}</strong></p>
+              <p className="psra-report-footnote">GPK kelas: <strong>{number(average(selectedClassResults.flatMap((item) => item.gpm === null ? [] : [item.gpm])))}</strong></p>
             </ReportSection>
           ) : null}
 
@@ -454,7 +458,7 @@ export default function PsraReportManager({
                           onClick={() => setSelectedStudentId(student.id)}
                         >
                           <strong>{student.nama_murid}</strong>
-                          <span>{cleanMykid(student.mykid)} · {item ? item.grade : 'Belum lengkap'}</span>
+                          <span>{item ? item.grade : 'Belum lengkap'}</span>
                         </button>
                       );
                     })}
@@ -517,7 +521,7 @@ export default function PsraReportManager({
                 title="Laporan Bilangan Gred Keseluruhan"
                 subtitle="Gred keseluruhan dikira daripada jumlah lima mata pelajaran bagi setiap calon (markah penuh 500)."
               >
-                <ReportTable headers={['Gred Keseluruhan', 'Julat Markah', 'Bilangan Murid', 'Peratus Calon Lengkap']}>
+                <ReportTable headers={['Gred Keseluruhan', 'Julat Markah', 'Bilangan Murid', 'Peratus Calon Dipapar']}>
                   {GRADE_NAMES.map((grade, index) => (
                     <tr key={grade}>
                       <th>{grade}</th>
@@ -532,7 +536,7 @@ export default function PsraReportManager({
                   ))}
                 </ReportTable>
                 <p className="psra-report-footnote">
-                  Jumlah calon lengkap: <strong>{completeStudents.length}</strong>
+                  Jumlah calon dipapar: <strong>{completeStudents.length}</strong>
                   {' · '}
                   GPS: <strong>{number(gps)}</strong>
                 </p>
