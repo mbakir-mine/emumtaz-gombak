@@ -83,6 +83,13 @@ function number(value: number | null, digits = 2) {
   return value === null ? '—' : value.toFixed(digits);
 }
 
+function rankForStudent(studentId: string, rows: CompleteStudent[]) {
+  const rank = [...rows]
+    .sort((a, b) => b.percentage - a.percentage || a.student.nama_murid.localeCompare(b.student.nama_murid))
+    .findIndex((item) => item.student.id === studentId);
+  return rank === -1 ? null : rank + 1;
+}
+
 export default function PsraReportManager({
   schools,
   moduleAccesses,
@@ -319,7 +326,9 @@ export default function PsraReportManager({
   const selectedIndividual = completeStudents.find((item) => item.student.id === selectedStudentId);
   const selectedStudent = studentsInSelectedClass.find((item) => item.id === selectedStudentId);
   const selectedStudentMarks = selectedStudent ? marksByStudent.get(selectedStudent.id) : undefined;
-  const selectedSchoolName = selectableSchools.find((item) => item.kod_sekolah === selectedSchool)?.nama_sekolah ?? selectedSchool;
+  const selectedSchoolRecord = selectableSchools.find((item) => item.kod_sekolah === selectedSchool);
+  const selectedSchoolName = selectedSchoolRecord?.nama_sekolah ?? selectedSchool;
+  const selectedRank = selectedStudent ? rankForStudent(selectedStudent.id, completeStudents) : null;
 
   if (!hasModuleAccess) {
     return <div className="empty-state">Sekolah ini belum diberi akses kepada modul Percubaan PSRA.</div>;
@@ -444,16 +453,16 @@ export default function PsraReportManager({
                 </label>
               </div>
               {selectedStudent ? (
-                <div className="psra-individual-card">
-                  <header><div><span>Nama Murid</span><strong>{selectedStudent.nama_murid}</strong><small>{cleanMykid(selectedStudent.mykid)}</small></div>
-                    <div><span>GPM</span><strong>{selectedIndividual ? number(selectedIndividual.gpm) : 'Belum lengkap'}</strong><small>{selectedIndividual?.grade ?? '—'}</small></div></header>
-                  <ReportTable headers={['Mata Pelajaran', 'Markah', 'Gred', 'Mata Gred']}>
-                    {PSRA_PAPERS.map((paper) => {
-                      const mark = selectedStudentMarks?.get(paper.subjectCode);
-                      return <tr key={paper.subjectCode}><th>{paper.label}</th><td>{mark ?? '—'}</td><td>{mark === undefined ? '—' : psraGrade(mark)}</td><td>{mark === undefined ? '—' : gradePoint(mark)}</td></tr>;
-                    })}
-                  </ReportTable>
-                </div>
+                <IndividualPsraPrint
+                  school={selectedSchoolRecord}
+                  title={`Keputusan Ujian Percubaan PSRA ${session}`}
+                  student={selectedStudent}
+                  classRecord={selectedIndividual?.classRecord ?? classById.get(selectedStudent.class_id ?? '')}
+                  marks={selectedStudentMarks}
+                  result={selectedIndividual}
+                  rank={selectedRank}
+                  completeCount={completeStudents.length}
+                />
               ) : <div className="empty-state">Tiada murid untuk kelas ini.</div>}
             </ReportSection>
           ) : null}
@@ -532,6 +541,75 @@ function ReportSection({ title, subtitle, children }: { title: string; subtitle:
 
 function ReportTable({ headers, children }: { headers: string[]; children: ReactNode }) {
   return <div className="psra-report-table-wrap"><table className="psra-report-table"><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{children}</tbody></table></div>;
+}
+
+function IndividualPsraPrint({
+  school,
+  title,
+  student,
+  classRecord,
+  marks,
+  result,
+  rank,
+  completeCount,
+}: {
+  school: School | undefined;
+  title: string;
+  student: StudentRecord;
+  classRecord: ClassRecord | undefined;
+  marks: Map<string, number> | undefined;
+  result: CompleteStudent | undefined;
+  rank: number | null;
+  completeCount: number;
+}) {
+  return (
+    <article className="psra-individual-print">
+      <header className="psra-individual-print-school">
+        <h2>{school?.nama_sekolah ?? student.kod_sekolah}</h2>
+        <p>{school ? `${school.kod_sekolah} · ${school.daerah}${school.zon ? ` · Zon ${school.zon}` : ''}` : 'Alamat Sekolah'}</p>
+      </header>
+
+      <h3>Tajuk Laporan : {title}</h3>
+
+      <dl className="psra-individual-print-profile">
+        <div><dt>Nama Murid :</dt><dd>{student.nama_murid}</dd></div>
+        <div><dt>No Mykid :</dt><dd>{cleanMykid(student.mykid)}</dd></div>
+        <div><dt>Kelas :</dt><dd>{classRecord?.nama_kelas ?? '—'}</dd></div>
+        <div><dt>Nama Guru Kelas:</dt><dd /></div>
+      </dl>
+
+      <section className="psra-individual-print-subjects">
+        <h4>Keputusan Bagi Setiap Mata Pelajaran</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Mata Pelajaran</th>
+              <th>Markah Diperolehi</th>
+              <th>Gred</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PSRA_PAPERS.map((paper) => {
+              const mark = marks?.get(paper.subjectCode);
+              return (
+                <tr key={paper.subjectCode}>
+                  <td>{paper.label}</td>
+                  <td>{mark ?? '—'}</td>
+                  <td>{mark === undefined ? '—' : psraGrade(mark)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+
+      <dl className="psra-individual-print-summary">
+        <div><dt>Jumlah Markah Keseluruhan</dt><dd>{result ? `${result.total}/500` : 'Belum lengkap'}</dd></div>
+        <div><dt>Pangkat</dt><dd>{rank ? `${rank} / ${completeCount}` : 'Belum lengkap'}</dd></div>
+        <div><dt>Gred Purata Murid</dt><dd>{result ? number(result.gpm) : 'Belum lengkap'}</dd></div>
+      </dl>
+    </article>
+  );
 }
 
 function ChartLegend() {
