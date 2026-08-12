@@ -325,6 +325,7 @@ export default function PsraReportManager({
   const selectedStudentMarks = selectedStudent ? marksByStudent.get(selectedStudent.id) : undefined;
   const selectedSchoolRecord = selectableSchools.find((item) => item.kod_sekolah === selectedSchool);
   const selectedSchoolName = selectedSchoolRecord?.nama_sekolah ?? selectedSchool;
+  const selectedClassRecord = classById.get(selectedClassId);
 
   if (!hasModuleAccess) {
     return <div className="empty-state">Sekolah ini belum diberi akses kepada modul Percubaan PSRA.</div>;
@@ -433,14 +434,27 @@ export default function PsraReportManager({
           ) : null}
 
           {reportType === 'kelas' ? (
-            <ReportSection title="Laporan Kelas" subtitle="GPK dikira daripada purata mata gred setiap murid yang lengkap.">
+            <ReportSection title="Laporan Kelas" subtitle="GPK dikira daripada purata mata gred setiap murid yang lengkap." className="psra-year-print-report psra-class-print-report">
+              <header className="psra-year-print-header">
+                <h2>{selectedSchoolRecord?.nama_sekolah ?? selectedSchool}</h2>
+                <p>
+                  {selectedSchoolRecord
+                    ? `${selectedSchoolRecord.kod_sekolah} · ${selectedSchoolRecord.daerah}${selectedSchoolRecord.zon ? ` · Zon ${selectedSchoolRecord.zon}` : ''}`
+                    : 'Alamat Sekolah'}
+                </p>
+                <h3>Keputusan Percubaan PSRA {session} (Laporan Kelas)</h3>
+              </header>
+              <dl className="psra-class-print-meta">
+                <div><dt>Nama Kelas :</dt><dd>{selectedClassRecord?.nama_kelas ?? '—'}</dd></div>
+                <div><dt>Nama Guru Kelas :</dt><dd /></div>
+              </dl>
               <InlineFilters classes={yearSixClasses} selectedClassId={selectedClassId} setSelectedClassId={setSelectedClassId} />
-              <ReportTable headers={['Murid', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
+              <ReportTable headers={['Nama Murid', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', 'Peratus', 'Pangkat', 'GPM']}>
                 {selectedClassResults.map((item) => (
                   <tr key={item.student.id}>
                     <th>{item.student.nama_murid}</th>
                     {PSRA_PAPERS.map((paper) => <td key={paper.subjectCode}>{item.marks.get(paper.subjectCode) ?? '—'}</td>)}
-                    <td>{item.total}/500</td><td>{number(item.percentage, 1)}</td><td>{number(item.gpm)}</td><td>{item.grade}</td>
+                    <td>{item.total}</td><td>{number(item.percentage, 1)}</td><td>{item.grade}</td><td>{number(item.gpm)}</td>
                   </tr>
                 ))}
               </ReportTable>

@@ -422,6 +422,10 @@ a {
   display: none;
 }
 
+.psra-class-print-meta {
+  display: none;
+}
+
 .psra-individual-card > header {
   display: flex;
   justify-content: space-between;
@@ -941,6 +945,32 @@ a {
     margin: 6mm 0 0;
     color: #111;
     font-size: 13px;
+  }
+
+  .psra-class-print-meta {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4mm 12mm;
+    margin: -3mm 0 6mm;
+    color: #111;
+    font-size: 9px;
+    break-after: avoid;
+  }
+
+  .psra-class-print-meta div {
+    display: grid;
+    grid-template-columns: 30mm minmax(0, 1fr);
+    gap: 3mm;
+    align-items: start;
+  }
+
+  .psra-class-print-meta dt {
+    font-weight: 700;
+  }
+
+  .psra-class-print-meta dd {
+    margin: 0;
+    font-weight: 600;
   }
 
   .psra-year-print-report .psra-report-table-wrap {
