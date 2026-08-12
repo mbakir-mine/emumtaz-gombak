@@ -395,8 +395,18 @@ export default function PsraReportManager({
           {reportType === 'darjah' ? (
             <ReportSection
               title="Laporan Keseluruhan Darjah 6"
+              className="psra-year-print-report"
               subtitle={`Gabungan semua kelas Tahun 6 · Percubaan PSRA ${session} · ${selectedYear}`}
             >
+              <header className="psra-year-print-header">
+                <h2>{selectedSchoolRecord?.nama_sekolah ?? selectedSchool}</h2>
+                <p>
+                  {selectedSchoolRecord
+                    ? `${selectedSchoolRecord.kod_sekolah} · ${selectedSchoolRecord.daerah}${selectedSchoolRecord.zon ? ` · Zon ${selectedSchoolRecord.zon}` : ''}`
+                    : 'Alamat Sekolah'}
+                </p>
+                <h3>Keputusan Percubaan PSRA {session} (Keseluruhan Tahun 6)</h3>
+              </header>
               <ReportTable headers={['Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
                 {yearSixStudentRows.map((item) => (
                   <tr key={item.student.id}>
@@ -554,8 +564,8 @@ export default function PsraReportManager({
   );
 }
 
-function ReportSection({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
-  return <section className="psra-report-panel"><header><div><h3>{title}</h3><p>{subtitle}</p></div></header>{children}</section>;
+function ReportSection({ title, subtitle, children, className }: { title: string; subtitle: string; children: ReactNode; className?: string }) {
+  return <section className={className ? `psra-report-panel ${className}` : 'psra-report-panel'}><header><div><h3>{title}</h3><p>{subtitle}</p></div></header>{children}</section>;
 }
 
 function ReportTable({ headers, children }: { headers: string[]; children: ReactNode }) {

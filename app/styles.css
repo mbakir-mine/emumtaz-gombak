@@ -418,6 +418,10 @@ a {
   text-align: right;
 }
 
+.psra-year-print-header {
+  display: none;
+}
+
 .psra-individual-card > header {
   display: flex;
   justify-content: space-between;
@@ -883,6 +887,92 @@ a {
   @page {
     size: A4 portrait;
     margin: 16mm;
+  }
+
+  @page psra-year-report {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  .psra-year-print-report {
+    page: psra-year-report;
+  }
+
+  .psra-report-shell:has(.psra-year-print-report) .psra-report-heading,
+  .psra-report-shell:has(.psra-year-print-report) .psra-report-metrics {
+    display: none !important;
+  }
+
+  .psra-report-shell:has(.psra-year-print-report),
+  .psra-report-shell:has(.psra-year-print-report) .psra-report-panel {
+    display: block;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .psra-year-print-report > header:not(.psra-year-print-header) {
+    display: none !important;
+  }
+
+  .psra-year-print-header {
+    display: block !important;
+    margin: 0 0 8mm;
+    text-align: center;
+    break-after: avoid;
+  }
+
+  .psra-year-print-header h2 {
+    margin: 0;
+    color: #111;
+    font-size: 15px;
+    text-transform: uppercase;
+  }
+
+  .psra-year-print-header p {
+    margin: 2mm 0 0;
+    color: #333;
+    font-size: 9px;
+  }
+
+  .psra-year-print-header h3 {
+    margin: 6mm 0 0;
+    color: #111;
+    font-size: 13px;
+  }
+
+  .psra-year-print-report .psra-report-table-wrap {
+    overflow: visible;
+    border-radius: 0;
+  }
+
+  .psra-year-print-report .psra-report-table {
+    min-width: 0;
+    font-size: 8px;
+  }
+
+  .psra-year-print-report .psra-report-table th,
+  .psra-year-print-report .psra-report-table td {
+    padding: 4px 5px;
+    white-space: normal;
+  }
+
+  .psra-year-print-report .psra-report-table thead th {
+    color: #111;
+    background: #eef4f1;
+    font-size: 7px;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .psra-year-print-report .psra-report-table tbody th {
+    background: #fff;
+  }
+
+  .psra-year-print-report .psra-report-footnote {
+    display: none;
   }
 
   .psra-report-shell:has(.psra-individual-print) .psra-report-heading,
