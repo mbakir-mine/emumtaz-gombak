@@ -407,7 +407,7 @@ export default function PsraReportManager({
                 </p>
                 <h3>Keputusan Percubaan PSRA {session} (Keseluruhan Tahun 6)</h3>
               </header>
-              <ReportTable headers={['Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', '%', 'GPM', 'Gred']}>
+              <ReportTable headers={['Nama Murid', 'Kelas', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', 'Peratus', 'Pangkat', 'GPM']}>
                 {yearSixStudentRows.map((item) => (
                   <tr key={item.student.id}>
                     <th>{item.student.nama_murid}</th>
@@ -415,10 +415,10 @@ export default function PsraReportManager({
                     {PSRA_PAPERS.map((paper) => (
                       <td key={paper.subjectCode}>{item.marks?.get(paper.subjectCode) ?? '—'}</td>
                     ))}
-                    <td>{item.result ? `${item.result.total}/500` : 'Belum lengkap'}</td>
+                    <td>{item.result ? item.result.total : 'Belum lengkap'}</td>
                     <td>{item.result ? number(item.result.percentage, 1) : '—'}</td>
-                    <td>{item.result ? number(item.result.gpm) : '—'}</td>
                     <td>{item.result?.grade ?? '—'}</td>
+                    <td>{item.result ? number(item.result.gpm) : '—'}</td>
                   </tr>
                 ))}
               </ReportTable>
