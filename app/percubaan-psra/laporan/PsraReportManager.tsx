@@ -83,13 +83,6 @@ function number(value: number | null, digits = 2) {
   return value === null ? '—' : value.toFixed(digits);
 }
 
-function rankForStudent(studentId: string, rows: CompleteStudent[]) {
-  const rank = [...rows]
-    .sort((a, b) => b.percentage - a.percentage || a.student.nama_murid.localeCompare(b.student.nama_murid))
-    .findIndex((item) => item.student.id === studentId);
-  return rank === -1 ? null : rank + 1;
-}
-
 export default function PsraReportManager({
   schools,
   moduleAccesses,
@@ -328,7 +321,6 @@ export default function PsraReportManager({
   const selectedStudentMarks = selectedStudent ? marksByStudent.get(selectedStudent.id) : undefined;
   const selectedSchoolRecord = selectableSchools.find((item) => item.kod_sekolah === selectedSchool);
   const selectedSchoolName = selectedSchoolRecord?.nama_sekolah ?? selectedSchool;
-  const selectedRank = selectedStudent ? rankForStudent(selectedStudent.id, completeStudents) : null;
 
   if (!hasModuleAccess) {
     return <div className="empty-state">Sekolah ini belum diberi akses kepada modul Percubaan PSRA.</div>;
@@ -460,8 +452,6 @@ export default function PsraReportManager({
                   classRecord={selectedIndividual?.classRecord ?? classById.get(selectedStudent.class_id ?? '')}
                   marks={selectedStudentMarks}
                   result={selectedIndividual}
-                  rank={selectedRank}
-                  completeCount={completeStudents.length}
                 />
               ) : <div className="empty-state">Tiada murid untuk kelas ini.</div>}
             </ReportSection>
@@ -550,8 +540,6 @@ function IndividualPsraPrint({
   classRecord,
   marks,
   result,
-  rank,
-  completeCount,
 }: {
   school: School | undefined;
   title: string;
@@ -559,8 +547,6 @@ function IndividualPsraPrint({
   classRecord: ClassRecord | undefined;
   marks: Map<string, number> | undefined;
   result: CompleteStudent | undefined;
-  rank: number | null;
-  completeCount: number;
 }) {
   return (
     <article className="psra-individual-print">
@@ -569,7 +555,7 @@ function IndividualPsraPrint({
         <p>{school ? `${school.kod_sekolah} · ${school.daerah}${school.zon ? ` · Zon ${school.zon}` : ''}` : 'Alamat Sekolah'}</p>
       </header>
 
-      <h3>Tajuk Laporan : {title}</h3>
+      <h3>{title}</h3>
 
       <dl className="psra-individual-print-profile">
         <div><dt>Nama Murid :</dt><dd>{student.nama_murid}</dd></div>
@@ -579,11 +565,12 @@ function IndividualPsraPrint({
       </dl>
 
       <section className="psra-individual-print-subjects">
-        <h4>Keputusan Bagi Setiap Mata Pelajaran</h4>
+        <h4>Keputusan Bagi setiap mata pelajaran</h4>
         <table>
           <thead>
             <tr>
               <th>Mata Pelajaran</th>
+              <th>Kod</th>
               <th>Markah Diperolehi</th>
               <th>Gred</th>
             </tr>
@@ -594,6 +581,7 @@ function IndividualPsraPrint({
               return (
                 <tr key={paper.subjectCode}>
                   <td>{paper.label}</td>
+                  <td>{paper.subjectCode}</td>
                   <td>{mark ?? '—'}</td>
                   <td>{mark === undefined ? '—' : psraGrade(mark)}</td>
                 </tr>
@@ -604,9 +592,9 @@ function IndividualPsraPrint({
       </section>
 
       <dl className="psra-individual-print-summary">
-        <div><dt>Jumlah Markah Keseluruhan</dt><dd>{result ? `${result.total}/500` : 'Belum lengkap'}</dd></div>
-        <div><dt>Pangkat</dt><dd>{rank ? `${rank} / ${completeCount}` : 'Belum lengkap'}</dd></div>
-        <div><dt>Gred Purata Murid</dt><dd>{result ? number(result.gpm) : 'Belum lengkap'}</dd></div>
+        <div><dt>Jumlah Markah keseluruhan :</dt><dd>{result ? `${result.total}/500` : 'Belum lengkap'}</dd></div>
+        <div><dt>Pangkat :</dt><dd>{result?.grade ?? 'Belum lengkap'}</dd></div>
+        <div><dt>Gred Purata Murid:</dt><dd>{result ? number(result.gpm) : 'Belum lengkap'}</dd></div>
       </dl>
     </article>
   );

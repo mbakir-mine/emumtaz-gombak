@@ -468,24 +468,24 @@ a {
 }
 
 .psra-individual-print h3 {
-  margin: 34px 0 28px;
+  margin: 32px 0 28px;
   font-size: 18px;
   text-align: center;
 }
 
 .psra-individual-print-profile {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 15px 34px;
-  margin: 0 0 30px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 0 0 28px;
 }
 
 .psra-individual-print-profile div {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-columns: 170px minmax(0, 1fr);
   gap: 10px;
-  align-items: end;
-  min-height: 30px;
+  align-items: start;
+  min-height: 24px;
 }
 
 .psra-individual-print-profile dt,
@@ -495,9 +495,8 @@ a {
 
 .psra-individual-print-profile dd,
 .psra-individual-print-summary dd {
-  min-height: 25px;
+  min-height: 24px;
   margin: 0;
-  border-bottom: 1px solid #21352f;
   font-weight: 650;
 }
 
@@ -526,8 +525,10 @@ a {
 
 .psra-individual-print-subjects th:nth-child(2),
 .psra-individual-print-subjects th:nth-child(3),
+.psra-individual-print-subjects th:nth-child(4),
 .psra-individual-print-subjects td:nth-child(2),
-.psra-individual-print-subjects td:nth-child(3) {
+.psra-individual-print-subjects td:nth-child(3),
+.psra-individual-print-subjects td:nth-child(4) {
   text-align: center;
 }
 
@@ -542,7 +543,7 @@ a {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 12px;
-  align-items: end;
+  align-items: start;
 }
 
 .psra-report-chart-page {
