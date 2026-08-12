@@ -1013,7 +1013,7 @@ a {
     page: auto;
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 5mm !important;
+    gap: 3mm !important;
     margin: 0 !important;
     padding: 0 !important;
     break-inside: avoid;
@@ -1035,6 +1035,14 @@ a {
     background: #fff !important;
   }
 
+  .psra-report-shell:has(.psra-subject-print-report) .psra-report-chart-page {
+    page-break-before: auto !important;
+    break-before: auto !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    min-height: 0 !important;
+  }
+
   .psra-report-shell:has(.psra-subject-print-report) .psra-report-panel > header,
   .psra-report-shell:has(.psra-subject-print-report) .psra-report-chart-page > header {
     display: none !important;
@@ -1042,7 +1050,7 @@ a {
 
   .psra-subject-print-header {
     display: block !important;
-    margin: 0 0 8mm;
+    margin: 0 0 5mm;
     text-align: center;
     break-after: avoid;
   }
@@ -1050,20 +1058,20 @@ a {
   .psra-subject-print-header h2 {
     margin: 0;
     color: #111;
-    font-size: 15px;
+    font-size: 13px;
     text-transform: uppercase;
   }
 
   .psra-subject-print-header p {
-    margin: 2mm 0 0;
+    margin: 1mm 0 0;
     color: #333;
-    font-size: 9px;
+    font-size: 7px;
   }
 
   .psra-subject-print-header h3 {
-    margin: 6mm 0 0;
+    margin: 4mm 0 0;
     color: #111;
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .psra-subject-print-report .psra-report-table-wrap {
@@ -1073,12 +1081,12 @@ a {
 
   .psra-subject-print-report .psra-report-table {
     min-width: 0;
-    font-size: 8px;
+    font-size: 7px;
   }
 
   .psra-subject-print-report .psra-report-table th,
   .psra-subject-print-report .psra-report-table td {
-    padding: 4px 5px;
+    padding: 3px 4px;
     white-space: normal;
   }
 
@@ -1091,8 +1099,8 @@ a {
   }
 
   .psra-subject-print-report .psra-chart-legend {
-    gap: 7px;
-    margin: 2mm 0 3mm;
+    gap: 5px;
+    margin: 1mm 0 2mm;
     padding: 0;
     background: transparent;
   }
@@ -1108,13 +1116,13 @@ a {
   }
 
   .psra-subject-print-report .psra-stacked-chart {
-    gap: 3mm;
+    gap: 2mm;
     padding: 0;
   }
 
   .psra-subject-print-report .psra-stacked-row {
-    grid-template-columns: 34mm minmax(0, 1fr) 8mm;
-    gap: 3mm;
+    grid-template-columns: 28mm minmax(0, 1fr) 7mm;
+    gap: 2mm;
   }
 
   .psra-subject-print-report .psra-stacked-row > strong,
@@ -1123,7 +1131,7 @@ a {
   }
 
   .psra-subject-print-report .psra-chart-track {
-    height: 8mm;
+    height: 6mm;
     border-radius: 0;
   }
 
@@ -1132,7 +1140,7 @@ a {
   }
 
   .psra-subject-print-report .psra-chart-scale {
-    margin: 2mm 11mm 0 40mm;
+    margin: 1mm 9mm 0 31mm;
     font-size: 6px;
     min-width: 0;
   }
