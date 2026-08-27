@@ -1069,13 +1069,17 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
     : scopedSchoolRanks.filter((row) => row.kategori.toUpperCase() === schoolCategory);
   const schoolOwnRank = scopedSchoolRanks.find((row) => row.kod_sekolah === profile?.kod_sekolah);
   const schoolClassRanks = insights.classRanks.filter((row) => row.kod_sekolah === profile?.kod_sekolah);
-  const districtCompletionSchools = insights.completionSchools.filter((row) => {
+  const scopedCompletionSchools = insights.completionSchools.filter((row) => {
     if (dashboardDistrict && row.daerah?.toUpperCase?.() !== dashboardDistrict) return false;
+    if (isZoneAdmin) return row.zon === profile?.zon;
+    if (isSchoolAdmin) return row.kod_sekolah === profile?.kod_sekolah;
     return true;
   });
-  const districtCompletionClasses = insights.completionClasses.filter((row) => {
-    if (!dashboardDistrict) return true;
-    return insights.completionSchools.some((school) => school.kod_sekolah === row.kod_sekolah && school.daerah?.toUpperCase?.() === dashboardDistrict);
+  const scopedCompletionSchoolCodes = new Set(scopedCompletionSchools.map((school) => school.kod_sekolah));
+  const scopedCompletionClasses = insights.completionClasses.filter((row) => {
+    if (isSchoolAdmin) return row.kod_sekolah === profile?.kod_sekolah;
+    if (dashboardDistrict || isZoneAdmin) return scopedCompletionSchoolCodes.has(row.kod_sekolah);
+    return true;
   });
   const bestSchool = categorySchoolRanks[0];
   const districtHasPsraAccess = profile?.role === 'ADMIN_DAERAH' && insights.psraAvailableDistricts.includes(
@@ -1150,8 +1154,8 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         <ExamDashboardTabs active={dashboardView} onChange={setDashboardView} />
         <ExamActionKpis
           latestExamLabel={insights.latestExamLabel}
-          schools={isSchoolAdmin ? [] : districtCompletionSchools}
-          classes={isSchoolAdmin ? districtCompletionClasses : []}
+          schools={isSchoolAdmin ? [] : scopedCompletionSchools}
+          classes={isSchoolAdmin ? scopedCompletionClasses : []}
           bestSchool={bestSchool}
         />
 
@@ -1230,8 +1234,8 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
             zon={profile?.zon}
             kodSekolah={profile?.kod_sekolah}
             latestExamLabel={insights.latestExamLabel}
-            schools={districtCompletionSchools}
-            classes={districtCompletionClasses}
+            schools={scopedCompletionSchools}
+            classes={scopedCompletionClasses}
           />
         </div>
       )}
@@ -1242,8 +1246,8 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
           zon={profile?.zon}
           kodSekolah={profile?.kod_sekolah}
           latestExamLabel={insights.latestExamLabel}
-          schools={districtCompletionSchools}
-          classes={districtCompletionClasses}
+          schools={scopedCompletionSchools}
+          classes={scopedCompletionClasses}
         />
       )}
 
