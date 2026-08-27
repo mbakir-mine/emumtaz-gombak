@@ -243,6 +243,18 @@ export default function PsraReportManager({
     return map;
   }, [records]);
   const classById = useMemo(() => new Map(yearSixClasses.map((item) => [item.id, item])), [yearSixClasses]);
+  const teacherNameByClass = useMemo(() => {
+    const names = new Map<string, string[]>();
+    classAssignments.forEach((assignment) => {
+      const teacherName = assignment.users?.nama?.trim();
+      if (!teacherName) return;
+
+      const current = names.get(assignment.class_id) ?? [];
+      if (!current.includes(teacherName)) current.push(teacherName);
+      names.set(assignment.class_id, current);
+    });
+    return new Map([...names.entries()].map(([classId, teacherNames]) => [classId, teacherNames.join(', ')]));
+  }, [classAssignments]);
   const completeStudents = useMemo<CompleteStudent[]>(
     () =>
       visibleStudents.flatMap((student) => {
@@ -326,6 +338,7 @@ export default function PsraReportManager({
   const selectedSchoolRecord = selectableSchools.find((item) => item.kod_sekolah === selectedSchool);
   const selectedSchoolName = selectedSchoolRecord?.nama_sekolah ?? selectedSchool;
   const selectedClassRecord = classById.get(selectedClassId);
+  const selectedClassTeacherName = selectedClassId ? teacherNameByClass.get(selectedClassId) ?? '—' : '—';
 
   if (!hasModuleAccess) {
     return <div className="empty-state">Sekolah ini belum diberi akses kepada modul Percubaan PSRA.</div>;
@@ -446,7 +459,7 @@ export default function PsraReportManager({
               </header>
               <dl className="psra-class-print-meta">
                 <div><dt>Nama Kelas :</dt><dd>{selectedClassRecord?.nama_kelas ?? '—'}</dd></div>
-                <div><dt>Nama Guru Kelas :</dt><dd /></div>
+                <div><dt>Nama Guru Kelas :</dt><dd>{selectedClassTeacherName}</dd></div>
               </dl>
               <InlineFilters classes={yearSixClasses} selectedClassId={selectedClassId} setSelectedClassId={setSelectedClassId} />
               <ReportTable headers={['Nama Murid', ...PSRA_PAPERS.map((paper) => paper.shortLabel), 'Jumlah', 'Peratus', 'Pangkat', 'GPM']}>
@@ -501,6 +514,7 @@ export default function PsraReportManager({
                       title={`Keputusan Ujian Percubaan PSRA ${session}`}
                       student={selectedStudent}
                       classRecord={selectedIndividual?.classRecord ?? classById.get(selectedStudent.class_id ?? '')}
+                      classTeacherName={selectedStudent.class_id ? teacherNameByClass.get(selectedStudent.class_id) : undefined}
                       marks={selectedStudentMarks}
                       result={selectedIndividual}
                     />
@@ -601,6 +615,7 @@ function IndividualPsraPrint({
   title,
   student,
   classRecord,
+  classTeacherName,
   marks,
   result,
 }: {
@@ -608,6 +623,7 @@ function IndividualPsraPrint({
   title: string;
   student: StudentRecord;
   classRecord: ClassRecord | undefined;
+  classTeacherName: string | undefined;
   marks: Map<string, number> | undefined;
   result: CompleteStudent | undefined;
 }) {
@@ -624,7 +640,7 @@ function IndividualPsraPrint({
         <div><dt>Nama Murid :</dt><dd>{student.nama_murid}</dd></div>
         <div><dt>No Mykid :</dt><dd>{cleanMykid(student.mykid)}</dd></div>
         <div><dt>Kelas :</dt><dd>{classRecord?.nama_kelas ?? '—'}</dd></div>
-        <div><dt>Nama Guru Kelas:</dt><dd /></div>
+        <div><dt>Nama Guru Kelas:</dt><dd>{classTeacherName ?? '—'}</dd></div>
       </dl>
 
       <section className="psra-individual-print-subjects">
