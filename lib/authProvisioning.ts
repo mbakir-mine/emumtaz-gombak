@@ -345,3 +345,49 @@ export async function resetAuthUserPassword(profile: AuthProvisionProfile): Prom
 
   return { ok: true, authUserId, created, temporaryPassword };
 }
+
+export async function createPendingSelfRegisteredAuthUser(
+  profile: AuthProvisionProfile,
+  password: string,
+): Promise<AuthProvisionResult> {
+  const email = profile.email.trim().toLowerCase();
+  if (!email) return { ok: false, message: 'Email pengguna tidak lengkap.' };
+  if (password.length < 8) return { ok: false, message: 'Password mesti sekurang-kurangnya 8 aksara.' };
+
+  const admin = createSupabaseAdmin();
+  if (!admin) return { ok: false, message: missingServiceRoleMessage() };
+
+  const existing = await findAuthUserByEmail(admin, email);
+  if (existing.error) {
+    return { ok: false, message: `Akaun Auth gagal disemak: ${existing.error.message}` };
+  }
+  if (existing.user) {
+    return {
+      ok: false,
+      message: 'Email ini sudah mempunyai akaun login. Sila kembali ke Login atau gunakan Lupa Kata Laluan.',
+    };
+  }
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      nama: profile.nama,
+      role: profile.role,
+      kod_sekolah: profile.kod_sekolah ?? null,
+      zon: profile.zon ?? null,
+    },
+  });
+
+  if (error || !data.user) {
+    return { ok: false, message: `Gagal mencipta akaun login: ${error?.message ?? 'Ralat tidak diketahui.'}` };
+  }
+
+  return {
+    ok: true,
+    authUserId: data.user.id,
+    created: true,
+    message: 'Akaun login berjaya dicipta dan menunggu pengesahan Admin.',
+  };
+}

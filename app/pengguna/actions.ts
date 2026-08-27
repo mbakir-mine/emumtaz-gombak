@@ -40,7 +40,7 @@ async function prepareActivationUpdate(user: UserForProvision, targetStatus: str
 
   updates.auth_user_id = provision.authUserId;
   if (user.status !== 'AKTIF' || provision.created || !user.auth_user_id) {
-    updates.must_change_password = true;
+    updates.must_change_password = Boolean(provision.temporaryPassword);
   }
 
   return {

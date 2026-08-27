@@ -6,6 +6,7 @@ type PasswordFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  name?: string;
   placeholder?: string;
   required?: boolean;
   autoComplete?: string;
@@ -15,6 +16,7 @@ export default function PasswordField({
   label,
   value,
   onChange,
+  name,
   placeholder,
   required,
   autoComplete,
@@ -26,6 +28,7 @@ export default function PasswordField({
       {label}
       <span className="password-input-wrap">
         <input
+          name={name}
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={(event) => onChange(event.target.value)}

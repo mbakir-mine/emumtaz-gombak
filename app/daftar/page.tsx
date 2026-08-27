@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import PasswordField from '../ui/PasswordField';
+import { registerPendingUser } from './actions';
 
 type SchoolOption = {
   kod_sekolah: string;
@@ -10,6 +12,7 @@ type SchoolOption = {
 };
 
 const zoneOptions = ['BARAT', 'TIMUR', 'TENGAH'];
+const initialState = { ok: false, message: '' };
 
 export default function DaftarPage() {
   const [schools, setSchools] = useState<SchoolOption[]>([]);
@@ -18,9 +21,9 @@ export default function DaftarPage() {
   const [role, setRole] = useState('GURU_SUBJEK');
   const [kodSekolah, setKodSekolah] = useState('');
   const [zon, setZon] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [state, formAction, pending] = useActionState(registerPendingUser, initialState);
 
   useEffect(() => {
     async function loadSchools() {
@@ -41,83 +44,6 @@ export default function DaftarPage() {
   const needsSchool = useMemo(() => !['ADMIN_DAERAH', 'ADMIN_ZON'].includes(role), [role]);
   const needsZone = role === 'ADMIN_ZON';
 
-  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage('');
-    setSuccess(false);
-
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap. Sila isi .env.local dahulu.');
-      return;
-    }
-
-    if (needsSchool && !kodSekolah) {
-      setMessage('Sila pilih sekolah.');
-      return;
-    }
-
-    if (needsZone && !zon) {
-      setMessage('Sila pilih zon.');
-      return;
-    }
-
-    setLoading(true);
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = nama.trim().toUpperCase();
-    const userRole = role.trim();
-    const schoolCode = needsSchool ? kodSekolah : null;
-    const zoneCode = needsZone ? zon : null;
-
-    const { data: existingProfiles, error: existingError } = await supabase
-      .from('app_users')
-      .select('id,status')
-      .eq('email', cleanEmail);
-
-    if (existingError) {
-      setLoading(false);
-      setMessage(`Semakan profil pengguna gagal: ${existingError.message}`);
-      return;
-    }
-
-    if ((existingProfiles ?? []).some((profile) => profile.status === 'AKTIF')) {
-      setLoading(false);
-      setMessage('Email ini sudah mempunyai akaun aktif. Sila kembali ke Login.');
-      return;
-    }
-
-    if ((existingProfiles ?? []).some((profile) => profile.status === 'MENUNGGU')) {
-      setLoading(false);
-      setSuccess(true);
-      setMessage('Permohonan akaun ini sudah diterima dan sedang menunggu pengesahan Admin.');
-      return;
-    }
-
-    const { error } = await supabase.from('app_users').insert({
-      email: cleanEmail,
-      nama: cleanName,
-      role: userRole,
-      kod_sekolah: schoolCode,
-      zon: zoneCode,
-      status: 'MENUNGGU',
-    });
-
-    setLoading(false);
-
-    if (error) {
-      setMessage(`Permohonan gagal disimpan: ${error.message}`);
-      return;
-    }
-
-    setSuccess(true);
-    setMessage('Pendaftaran berjaya dihantar. Sila tunggu Admin mengaktifkan akaun.');
-    setNama('');
-    setEmail('');
-    setRole('GURU_SUBJEK');
-    setKodSekolah('');
-    setZon('');
-  }
-
   return (
     <main className="login-page">
       <section className="login-card register-card">
@@ -131,7 +57,7 @@ export default function DaftarPage() {
 
         <h1>Daftar Pengguna Baru</h1>
         <p className="login-copy">
-          Isi maklumat pengguna. Permohonan akan direkod sebagai MENUNGGU sehingga disemak oleh Admin.
+          Tetapkan password semasa mendaftar. Admin perlu mengaktifkan akaun sebelum pengguna boleh masuk ke sistem.
         </p>
 
         {!hasSupabaseEnv && (
@@ -140,10 +66,11 @@ export default function DaftarPage() {
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="login-form">
+        <form action={formAction} className="login-form">
           <label>
             Nama Penuh
             <input
+              name="nama"
               placeholder="Nama penuh pengguna"
               value={nama}
               onChange={(event) => setNama(event.target.value)}
@@ -154,6 +81,7 @@ export default function DaftarPage() {
           <label>
             Email
             <input
+              name="email"
               type="email"
               placeholder="contoh@email.com"
               value={email}
@@ -165,10 +93,12 @@ export default function DaftarPage() {
           <label>
             Role
             <select
+              name="role"
               value={role}
               onChange={(event) => {
                 setRole(event.target.value);
                 setKodSekolah('');
+                setZon('');
               }}
               required
             >
@@ -183,7 +113,7 @@ export default function DaftarPage() {
           {needsZone && (
             <label>
               Zon
-              <select value={zon} onChange={(event) => setZon(event.target.value)} required>
+              <select name="zon" value={zon} onChange={(event) => setZon(event.target.value)} required>
                 <option value="">Pilih zon</option>
                 {zoneOptions.map((zone) => (
                   <option key={zone} value={zone}>
@@ -197,7 +127,7 @@ export default function DaftarPage() {
           {needsSchool && (
             <label>
               Sekolah
-              <select value={kodSekolah} onChange={(event) => setKodSekolah(event.target.value)} required>
+              <select name="kod_sekolah" value={kodSekolah} onChange={(event) => setKodSekolah(event.target.value)} required>
                 <option value="">Pilih sekolah</option>
                 {schools.map((school) => (
                   <option key={school.kod_sekolah} value={school.kod_sekolah}>
@@ -208,10 +138,30 @@ export default function DaftarPage() {
             </label>
           )}
 
-          {message && <p className={success ? 'form-success' : 'form-message'}>{message}</p>}
+          <PasswordField
+            label="Password"
+            name="password"
+            placeholder="Tetapkan password"
+            value={password}
+            onChange={setPassword}
+            required
+            autoComplete="new-password"
+          />
 
-          <button className="button" type="submit" disabled={loading}>
-            {loading ? 'Menghantar...' : 'Hantar Pendaftaran'}
+          <PasswordField
+            label="Sahkan Password"
+            name="confirm_password"
+            placeholder="Masukkan semula password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            required
+            autoComplete="new-password"
+          />
+
+          {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
+
+          <button className="button" type="submit" disabled={pending}>
+            {pending ? 'Menghantar...' : 'Hantar Pendaftaran'}
           </button>
 
           <Link className="button secondary login-register-link" href="/login">
