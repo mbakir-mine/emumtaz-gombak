@@ -104,10 +104,6 @@ export default function LoginPage() {
               <span>Akses</span>
               <strong>Admin, guru dan ibu bapa</strong>
             </div>
-            <div>
-              <span>Status akaun</span>
-              <strong>Disahkan oleh Admin</strong>
-            </div>
           </div>
         </section>
 
