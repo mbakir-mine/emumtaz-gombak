@@ -20,12 +20,4 @@ on conflict (kod_peperiksaan, tahun_akademik) do update set
   nama_peperiksaan = excluded.nama_peperiksaan,
   status = excluded.status;
 
-insert into app_users (email, nama, role, kod_sekolah, status)
-values
-  ('owner@emumtaz.local', 'Pemilik e-Mumtaz Gombak', 'OWNER', null, 'AKTIF'),
-  ('daerah@emumtaz.local', 'Admin Daerah Gombak', 'ADMIN_DAERAH', null, 'AKTIF'),
-  ('admin.byp7001@emumtaz.local', 'Admin SRA Taman Permata', 'ADMIN_SEKOLAH', 'BYP7001', 'AKTIF')
-on conflict (email, role, kod_sekolah) do update set
-  nama = excluded.nama,
-  status = excluded.status;
-
+-- Pengguna sistem tidak lagi diseed dengan email dummy.

@@ -10,11 +10,4 @@ on conflict (kod_sekolah) do update set
   daerah = excluded.daerah,
   status = excluded.status;
 
-insert into app_users (email, nama, role, kod_sekolah, status)
-values
-  ('bba7228@emumtaz.local', 'ADMIN KAFA INTEGRASI SUNGAI PUSU', 'ADMIN_SEKOLAH', 'BBA7228', 'AKTIF'),
-  ('byp7001@emumtaz.local', 'ADMIN SRA TAMAN PERMATA', 'ADMIN_SEKOLAH', 'BYP7001', 'AKTIF')
-on conflict (email, role, kod_sekolah) do update set
-  nama = excluded.nama,
-  status = excluded.status;
-
+-- Pengguna sekolah perlu didaftarkan menggunakan email sebenar melalui aplikasi.

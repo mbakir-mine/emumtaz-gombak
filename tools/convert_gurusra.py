@@ -18,11 +18,7 @@ def clean_text(value: object) -> str:
 
 
 def slug_email_name(name: str, index: int) -> str:
-    base = name.lower().replace("'", "")
-    base = re.sub(r"[^a-z0-9]+", ".", base)
-    base = re.sub(r"\.+", ".", base).strip(".")
-    base = base[:38].strip(".") or f"guru{index}"
-    return f"{base}.{KOD_SEKOLAH.lower()}@emumtaz.local"
+    return ""
 
 
 raw = pd.read_excel(SOURCE, sheet_name=0, header=None, dtype=object)
@@ -66,6 +62,7 @@ teachers["kod_sekolah"] = KOD_SEKOLAH
 teachers["status"] = "AKTIF"
 
 app_users = teachers[["email", "nama", "role", "kod_sekolah", "status"]].drop_duplicates("email")
+app_users = app_users[app_users["email"] != ""]
 review = teachers[["nama", "email", "telefon", "jawatan", "kelas", "subjek", "role", "kod_sekolah", "status"]]
 
 app_users_path = OUTDIR / "byp7010_guru_app_users.csv"
@@ -79,4 +76,3 @@ print("review", review_path)
 print("roles")
 print(app_users.groupby("role").size().to_string())
 print(app_users.head(10).to_string(index=False))
-

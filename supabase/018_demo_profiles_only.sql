@@ -14,8 +14,7 @@
 -- demo.guru.subjek@mumtaz.gombak
 
 delete from public.app_users
-where email like 'demo.%@emumtaz.local'
-   or email like 'demo.%@mumtaz.gombak';
+where email like 'demo.%@mumtaz.gombak';
 
 insert into public.app_users (
   email,
