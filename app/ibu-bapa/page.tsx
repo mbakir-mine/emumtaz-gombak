@@ -21,7 +21,7 @@ export default async function IbuBapaLoginPage() {
         <div className="login-brand">
           <div className="brand-mark">eM</div>
           <div>
-            <strong>e-Mumtaz Gombak</strong>
+            <strong>e-Mumtaz</strong>
             <span>Akses Ibu Bapa</span>
           </div>
         </div>

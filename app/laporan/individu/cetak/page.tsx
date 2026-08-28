@@ -91,7 +91,7 @@ export default async function CetakLaporanIndividuPage({
         ) : (
           <>
             <div className="print-report-title">
-              <h2>e-Mumtaz Gombak</h2>
+              <h2>e-Mumtaz</h2>
               <p>Laporan Individu Murid</p>
             </div>
 

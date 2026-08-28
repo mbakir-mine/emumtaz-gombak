@@ -22,7 +22,6 @@ export default function AppFrame({
             <div className="brand-mark">eM</div>
             <div>
               <strong>e-Mumtaz</strong>
-              <small>Gombak</small>
             </div>
           </div>
           <SidebarNav active={active} />

@@ -91,7 +91,7 @@ export default function AksesPage() {
         <div className="login-brand">
           <div className="brand-mark">eM</div>
           <div>
-            <strong>e-Mumtaz Gombak</strong>
+            <strong>e-Mumtaz</strong>
             <span>Pilih akses pengguna</span>
           </div>
         </div>

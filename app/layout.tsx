@@ -4,8 +4,8 @@ import './compact-ui.css';
 import './owner-dashboard.css';
 
 export const metadata: Metadata = {
-  title: 'e-Mumtaz Gombak',
-  description: 'Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI Daerah Gombak',
+  title: 'e-Mumtaz',
+  description: 'Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

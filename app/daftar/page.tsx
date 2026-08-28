@@ -50,7 +50,7 @@ export default function DaftarPage() {
         <div className="login-brand">
           <div className="brand-mark">eM</div>
           <div>
-            <strong>Daftar e-Mumtaz Gombak</strong>
+            <strong>Daftar e-Mumtaz</strong>
             <span>Permohonan akaun pengguna sekolah</span>
           </div>
         </div>

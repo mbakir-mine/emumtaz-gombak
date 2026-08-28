@@ -88,7 +88,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <h1>e-Mumtaz Gombak</h1>
+            <h1>e-Mumtaz</h1>
             <p className="login-copy">
               Platform pengurusan dan analisis prestasi murid untuk membantu sekolah memantau markah,
               laporan, kehadiran, modul pembelajaran dan data pentadbiran secara lebih tersusun.

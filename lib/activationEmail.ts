@@ -25,7 +25,7 @@ function emailText(profile: ActivationEmailProfile, temporaryPassword?: string) 
   return [
     `Assalamualaikum ${profile.nama},`,
     '',
-    'Akaun e-Mumtaz Gombak anda telah diaktifkan.',
+    'Akaun e-Mumtaz anda telah diaktifkan.',
     '',
     `Email login: ${profile.email}`,
     temporaryPassword ? `Kata laluan sementara: ${temporaryPassword}` : 'Kata laluan: Gunakan kata laluan sedia ada.',
@@ -38,7 +38,7 @@ function emailText(profile: ActivationEmailProfile, temporaryPassword?: string) 
       : 'Jika anda terlupa kata laluan, gunakan pautan Lupa Kata Laluan pada halaman log masuk.',
     '',
     'Terima kasih.',
-    'e-Mumtaz Gombak',
+    'e-Mumtaz',
   ]
     .filter(Boolean)
     .join('\n');
@@ -49,9 +49,9 @@ function emailHtml(profile: ActivationEmailProfile, temporaryPassword?: string) 
 
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0b1b2b;">
-      <h2 style="margin: 0 0 12px;">Akaun e-Mumtaz Gombak Diaktifkan</h2>
+      <h2 style="margin: 0 0 12px;">Akaun e-Mumtaz Diaktifkan</h2>
       <p>Assalamualaikum <strong>${profile.nama}</strong>,</p>
-      <p>Akaun e-Mumtaz Gombak anda telah diaktifkan.</p>
+      <p>Akaun e-Mumtaz anda telah diaktifkan.</p>
       <table style="border-collapse: collapse; margin: 16px 0;">
         <tr>
           <td style="padding: 6px 14px 6px 0; color: #52637a;">Email login</td>
@@ -84,7 +84,7 @@ function emailHtml(profile: ActivationEmailProfile, temporaryPassword?: string) 
           ? 'Sila log masuk menggunakan kata laluan sementara ini. Sistem akan meminta anda menukarnya selepas log masuk.'
           : 'Gunakan kata laluan sedia ada. Jika terlupa, pilih Lupa Kata Laluan pada halaman log masuk.'
       }</p>
-      <p>Terima kasih.<br />e-Mumtaz Gombak</p>
+      <p>Terima kasih.<br />e-Mumtaz</p>
     </div>
   `;
 }
@@ -109,7 +109,7 @@ export async function sendActivationEmail(profile: ActivationEmailProfile, tempo
     body: JSON.stringify({
       from,
       to: [profile.email],
-      subject: 'Akaun e-Mumtaz Gombak telah diaktifkan',
+      subject: 'Akaun e-Mumtaz telah diaktifkan',
       text: emailText(profile, temporaryPassword),
       html: emailHtml(profile, temporaryPassword),
     }),

@@ -30,7 +30,7 @@ export default async function IbuBapaLaporanPage({
           <div className="login-brand">
             <div className="brand-mark">eM</div>
             <div>
-              <strong>e-Mumtaz Gombak</strong>
+              <strong>e-Mumtaz</strong>
               <span>Laporan Individu Murid</span>
             </div>
           </div>

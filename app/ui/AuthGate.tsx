@@ -183,7 +183,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           <div className="login-brand">
             <div className="brand-mark">eM</div>
             <div>
-              <strong>e-Mumtaz Gombak</strong>
+              <strong>e-Mumtaz</strong>
               <span>Menyemak akses pengguna</span>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           <div className="login-brand">
             <div className="brand-mark">eM</div>
             <div>
-              <strong>e-Mumtaz Gombak</strong>
+              <strong>e-Mumtaz</strong>
               <span>Akses pengguna</span>
             </div>
           </div>
