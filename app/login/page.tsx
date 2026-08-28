@@ -77,71 +77,105 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-card">
-        <div className="login-brand">
-          <div className="brand-mark">eM</div>
+      <div className="login-shell">
+        <section className="login-card login-info-card">
+          <div className="login-brand">
+            <div className="brand-mark">eM</div>
+            <div>
+              <strong>e-Mumtaz</strong>
+              <span>Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI</span>
+            </div>
+          </div>
+
           <div>
-            <strong>e-Mumtaz</strong>
-            <span>Sistem Analisis Prestasi Murid SRA, SRAI, SRI & KAFAI</span>
+            <h1>e-Mumtaz Gombak</h1>
+            <p className="login-copy">
+              Platform pengurusan dan analisis prestasi murid untuk membantu sekolah memantau markah,
+              laporan, kehadiran, modul pembelajaran dan data pentadbiran secara lebih tersusun.
+            </p>
           </div>
-        </div>
 
-        <h1>Log Masuk</h1>
-        <p className="login-copy">
-          Gunakan akaun pentadbir atau guru yang telah disahkan.
-        </p>
-
-        {!hasSupabaseEnv && (
-          <div className="notice">
-            Supabase belum disambungkan. Isi fail <strong>.env.local</strong> dengan URL dan anon key
-            Supabase, kemudian restart server.
+          <div className="login-info-grid">
+            <div>
+              <span>Sekolah</span>
+              <strong>SRA, SRAI, SRI & KAFAI</strong>
+            </div>
+            <div>
+              <span>Akses</span>
+              <strong>Admin, guru dan ibu bapa</strong>
+            </div>
+            <div>
+              <span>Status akaun</span>
+              <strong>Disahkan oleh Admin</strong>
+            </div>
           </div>
-        )}
+        </section>
 
-        <form onSubmit={handleLogin} className="login-form">
-          <label>
-            Email
-            <input
-              type="email"
-              placeholder="contoh@email.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+        <section className="login-card">
+          <div className="login-brand login-form-brand">
+            <div>
+              <strong>Log Masuk</strong>
+              <span>Gunakan akaun yang telah disahkan.</span>
+            </div>
+          </div>
+
+          <h1>Log Masuk</h1>
+          <p className="login-copy">
+            Akaun baru hanya boleh masuk selepas status diaktifkan oleh Admin.
+          </p>
+
+          {!hasSupabaseEnv && (
+            <div className="notice">
+              Supabase belum disambungkan. Isi fail <strong>.env.local</strong> dengan URL dan anon key
+              Supabase, kemudian restart server.
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="login-form">
+            <label>
+              Email
+              <input
+                type="email"
+                placeholder="contoh@email.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <PasswordField
+              label="Kata Laluan"
+              placeholder="Masukkan kata laluan"
+              value={password}
+              onChange={setPassword}
               required
+              autoComplete="current-password"
             />
-          </label>
 
-          <PasswordField
-            label="Kata Laluan"
-            placeholder="Masukkan kata laluan"
-            value={password}
-            onChange={setPassword}
-            required
-            autoComplete="current-password"
-          />
+            <Link className="forgot-link" href="/lupa-password">
+              Lupa Kata Laluan?
+            </Link>
 
-          <Link className="forgot-link" href="/lupa-password">
-            Lupa Kata Laluan?
-          </Link>
+            {message && <p className="form-message">{message}</p>}
 
-          {message && <p className="form-message">{message}</p>}
+            <button className="button" type="submit" disabled={loading}>
+              {loading ? 'Sedang log masuk...' : 'Log Masuk'}
+            </button>
 
-          <button className="button" type="submit" disabled={loading}>
-            {loading ? 'Sedang log masuk...' : 'Log Masuk'}
-          </button>
+            <div className="login-divider">
+              <span>atau</span>
+            </div>
 
-          <div className="login-divider">
-            <span>atau</span>
-          </div>
+            <Link className="button secondary login-register-link" href="/daftar">
+              Daftar Pengguna Baru
+            </Link>
 
-          <Link className="button secondary login-register-link" href="/daftar">
-            Daftar Pengguna Baru
-          </Link>
-
-          <Link className="button secondary login-register-link" href="/ibu-bapa">
-            Akses Ibu Bapa
-          </Link>
-        </form>
-      </section>
+            <Link className="button secondary login-register-link" href="/ibu-bapa">
+              Akses Ibu Bapa
+            </Link>
+          </form>
+        </section>
+      </div>
     </main>
   );
 }

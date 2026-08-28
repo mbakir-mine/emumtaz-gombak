@@ -4557,6 +4557,14 @@ textarea {
     var(--bg);
 }
 
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(360px, 460px);
+  align-items: stretch;
+  gap: 22px;
+  width: min(100%, 1040px);
+}
+
 .login-card {
   width: min(100%, 460px);
   padding: 32px;
@@ -4566,11 +4574,67 @@ textarea {
   box-shadow: 0 18px 42px rgba(16, 32, 51, 0.12);
 }
 
+.login-shell .login-card {
+  width: 100%;
+}
+
+.login-info-card {
+  display: flex;
+  min-height: 520px;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    linear-gradient(160deg, rgba(4, 120, 87, 0.94), rgba(6, 78, 59, 0.96)),
+    #08743b;
+  color: white;
+}
+
+.login-info-card .login-brand span,
+.login-info-card .login-copy {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.login-info-card h1 {
+  margin-bottom: 14px;
+  color: white;
+  font-size: 38px;
+  line-height: 1.08;
+}
+
+.login-info-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.login-info-grid div {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.login-info-grid span {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.login-info-grid strong {
+  color: white;
+}
+
 .login-brand {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 24px;
+}
+
+.login-form-brand {
+  margin-bottom: 18px;
 }
 
 .login-brand span {
@@ -7803,6 +7867,20 @@ button:disabled {
   .login-page {
     align-items: start;
     padding: 14px;
+  }
+
+  .login-shell {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .login-info-card {
+    min-height: auto;
+    gap: 22px;
+  }
+
+  .login-info-card h1 {
+    font-size: 30px;
   }
 
   .login-card {
