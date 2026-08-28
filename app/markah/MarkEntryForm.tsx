@@ -10,6 +10,10 @@ const initialState = {
   message: '',
 };
 
+function isWholeInput(value: string) {
+  return value === '' || /^\d+$/.test(value);
+}
+
 export default function MarkEntryForm({
   examId,
   classId,
@@ -66,6 +70,7 @@ export default function MarkEntryForm({
   }, [activeComponents, componentMarksByKey, students]);
 
   function updateComponentValue(studentId: string, componentCode: string, value: string) {
+    if (!isWholeInput(value)) return;
     setComponentValues((current) => ({
       ...current,
       [`${studentId}|${componentCode}`]: value,
@@ -84,7 +89,7 @@ export default function MarkEntryForm({
       total += markah;
     }
 
-    return Number(total.toFixed(2));
+    return total;
   }
 
   return (
@@ -172,8 +177,12 @@ export default function MarkEntryForm({
                           type="number"
                           min="0"
                           max={component.markah_penuh}
-                          step="0.01"
+                          step="1"
+                          inputMode="numeric"
                           value={componentValues[`${student.id}|${component.kod_komponen}`] ?? ''}
+                          onKeyDown={(event) => {
+                            if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault();
+                          }}
                           onChange={(event) => updateComponentValue(student.id, component.kod_komponen, event.target.value)}
                           placeholder="-"
                         />
@@ -191,8 +200,12 @@ export default function MarkEntryForm({
                         type="number"
                         min="0"
                         max="100"
-                        step="0.01"
+                        step="1"
+                        inputMode="numeric"
                         defaultValue={markah ?? ''}
+                        onKeyDown={(event) => {
+                          if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault();
+                        }}
                         placeholder="-"
                       />
                     </td>

@@ -45,7 +45,16 @@ function isActive(status: string | null | undefined) {
 
 function scoreNumber(value: string) {
   const number = Number(value.replace(',', '.'));
-  return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
+  return Number.isInteger(number) ? Math.max(0, Math.min(100, number)) : 0;
+}
+
+function isWholeScore(value: string) {
+  const number = Number(value.replace(',', '.'));
+  return Number.isInteger(number) && number >= 0 && number <= 100;
+}
+
+function isWholeInput(value: string) {
+  return value === '' || /^\d+$/.test(value);
 }
 
 function displayNumber(value: number) {
@@ -269,6 +278,11 @@ export default function PsraTrialManager({
       setMessage('Masukkan sekurang-kurangnya satu markah untuk disimpan.');
       return;
     }
+    const invalidPaper = papersToSave.find((paper) => !isWholeScore(draft[paper.key]));
+    if (invalidPaper) {
+      setMessage(`Markah ${invalidPaper.label} mesti nombor bulat antara 0 hingga 100.`);
+      return;
+    }
 
     setPending(true);
     setMessage('');
@@ -443,15 +457,20 @@ export default function PsraTrialManager({
                           type="number"
                           min="0"
                           max="100"
-                          step="0.5"
-                          inputMode="decimal"
+                          step="1"
+                          inputMode="numeric"
                           value={draft[paper.key]}
                           disabled={!editable}
-                          onChange={(event) =>
-                            setDraft((current) => ({ ...current, [paper.key]: event.target.value }))
-                          }
+                          onKeyDown={(event) => {
+                            if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault();
+                          }}
+                          onChange={(event) => {
+                            if (!isWholeInput(event.target.value)) return;
+                            setDraft((current) => ({ ...current, [paper.key]: event.target.value }));
+                          }}
                           onBlur={(event) => {
                             if (!event.target.value.trim()) return;
+                            if (!isWholeScore(event.target.value)) return;
                             setDraft((current) => ({
                               ...current,
                               [paper.key]: displayNumber(scoreNumber(event.target.value)),

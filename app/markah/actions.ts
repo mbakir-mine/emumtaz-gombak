@@ -21,6 +21,14 @@ function positiveInteger(value: FormDataEntryValue | null, fallback: number) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function wholeMark(rawValue: FormDataEntryValue | null) {
+  const raw = String(rawValue ?? '').trim();
+  if (raw === '') return null;
+
+  const markah = Number(raw);
+  return Number.isInteger(markah) ? markah : Number.NaN;
+}
+
 export async function saveMarks(
   _previousState: MarkActionState,
   formData: FormData,
@@ -113,8 +121,7 @@ export async function saveMarks(
 
     const componentRows = studentIds.flatMap((studentId) =>
       componentCodes.map((componentCode) => {
-        const raw = String(formData.get(`component_markah_${studentId}_${componentCode}`) ?? '').trim();
-        const markah = raw === '' ? null : Number(raw);
+        const markah = wholeMark(formData.get(`component_markah_${studentId}_${componentCode}`));
         return {
           exam_id: examId,
           student_id: studentId,
@@ -134,7 +141,7 @@ export async function saveMarks(
 
     if (invalidComponent) {
       const maxMark = componentMaxByCode.get(invalidComponent.kod_komponen) ?? 100;
-      return { ok: false, message: `Markah ${invalidComponent.kod_komponen} mesti antara 0 hingga ${maxMark}.` };
+      return { ok: false, message: `Markah ${invalidComponent.kod_komponen} mesti nombor bulat antara 0 hingga ${maxMark}.` };
     }
 
     const { error: componentError } = await supabase.from('mark_components').upsert(componentRows, {
@@ -150,12 +157,11 @@ export async function saveMarks(
 
     const rows = studentIds.map((studentId) => {
       const values = componentCodes.map((componentCode) => {
-        const raw = String(formData.get(`component_markah_${studentId}_${componentCode}`) ?? '').trim();
-        return raw === '' ? null : Number(raw);
+        return wholeMark(formData.get(`component_markah_${studentId}_${componentCode}`));
       });
       const numericValues = values.filter((value): value is number => value !== null && Number.isFinite(value));
       const complete = numericValues.length === componentCodes.length;
-      const markah = complete ? Number(numericValues.reduce((sum, value) => sum + value, 0).toFixed(2)) : null;
+      const markah = complete ? numericValues.reduce((sum, value) => sum + value, 0) : null;
       return {
         exam_id: examId,
         student_id: studentId,
@@ -181,8 +187,7 @@ export async function saveMarks(
   }
 
   const rows = studentIds.map((studentId) => {
-    const raw = String(formData.get(`markah_${studentId}`) ?? '').trim();
-    const markah = raw === '' ? null : Number(raw);
+    const markah = wholeMark(formData.get(`markah_${studentId}`));
     return {
       exam_id: examId,
       student_id: studentId,
@@ -194,10 +199,10 @@ export async function saveMarks(
   });
 
   const invalid = rows.find(
-    (row) => row.markah !== null && (!Number.isFinite(row.markah) || row.markah < 0 || row.markah > 100),
+    (row) => row.markah !== null && (!Number.isInteger(row.markah) || row.markah < 0 || row.markah > 100),
   );
   if (invalid) {
-    return { ok: false, message: 'Markah mesti antara 0 hingga 100.' };
+    return { ok: false, message: 'Markah mesti nombor bulat antara 0 hingga 100.' };
   }
 
   const { error } = await supabase.from('marks').upsert(rows, {
