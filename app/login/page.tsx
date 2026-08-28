@@ -23,17 +23,54 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
       password,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       setMessage('Login gagal. Semak email dan password.');
       return;
     }
 
+    const user = data.user;
+    const profileFilter = user.id
+      ? `auth_user_id.eq.${user.id},email.ilike.${cleanEmail}`
+      : `email.ilike.${cleanEmail}`;
+    const { data: activeProfiles, error: activeError } = await supabase
+      .from('app_users')
+      .select('id')
+      .or(profileFilter)
+      .eq('status', 'AKTIF')
+      .limit(1);
+
+    if (activeError) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setMessage('Ralat menyemak status akaun. Sila cuba semula.');
+      return;
+    }
+
+    if (!activeProfiles || activeProfiles.length === 0) {
+      const { data: pendingProfiles } = await supabase
+        .from('app_users')
+        .select('status')
+        .or(profileFilter)
+        .limit(1);
+
+      await supabase.auth.signOut();
+      setLoading(false);
+      setMessage(
+        pendingProfiles?.some((profile) => profile.status === 'MENUNGGU')
+          ? 'Akaun anda masih menunggu pengesahan Admin.'
+          : 'Akaun anda belum aktif. Sila hubungi Admin.',
+      );
+      return;
+    }
+
+    setLoading(false);
     window.localStorage.removeItem('emumtaz_selected_profile_id');
     router.push('/');
   }
