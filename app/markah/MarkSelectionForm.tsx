@@ -8,8 +8,9 @@ import type {
   SubjectRecord,
   TeacherSubjectAssignment,
   TeacherSubjectComponentAssignment,
+  SchoolModuleAccess,
 } from '@/lib/data';
-import { compareExamRecords, isStandardExamCode } from '@/lib/examOrdering';
+import { compareExamRecords, isMarkEntryExamCode, isPsraExamCode } from '@/lib/examOrdering';
 import { allowedSubjectForTahun } from '@/lib/subjects';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../ui/scopedData';
@@ -23,6 +24,7 @@ export default function MarkSelectionForm({
   subjects,
   subjectAssignments,
   componentAssignments,
+  moduleAccesses,
   initialYear,
   initialExamId,
   initialSchool,
@@ -36,6 +38,7 @@ export default function MarkSelectionForm({
   subjects: SubjectRecord[];
   subjectAssignments: TeacherSubjectAssignment[];
   componentAssignments: TeacherSubjectComponentAssignment[];
+  moduleAccesses: SchoolModuleAccess[];
   initialYear: number;
   initialExamId: string;
   initialSchool: string;
@@ -53,6 +56,26 @@ export default function MarkSelectionForm({
   const [selectedSubject, setSelectedSubject] = useState(initialSubject);
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
+  const selectedExam = useMemo(
+    () => exams.find((exam) => exam.id === selectedExamId) ?? null,
+    [exams, selectedExamId],
+  );
+  const psraEnabledSchools = useMemo(
+    () =>
+      new Set(
+        moduleAccesses
+          .filter((access) => access.module_key === 'PERCUBAAN_PSRA' && access.enabled)
+          .map((access) => access.kod_sekolah),
+      ),
+    [moduleAccesses],
+  );
+  const selectableSchools = useMemo(
+    () =>
+      isPsraExamCode(selectedExam?.kod_peperiksaan)
+        ? scopedSchools.filter((school) => psraEnabledSchools.has(school.kod_sekolah))
+        : scopedSchools,
+    [psraEnabledSchools, scopedSchools, selectedExam?.kod_peperiksaan],
+  );
   const myTeachingKeys = useMemo(() => {
     const keys = new Set<string>();
     if (!profile?.id) return keys;
@@ -83,17 +106,17 @@ export default function MarkSelectionForm({
   }, [hasTeachingAssignments, selectedMode]);
 
   useEffect(() => {
-    if (!selectedSchool && scopedSchools.length === 1) {
-      setSelectedSchool(scopedSchools[0].kod_sekolah);
+    if (!selectedSchool && selectableSchools.length === 1) {
+      setSelectedSchool(selectableSchools[0].kod_sekolah);
       return;
     }
 
-    if (selectedSchool && !scopedSchools.some((school) => school.kod_sekolah === selectedSchool)) {
+    if (selectedSchool && !selectableSchools.some((school) => school.kod_sekolah === selectedSchool)) {
       setSelectedSchool('');
       setSelectedClassId('');
       setSelectedSubject('');
     }
-  }, [scopedSchools, selectedSchool]);
+  }, [selectableSchools, selectedSchool]);
 
   const filteredClasses = useMemo(
     () => {
@@ -102,18 +125,19 @@ export default function MarkSelectionForm({
           selectedSchool &&
           item.kod_sekolah === selectedSchool &&
           item.tahun_akademik === selectedYear &&
+          (!isPsraExamCode(selectedExam?.kod_peperiksaan) || item.tahun === 6) &&
           item.status === 'AKTIF',
       );
 
       if (selectedMode !== 'mine') return baseClasses;
       return baseClasses.filter((item) => myTeachingClassIds.has(item.id));
     },
-    [myTeachingClassIds, scopedClasses, selectedMode, selectedSchool, selectedYear],
+    [myTeachingClassIds, scopedClasses, selectedExam?.kod_peperiksaan, selectedMode, selectedSchool, selectedYear],
   );
   const filteredExams = useMemo(
     () =>
       exams
-        .filter((exam) => exam.tahun_akademik === selectedYear && isStandardExamCode(exam.kod_peperiksaan))
+        .filter((exam) => exam.tahun_akademik === selectedYear && isMarkEntryExamCode(exam.kod_peperiksaan))
         .sort(compareExamRecords),
     [exams, selectedYear],
   );
@@ -233,7 +257,7 @@ export default function MarkSelectionForm({
           required
         >
           <option value="">Pilih sekolah</option>
-          {scopedSchools.map((school) => (
+          {selectableSchools.map((school) => (
             <option key={school.kod_sekolah} value={school.kod_sekolah}>
               {school.kod_sekolah} - {school.nama_sekolah}
             </option>

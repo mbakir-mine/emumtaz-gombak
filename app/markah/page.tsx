@@ -6,6 +6,7 @@ import {
   getExams,
   getMarkComponentsForSelection,
   getMarksForSelection,
+  getSchoolModuleAccesses,
   getSchools,
   getSubjectComponentMarkSettings,
   getStudentsByClass,
@@ -15,6 +16,7 @@ import {
   getSubjects,
 } from '@/lib/data';
 import { examAccessStatus } from '@/lib/examAccess';
+import { isPsraExamCode } from '@/lib/examOrdering';
 import { applySubjectComponentMarkSettings } from '@/lib/subjectComponents';
 
 export default async function MarkahPage({
@@ -32,6 +34,7 @@ export default async function MarkahPage({
     componentMarkSettings,
     subjectAssignments,
     componentAssignments,
+    moduleAccesses,
   ] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -41,6 +44,7 @@ export default async function MarkahPage({
     getSubjectComponentMarkSettings(),
     getTeacherSubjectAssignments(),
     getTeacherSubjectComponentAssignments(),
+    getSchoolModuleAccesses(),
   ]);
 
   const selectedSchool = params.kod_sekolah ?? '';
@@ -53,6 +57,17 @@ export default async function MarkahPage({
   const selectedClass = classes.find((item) => item.id === selectedClassId);
   const selectedExam = exams.find((exam) => exam.id === selectedExamId);
   const markAccess = examAccessStatus(selectedExam);
+  const selectedPsraWithoutAccess = Boolean(
+    selectedExam &&
+      isPsraExamCode(selectedExam.kod_peperiksaan) &&
+      selectedSchool &&
+      !moduleAccesses.some(
+        (access) =>
+          access.kod_sekolah === selectedSchool &&
+          access.module_key === 'PERCUBAAN_PSRA' &&
+          access.enabled,
+      ),
+  );
 
   const selectedSubjectComponents = applySubjectComponentMarkSettings(
     subjectComponents.filter((component) => component.kod_subjek === selectedSubject),
@@ -64,7 +79,7 @@ export default async function MarkahPage({
     },
   );
   const [students, marks, componentMarks] =
-    selectedExamId && selectedClassId && selectedSubject
+    selectedExamId && selectedClassId && selectedSubject && !selectedPsraWithoutAccess
       ? await Promise.all([
           getStudentsByClass(selectedClassId),
           getMarksForSelection(selectedExamId, selectedClassId, selectedSubject),
@@ -75,11 +90,11 @@ export default async function MarkahPage({
       : [[], [], []];
 
   return (
-    <AppFrame title="Markah" subtitle="Kemasukan UPSA dan UASA." active="marks">
+    <AppFrame title="Markah" subtitle="Kemasukan UPSA, UASA dan Percubaan PSRA." active="marks">
       <section className="panel">
         <div className="panel-head">
           <h2>Pilih Kelas dan Subjek</h2>
-          <span>UPSA / UASA</span>
+          <span>UPSA / UASA / PSRA</span>
         </div>
         <MarkSelectionForm
           schools={schools}
@@ -88,6 +103,7 @@ export default async function MarkahPage({
           subjects={subjects}
           subjectAssignments={subjectAssignments}
           componentAssignments={componentAssignments}
+          moduleAccesses={moduleAccesses}
           initialYear={selectedYear}
           initialExamId={selectedExamId}
           initialSchool={selectedSchool}
@@ -106,6 +122,11 @@ export default async function MarkahPage({
             {markAccess.label}
           </p>
         )}
+        {selectedPsraWithoutAccess && (
+          <p className="notice mark-notice">
+            Sekolah ini belum dibenarkan akses Percubaan PSRA. Pilih sekolah yang telah diaktifkan dalam Akses Modul Sekolah.
+          </p>
+        )}
       </section>
 
       <section className="panel">
@@ -115,6 +136,8 @@ export default async function MarkahPage({
         </div>
         {!selectedExamId || !selectedClassId || !selectedSubject ? (
           <p className="empty">Pilih peperiksaan, sekolah, kelas dan subjek untuk mula isi markah.</p>
+        ) : selectedPsraWithoutAccess ? (
+          <p className="empty">Sekolah ini belum diberi akses Percubaan PSRA.</p>
         ) : students.length === 0 ? (
           <p className="empty">Tiada murid aktif ditemui untuk kelas ini.</p>
         ) : !markAccess.open ? (

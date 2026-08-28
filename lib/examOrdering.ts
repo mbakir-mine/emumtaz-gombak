@@ -1,6 +1,8 @@
 const EXAM_PRIORITY: Record<string, number> = {
   UPSA: 1,
   UASA: 2,
+  PSRA1: 3,
+  PSRA2: 4,
 };
 
 export function normalizeExamCode(code: string | null | undefined) {
@@ -10,6 +12,15 @@ export function normalizeExamCode(code: string | null | undefined) {
 export function isStandardExamCode(code: string | null | undefined) {
   const normalized = normalizeExamCode(code);
   return normalized === 'UPSA' || normalized === 'UASA';
+}
+
+export function isPsraExamCode(code: string | null | undefined) {
+  const normalized = normalizeExamCode(code);
+  return normalized === 'PSRA1' || normalized === 'PSRA2';
+}
+
+export function isMarkEntryExamCode(code: string | null | undefined) {
+  return isStandardExamCode(code) || isPsraExamCode(code);
 }
 
 export function examPriority(code: string | null | undefined) {

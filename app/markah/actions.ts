@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { examAccessStatus } from '@/lib/examAccess';
+import { isPsraExamCode } from '@/lib/examOrdering';
 import { defaultComponentsForSubject } from '@/lib/subjectComponents';
 
 export type MarkActionState = {
@@ -49,6 +50,24 @@ export async function saveMarks(
 
   if (!access.open) {
     return { ok: false, message: access.label };
+  }
+
+  if (isPsraExamCode(exam?.kod_peperiksaan)) {
+    const { data: moduleAccess, error: moduleAccessError } = await supabase
+      .from('school_module_access')
+      .select('id')
+      .eq('kod_sekolah', kodSekolah)
+      .eq('module_key', 'PERCUBAAN_PSRA')
+      .eq('enabled', true)
+      .maybeSingle();
+
+    if (moduleAccessError) {
+      return { ok: false, message: `Gagal semak akses PSRA sekolah: ${moduleAccessError.message}` };
+    }
+
+    if (!moduleAccess) {
+      return { ok: false, message: 'Sekolah ini belum dibenarkan akses Percubaan PSRA.' };
+    }
   }
 
   if (componentCodes.length > 0) {

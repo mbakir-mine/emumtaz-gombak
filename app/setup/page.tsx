@@ -1,5 +1,6 @@
 import AppFrame from '../ui/AppFrame';
 import { getExams } from '@/lib/data';
+import { compareExamRecords } from '@/lib/examOrdering';
 import ExamAccessForm from './ExamAccessForm';
 
 export const dynamic = 'force-dynamic';
@@ -7,8 +8,25 @@ export const revalidate = 0;
 
 export default async function SetupPage() {
   const exams = await getExams();
-  const upsaExams = exams.filter((exam) => exam.kod_peperiksaan.toUpperCase() === 'UPSA');
-  const uasaExams = exams.filter((exam) => exam.kod_peperiksaan.toUpperCase() === 'UASA');
+  const examGroups = [
+    {
+      title: 'UPSA',
+      empty: 'Belum ada rekod UPSA.',
+      records: exams.filter((exam) => exam.kod_peperiksaan.toUpperCase() === 'UPSA').sort(compareExamRecords),
+    },
+    {
+      title: 'UASA',
+      empty: 'Belum ada rekod UASA.',
+      records: exams.filter((exam) => exam.kod_peperiksaan.toUpperCase() === 'UASA').sort(compareExamRecords),
+    },
+    {
+      title: 'Percubaan PSRA',
+      empty: 'Belum ada rekod Percubaan PSRA.',
+      records: exams
+        .filter((exam) => ['PSRA1', 'PSRA2'].includes(exam.kod_peperiksaan.toUpperCase()))
+        .sort(compareExamRecords),
+    },
+  ];
 
   return (
     <AppFrame title="Tetapan" subtitle="Akses markah dan panduan sistem." active="setup">
@@ -21,26 +39,18 @@ export default async function SetupPage() {
           <p className="empty">Belum ada peperiksaan.</p>
         ) : (
           <div className="exam-access-board">
-            <div className="exam-access-card">
-              <h3>UPSA</h3>
-              <div className="exam-access-list">
-                {upsaExams.length === 0 ? (
-                  <p className="empty">Belum ada rekod UPSA.</p>
-                ) : (
-                  upsaExams.map((exam) => <ExamAccessForm key={exam.id} exam={exam} />)
-                )}
+            {examGroups.map((group) => (
+              <div className="exam-access-card" key={group.title}>
+                <h3>{group.title}</h3>
+                <div className="exam-access-list">
+                  {group.records.length === 0 ? (
+                    <p className="empty">{group.empty}</p>
+                  ) : (
+                    group.records.map((exam) => <ExamAccessForm key={exam.id} exam={exam} />)
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="exam-access-card">
-              <h3>UASA</h3>
-              <div className="exam-access-list">
-                {uasaExams.length === 0 ? (
-                  <p className="empty">Belum ada rekod UASA.</p>
-                ) : (
-                  uasaExams.map((exam) => <ExamAccessForm key={exam.id} exam={exam} />)
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         )}
       </section>

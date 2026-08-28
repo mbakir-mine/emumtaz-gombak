@@ -15,7 +15,9 @@ on conflict (kod_sekolah) do update set
 insert into exams (kod_peperiksaan, nama_peperiksaan, tahun_akademik, status)
 values
   ('UPSA', 'Ujian Pertengahan Semester Akademik', 2026, 'DIBUKA'),
-  ('UASA', 'Ujian Akhir Semester Akademik', 2026, 'DIBUKA')
+  ('UASA', 'Ujian Akhir Semester Akademik', 2026, 'DIBUKA'),
+  ('PSRA1', 'Percubaan PSRA 1', 2026, 'DIBUKA'),
+  ('PSRA2', 'Percubaan PSRA 2', 2026, 'DIBUKA')
 on conflict (kod_peperiksaan, tahun_akademik) do update set
   nama_peperiksaan = excluded.nama_peperiksaan,
   status = excluded.status;
