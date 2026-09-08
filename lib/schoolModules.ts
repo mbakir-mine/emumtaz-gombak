@@ -63,6 +63,13 @@ export const optionalSchoolModules = [
     description: 'Dua peperiksaan Percubaan PSRA dengan lima kertas ujian untuk murid Tahun 6.',
   },
   {
+    key: 'PERCUBAAN_UPKK',
+    navKey: 'upkkTrial',
+    label: 'Percubaan UPKK',
+    shortLabel: 'Perc. UPKK',
+    description: 'Enam subjek bertulis Percubaan UPKK untuk murid Tahun 5 dengan gred khusus sekolah.',
+  },
+  {
     key: 'KHALIFAH_MUDA',
     navKey: 'khalifahMuda',
     label: 'IHAB',
