@@ -4,6 +4,8 @@ import { useActionState, useEffect, useMemo, useState } from 'react';
 import { saveMarks } from './actions';
 import type { MarkComponentRecord, MarkRecord, StudentRecord, SubjectComponentRecord } from '@/lib/data';
 import { gradeForMark } from '@/lib/subjects';
+import { DEFAULT_UPKK_GRADES, upkkGrade, type UpkkGradeSettings } from '@/lib/upkkTrial';
+import { supabase } from '@/lib/supabase';
 
 const initialState = {
   ok: false,
@@ -23,6 +25,7 @@ export default function MarkEntryForm({
   marks,
   subjectComponents = [],
   componentMarks = [],
+  isUpkkTrial = false,
 }: {
   examId: string;
   classId: string;
@@ -32,6 +35,7 @@ export default function MarkEntryForm({
   marks: MarkRecord[];
   subjectComponents?: SubjectComponentRecord[];
   componentMarks?: MarkComponentRecord[];
+  isUpkkTrial?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveMarks, initialState);
   const marksByStudent = useMemo(() => new Map(marks.map((mark) => [mark.student_id, mark.markah])), [marks]);
@@ -57,6 +61,24 @@ export default function MarkEntryForm({
     return initial;
   });
   const hasComponents = activeComponents.length > 0;
+  const [upkkGrades, setUpkkGrades] = useState<UpkkGradeSettings>({ kod_sekolah: kodSekolah, ...DEFAULT_UPKK_GRADES });
+
+  useEffect(() => {
+    if (!isUpkkTrial || !supabase || !kodSekolah) return;
+    void supabase
+      .from('upkk_trial_grade_settings')
+      .select('kod_sekolah,grade_a_min,grade_b_min,grade_c_min')
+      .eq('kod_sekolah', kodSekolah)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setUpkkGrades(data as UpkkGradeSettings);
+      });
+  }, [isUpkkTrial, kodSekolah]);
+
+  const displayGrade = (markah: number | null | undefined) => {
+    if (markah === null || markah === undefined || Number.isNaN(markah)) return '';
+    return isUpkkTrial ? upkkGrade(Number(markah), upkkGrades) : gradeForMark(markah);
+  };
 
   useEffect(() => {
     const next: Record<string, string> = {};
@@ -189,7 +211,7 @@ export default function MarkEntryForm({
                       </td>
                     ))}
                     <td className="mark-total-cell">{totalMark ?? '-'}</td>
-                    <td>{gradeForMark(totalMark)}</td>
+                    <td>{displayGrade(totalMark)}</td>
                   </>
                 ) : (
                   <>
@@ -209,7 +231,7 @@ export default function MarkEntryForm({
                         placeholder="-"
                       />
                     </td>
-                    <td>{gradeForMark(markah)}</td>
+                      <td>{displayGrade(markah)}</td>
                   </>
                 )}
               </tr>

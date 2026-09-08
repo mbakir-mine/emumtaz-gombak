@@ -10,8 +10,9 @@ import type {
   TeacherSubjectComponentAssignment,
   SchoolModuleAccess,
 } from '@/lib/data';
-import { compareExamRecords, isMarkEntryExamCode, isPsraExamCode } from '@/lib/examOrdering';
+import { compareExamRecords, isMarkEntryExamCode, isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { allowedSubjectForTahun } from '@/lib/subjects';
+import { isUpkkWrittenSubjectCode, upkkWrittenPaperForSubject } from '@/lib/upkkTrial';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../ui/scopedData';
 
@@ -69,12 +70,26 @@ export default function MarkSelectionForm({
       ),
     [moduleAccesses],
   );
-  const selectableSchools = useMemo(
+  const upkkEnabledSchools = useMemo(
     () =>
-      isPsraExamCode(selectedExam?.kod_peperiksaan)
-        ? scopedSchools.filter((school) => psraEnabledSchools.has(school.kod_sekolah))
-        : scopedSchools,
-    [psraEnabledSchools, scopedSchools, selectedExam?.kod_peperiksaan],
+      new Set(
+        moduleAccesses
+          .filter((access) => access.module_key === 'PERCUBAAN_UPKK' && access.enabled)
+          .map((access) => access.kod_sekolah),
+      ),
+    [moduleAccesses],
+  );
+  const selectableSchools = useMemo(
+    () => {
+      if (isPsraExamCode(selectedExam?.kod_peperiksaan)) {
+        return scopedSchools.filter((school) => psraEnabledSchools.has(school.kod_sekolah));
+      }
+      if (isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)) {
+        return scopedSchools.filter((school) => upkkEnabledSchools.has(school.kod_sekolah));
+      }
+      return scopedSchools;
+    },
+    [psraEnabledSchools, scopedSchools, selectedExam?.kod_peperiksaan, upkkEnabledSchools],
   );
   const myTeachingKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -126,6 +141,7 @@ export default function MarkSelectionForm({
           item.kod_sekolah === selectedSchool &&
           item.tahun_akademik === selectedYear &&
           (!isPsraExamCode(selectedExam?.kod_peperiksaan) || item.tahun === 6) &&
+          (!isUpkkTrialExamCode(selectedExam?.kod_peperiksaan) || item.tahun === 5) &&
           item.status === 'AKTIF',
       );
 
@@ -137,9 +153,18 @@ export default function MarkSelectionForm({
   const filteredExams = useMemo(
     () =>
       exams
-        .filter((exam) => exam.tahun_akademik === selectedYear && isMarkEntryExamCode(exam.kod_peperiksaan))
+        .filter((exam) => {
+          if (exam.tahun_akademik !== selectedYear || !isMarkEntryExamCode(exam.kod_peperiksaan)) return false;
+          if (isPsraExamCode(exam.kod_peperiksaan)) {
+            return scopedSchools.some((school) => psraEnabledSchools.has(school.kod_sekolah));
+          }
+          if (isUpkkTrialExamCode(exam.kod_peperiksaan)) {
+            return scopedSchools.some((school) => upkkEnabledSchools.has(school.kod_sekolah));
+          }
+          return true;
+        })
         .sort(compareExamRecords),
-    [exams, selectedYear],
+    [exams, psraEnabledSchools, scopedSchools, selectedYear, upkkEnabledSchools],
   );
 
   const selectedClass = useMemo(
@@ -149,14 +174,18 @@ export default function MarkSelectionForm({
 
   const filteredSubjects = useMemo(
     () => {
-      const allowedSubjects = subjects.filter((subject) =>
-        selectedClass ? allowedSubjectForTahun(subject, selectedClass.tahun) : false,
-      );
+      const allowedSubjects = subjects.filter((subject) => {
+        if (!selectedClass) return false;
+        if (isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)) {
+          return isUpkkWrittenSubjectCode(subject.kod_subjek);
+        }
+        return allowedSubjectForTahun(subject, selectedClass.tahun);
+      });
 
       if (!selectedClass || selectedMode !== 'mine') return allowedSubjects;
       return allowedSubjects.filter((subject) => myTeachingKeys.has(`${selectedClass.id}|${subject.kod_subjek}`));
     },
-    [myTeachingKeys, selectedClass, selectedMode, subjects],
+    [myTeachingKeys, selectedClass, selectedExam?.kod_peperiksaan, selectedMode, subjects],
   );
 
   useEffect(() => {
@@ -298,7 +327,9 @@ export default function MarkSelectionForm({
           <option value="">{selectedClassId ? 'Pilih subjek' : 'Pilih kelas dahulu'}</option>
           {filteredSubjects.map((subject) => (
             <option key={subject.kod_subjek} value={subject.kod_subjek}>
-              {subject.kod_subjek} - {subject.nama_subjek}
+              {isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)
+                ? `${upkkWrittenPaperForSubject(subject.kod_subjek)?.code} - ${upkkWrittenPaperForSubject(subject.kod_subjek)?.label}`
+                : `${subject.kod_subjek} - ${subject.nama_subjek}`}
             </option>
           ))}
         </select>

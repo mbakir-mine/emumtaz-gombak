@@ -16,7 +16,7 @@ import {
   getSubjects,
 } from '@/lib/data';
 import { examAccessStatus } from '@/lib/examAccess';
-import { isPsraExamCode } from '@/lib/examOrdering';
+import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { applySubjectComponentMarkSettings } from '@/lib/subjectComponents';
 
 export default async function MarkahPage({
@@ -68,18 +68,32 @@ export default async function MarkahPage({
           access.enabled,
       ),
   );
-
-  const selectedSubjectComponents = applySubjectComponentMarkSettings(
-    subjectComponents.filter((component) => component.kod_subjek === selectedSubject),
-    componentMarkSettings,
-    {
-      tahun_akademik: selectedYear,
-      kod_peperiksaan: selectedExam?.kod_peperiksaan,
-      tahun: selectedClass?.tahun,
-    },
+  const selectedUpkkWithoutAccess = Boolean(
+    selectedExam &&
+      isUpkkTrialExamCode(selectedExam.kod_peperiksaan) &&
+      selectedSchool &&
+      !moduleAccesses.some(
+        (access) =>
+          access.kod_sekolah === selectedSchool &&
+          access.module_key === 'PERCUBAAN_UPKK' &&
+          access.enabled,
+      ),
   );
+  const selectedTrialWithoutAccess = selectedPsraWithoutAccess || selectedUpkkWithoutAccess;
+
+  const selectedSubjectComponents = isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)
+    ? []
+    : applySubjectComponentMarkSettings(
+        subjectComponents.filter((component) => component.kod_subjek === selectedSubject),
+        componentMarkSettings,
+        {
+          tahun_akademik: selectedYear,
+          kod_peperiksaan: selectedExam?.kod_peperiksaan,
+          tahun: selectedClass?.tahun,
+        },
+      );
   const [students, marks, componentMarks] =
-    selectedExamId && selectedClassId && selectedSubject && !selectedPsraWithoutAccess
+    selectedExamId && selectedClassId && selectedSubject && !selectedTrialWithoutAccess
       ? await Promise.all([
           getStudentsByClass(selectedClassId),
           getMarksForSelection(selectedExamId, selectedClassId, selectedSubject),
@@ -90,11 +104,11 @@ export default async function MarkahPage({
       : [[], [], []];
 
   return (
-    <AppFrame title="Markah" subtitle="Kemasukan UPSA, UASA dan Percubaan PSRA." active="marks">
+    <AppFrame title="Markah" subtitle="Kemasukan UPSA, UASA, Percubaan UPKK dan Percubaan PSRA." active="marks">
       <section className="panel">
         <div className="panel-head">
           <h2>Pilih Kelas dan Subjek</h2>
-          <span>UPSA / UASA / PSRA</span>
+          <span>UPSA / UASA / UPKK / PSRA</span>
         </div>
         <MarkSelectionForm
           schools={schools}
@@ -127,6 +141,11 @@ export default async function MarkahPage({
             Sekolah ini belum dibenarkan akses Percubaan PSRA. Pilih sekolah yang telah diaktifkan dalam Akses Modul Sekolah.
           </p>
         )}
+        {selectedUpkkWithoutAccess && (
+          <p className="notice mark-notice">
+            Sekolah ini belum dibenarkan akses Percubaan UPKK. Pilih sekolah yang telah diaktifkan dalam Akses Modul Sekolah.
+          </p>
+        )}
       </section>
 
       <section className="panel">
@@ -136,8 +155,8 @@ export default async function MarkahPage({
         </div>
         {!selectedExamId || !selectedClassId || !selectedSubject ? (
           <p className="empty">Pilih peperiksaan, sekolah, kelas dan subjek untuk mula isi markah.</p>
-        ) : selectedPsraWithoutAccess ? (
-          <p className="empty">Sekolah ini belum diberi akses Percubaan PSRA.</p>
+        ) : selectedTrialWithoutAccess ? (
+          <p className="empty">Sekolah ini belum diberi akses peperiksaan percubaan yang dipilih.</p>
         ) : students.length === 0 ? (
           <p className="empty">Tiada murid aktif ditemui untuk kelas ini.</p>
         ) : !markAccess.open ? (
@@ -152,6 +171,7 @@ export default async function MarkahPage({
             marks={marks}
             subjectComponents={selectedSubjectComponents}
             componentMarks={componentMarks}
+            isUpkkTrial={isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)}
           />
         )}
       </section>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabase } from '@/lib/supabase';
 import { examAccessStatus } from '@/lib/examAccess';
-import { isPsraExamCode } from '@/lib/examOrdering';
+import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { defaultComponentsForSubject } from '@/lib/subjectComponents';
 
 export type MarkActionState = {
@@ -75,6 +75,24 @@ export async function saveMarks(
 
     if (!moduleAccess) {
       return { ok: false, message: 'Sekolah ini belum dibenarkan akses Percubaan PSRA.' };
+    }
+  }
+
+  if (isUpkkTrialExamCode(exam?.kod_peperiksaan)) {
+    const { data: moduleAccess, error: moduleAccessError } = await supabase
+      .from('school_module_access')
+      .select('id')
+      .eq('kod_sekolah', kodSekolah)
+      .eq('module_key', 'PERCUBAAN_UPKK')
+      .eq('enabled', true)
+      .maybeSingle();
+
+    if (moduleAccessError) {
+      return { ok: false, message: `Gagal semak akses UPKK sekolah: ${moduleAccessError.message}` };
+    }
+
+    if (!moduleAccess) {
+      return { ok: false, message: 'Sekolah ini belum dibenarkan akses Percubaan UPKK.' };
     }
   }
 
