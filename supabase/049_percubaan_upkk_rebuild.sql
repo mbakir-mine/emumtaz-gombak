@@ -41,6 +41,7 @@ create table if not exists public.upkk_trial_paper_marks (
     references public.classes (id) on delete cascade,
   student_id uuid not null
     references public.students (id) on delete cascade,
+  sesi smallint not null default 1,
   paper_code text not null,
   markah smallint not null,
   entered_by uuid not null default auth.uid(),
@@ -50,13 +51,14 @@ create table if not exists public.upkk_trial_paper_marks (
   constraint upkk_trial_paper_code_check check (
     paper_code in ('UPKK02', 'UPKK03', 'UPKK04', 'UPKK05', 'UPKK06', 'UPKK07')
   ),
+  constraint upkk_trial_session_check check (sesi in (1, 2)),
   constraint upkk_trial_mark_check check (markah between 0 and 100),
   constraint upkk_trial_student_paper_unique
-    unique (tahun_akademik, student_id, paper_code)
+    unique (tahun_akademik, student_id, sesi, paper_code)
 );
 
 create index if not exists idx_upkk_trial_marks_school_year
-  on public.upkk_trial_paper_marks (kod_sekolah, tahun_akademik);
+  on public.upkk_trial_paper_marks (kod_sekolah, tahun_akademik, sesi);
 create index if not exists idx_upkk_trial_marks_class
   on public.upkk_trial_paper_marks (class_id);
 create index if not exists idx_upkk_trial_marks_student

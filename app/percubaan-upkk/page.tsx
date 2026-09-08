@@ -10,7 +10,7 @@ export default async function PercubaanUpkkPage() {
     getSchools(), getSchoolModuleAccesses(), getClasses(), getStudents(),
   ]);
   return (
-    <AppFrame title="Percubaan UPKK" subtitle="Enam subjek bertulis untuk calon Tahun 5." active="upkkTrial">
+    <AppFrame title="Percubaan UPKK" subtitle="Peperiksaan Percubaan UPKK 1 dan 2 untuk calon Tahun 5." active="upkkTrial">
       <UpkkTrialManager schools={schools} moduleAccesses={moduleAccesses} classes={classes} students={students} />
     </AppFrame>
   );
