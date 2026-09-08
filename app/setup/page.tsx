@@ -20,6 +20,13 @@ export default async function SetupPage() {
       records: exams.filter((exam) => exam.kod_peperiksaan.toUpperCase() === 'UASA').sort(compareExamRecords),
     },
     {
+      title: 'Percubaan UPKK',
+      empty: 'Belum ada rekod Percubaan UPKK.',
+      records: exams
+        .filter((exam) => ['UPKK1', 'UPKK2'].includes(exam.kod_peperiksaan.toUpperCase()))
+        .sort(compareExamRecords),
+    },
+    {
       title: 'Percubaan PSRA',
       empty: 'Belum ada rekod Percubaan PSRA.',
       records: exams

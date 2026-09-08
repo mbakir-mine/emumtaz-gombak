@@ -19,7 +19,8 @@ export default function ExamAccessForm({ exam }: { exam: ExamRecord }) {
     <form action={updateExamAccess} className="exam-access-form">
       <input type="hidden" name="id" value={exam.id} />
       <div>
-        <strong>Tahun {exam.tahun_akademik}</strong>
+        <strong>{exam.nama_peperiksaan}</strong>
+        <span>{exam.kod_peperiksaan} · Tahun {exam.tahun_akademik}</span>
       </div>
       <label>
         Buka
