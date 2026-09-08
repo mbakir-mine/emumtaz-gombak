@@ -56,23 +56,46 @@ returns boolean language sql stable security invoker set search_path = public as
 $$;
 
 drop policy if exists "upkk_grades_select" on public.upkk_trial_grade_settings;
-create policy "upkk_grades_select" on public.upkk_trial_grade_settings for select to authenticated using (public.upkk_trial_school_allowed(kod_sekolah));
+create policy "upkk_grades_select" on public.upkk_trial_grade_settings for select to authenticated using (public.upkk_trial_school_allowed(upkk_trial_grade_settings.kod_sekolah));
 drop policy if exists "upkk_grades_insert" on public.upkk_trial_grade_settings;
-create policy "upkk_grades_insert" on public.upkk_trial_grade_settings for insert to authenticated with check (public.upkk_trial_school_allowed(kod_sekolah));
+create policy "upkk_grades_insert" on public.upkk_trial_grade_settings for insert to authenticated with check (public.upkk_trial_school_allowed(upkk_trial_grade_settings.kod_sekolah));
 drop policy if exists "upkk_grades_update" on public.upkk_trial_grade_settings;
-create policy "upkk_grades_update" on public.upkk_trial_grade_settings for update to authenticated using (public.upkk_trial_school_allowed(kod_sekolah)) with check (public.upkk_trial_school_allowed(kod_sekolah));
+create policy "upkk_grades_update" on public.upkk_trial_grade_settings for update to authenticated using (public.upkk_trial_school_allowed(upkk_trial_grade_settings.kod_sekolah)) with check (public.upkk_trial_school_allowed(upkk_trial_grade_settings.kod_sekolah));
 
 drop policy if exists "upkk_marks_select" on public.upkk_trial_paper_marks;
-create policy "upkk_marks_select" on public.upkk_trial_paper_marks for select to authenticated using (public.upkk_trial_school_allowed(kod_sekolah));
+create policy "upkk_marks_select" on public.upkk_trial_paper_marks for select to authenticated using (public.upkk_trial_school_allowed(upkk_trial_paper_marks.kod_sekolah));
 drop policy if exists "upkk_marks_insert" on public.upkk_trial_paper_marks;
 create policy "upkk_marks_insert" on public.upkk_trial_paper_marks for insert to authenticated with check (
-  entered_by = (select auth.uid()) and updated_by = (select auth.uid()) and public.upkk_trial_school_allowed(kod_sekolah)
-  and exists (select 1 from public.classes c join public.students s on s.class_id = c.id where c.id = class_id and s.id = student_id and c.tahun = 5 and c.tahun_akademik = tahun_akademik and c.kod_sekolah = kod_sekolah and s.kod_sekolah = kod_sekolah and s.status = 'AKTIF')
+  upkk_trial_paper_marks.entered_by = (select auth.uid())
+  and upkk_trial_paper_marks.updated_by = (select auth.uid())
+  and public.upkk_trial_school_allowed(upkk_trial_paper_marks.kod_sekolah)
+  and exists (
+    select 1 from public.classes c
+    join public.students s on s.class_id = c.id
+    where c.id = upkk_trial_paper_marks.class_id
+      and s.id = upkk_trial_paper_marks.student_id
+      and c.tahun = 5
+      and c.tahun_akademik = upkk_trial_paper_marks.tahun_akademik
+      and c.kod_sekolah = upkk_trial_paper_marks.kod_sekolah
+      and s.kod_sekolah = upkk_trial_paper_marks.kod_sekolah
+      and s.status = 'AKTIF'
+  )
 );
 drop policy if exists "upkk_marks_update" on public.upkk_trial_paper_marks;
-create policy "upkk_marks_update" on public.upkk_trial_paper_marks for update to authenticated using (public.upkk_trial_school_allowed(kod_sekolah)) with check (
-  updated_by = (select auth.uid()) and public.upkk_trial_school_allowed(kod_sekolah)
-  and exists (select 1 from public.classes c join public.students s on s.class_id = c.id where c.id = class_id and s.id = student_id and c.tahun = 5 and c.tahun_akademik = tahun_akademik and c.kod_sekolah = kod_sekolah and s.kod_sekolah = kod_sekolah and s.status = 'AKTIF')
+create policy "upkk_marks_update" on public.upkk_trial_paper_marks for update to authenticated using (public.upkk_trial_school_allowed(upkk_trial_paper_marks.kod_sekolah)) with check (
+  upkk_trial_paper_marks.updated_by = (select auth.uid())
+  and public.upkk_trial_school_allowed(upkk_trial_paper_marks.kod_sekolah)
+  and exists (
+    select 1 from public.classes c
+    join public.students s on s.class_id = c.id
+    where c.id = upkk_trial_paper_marks.class_id
+      and s.id = upkk_trial_paper_marks.student_id
+      and c.tahun = 5
+      and c.tahun_akademik = upkk_trial_paper_marks.tahun_akademik
+      and c.kod_sekolah = upkk_trial_paper_marks.kod_sekolah
+      and s.kod_sekolah = upkk_trial_paper_marks.kod_sekolah
+      and s.status = 'AKTIF'
+  )
 );
 
 create or replace function public.set_upkk_trial_audit() returns trigger language plpgsql security invoker set search_path = public as $$ begin new.updated_by = auth.uid(); new.updated_at = now(); return new; end; $$;
