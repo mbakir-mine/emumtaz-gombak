@@ -6,6 +6,7 @@ import {
   khalifahMudaPositiveIndicators,
   type KhalifahMudaIndicator,
 } from './khalifahMuda';
+import { sahsiahIhabGradeScale, type SahsiahIhabResult } from './sahsiahIhab';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 import { gradePointForMark } from './subjects';
@@ -201,6 +202,26 @@ export type KhalifahMudaComponent = KhalifahMudaIndicator & {
   id?: string;
   sort_order: number;
   status: string;
+};
+
+export type SahsiahIhabAssessment = SahsiahIhabResult & {
+  id: string;
+  kod_sekolah: string;
+  tahun_akademik: number;
+  bulan: number;
+  class_id: string;
+  student_id: string;
+  m1_confirmed: boolean;
+  m2_confirmed: boolean;
+  m3_raw: number;
+  m4: number;
+  m5: number;
+  m6: number;
+  status: string;
+  catatan: string | null;
+  submitted_at: string | null;
+  verified_at: string | null;
+  nama_murid?: string | null;
 };
 
 export type TimetableSlot = {
@@ -1424,6 +1445,51 @@ export async function getKhalifahMudaComponents(): Promise<KhalifahMudaComponent
     points: Number(item.points ?? 0),
     sort_order: Number(item.sort_order ?? 0),
     status: item.status ?? 'AKTIF',
+  }));
+}
+
+export async function getSahsiahIhabAssessments(options?: {
+  kodSekolah?: string;
+  classId?: string;
+  tahunAkademik?: number;
+  bulan?: number;
+}): Promise<SahsiahIhabAssessment[]> {
+  if (!supabase) return [];
+  let query = supabase
+    .from('sahsiah_ihab_assessments')
+    .select('id,kod_sekolah,tahun_akademik,bulan,class_id,student_id,m1_confirmed,m2_confirmed,m3_raw,m3_percent,m4,m5,m6,total_score,grade,band,status,catatan,submitted_at,verified_at,students(nama_murid)')
+    .order('tahun_akademik', { ascending: false })
+    .order('bulan', { ascending: false })
+    .limit(2000);
+  if (options?.kodSekolah) query = query.eq('kod_sekolah', options.kodSekolah);
+  if (options?.classId) query = query.eq('class_id', options.classId);
+  if (options?.tahunAkademik) query = query.eq('tahun_akademik', options.tahunAkademik);
+  if (options?.bulan) query = query.eq('bulan', options.bulan);
+  const { data, error } = await query;
+  if (error) return [];
+  return ((data ?? []) as any[]).map((item) => ({
+    id: item.id,
+    kod_sekolah: item.kod_sekolah,
+    tahun_akademik: Number(item.tahun_akademik),
+    bulan: Number(item.bulan),
+    class_id: item.class_id,
+    student_id: item.student_id,
+    m1_confirmed: Boolean(item.m1_confirmed),
+    m2_confirmed: Boolean(item.m2_confirmed),
+    m3_raw: Number(item.m3_raw ?? 0),
+    m3Percent: Number(item.m3_percent ?? 0),
+    m4: Number(item.m4 ?? 0),
+    m5: Number(item.m5 ?? 0),
+    m6: Number(item.m6 ?? 0),
+    totalScore: Number(item.total_score ?? 0),
+    band: Number(item.band ?? 1) as SahsiahIhabAssessment['band'],
+    grade: item.grade,
+    achievement: sahsiahIhabGradeScale.find((scale) => scale.grade === item.grade)?.achievement ?? 'Perlu Bimbingan',
+    status: item.status,
+    catatan: item.catatan,
+    submitted_at: item.submitted_at,
+    verified_at: item.verified_at,
+    nama_murid: Array.isArray(item.students) ? item.students[0]?.nama_murid : item.students?.nama_murid,
   }));
 }
 
