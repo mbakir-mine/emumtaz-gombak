@@ -24,8 +24,8 @@ export default async function KhalifahMudaPage() {
 
   return (
     <AppFrame
-      title="IHAB"
-      subtitle="Rekod tarbiah dan pemerhatian sahsiah murid Tahun 6."
+      title="Sahsiah IHAB"
+      subtitle="Pentaksiran sahsiah, rekod tarbiah dan bimbingan murid Tahun 6."
       active="khalifahMuda"
     >
       <KhalifahMudaManager

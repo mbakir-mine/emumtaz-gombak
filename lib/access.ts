@@ -85,8 +85,8 @@ export const navItems: NavItem[] = [
   },
   {
     key: 'khalifahMuda',
-    label: 'IHAB',
-    href: '/khalifah-muda',
+    label: 'Sahsiah IHAB',
+    href: '/sahsiah-ihab',
     roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
     moduleKey: 'KHALIFAH_MUDA',
   },
@@ -108,7 +108,7 @@ export const navItems: NavItem[] = [
   { key: 'componentMarks', label: 'Komponen Markah', href: '/komponen-markah', roles: ['OWNER', 'ADMIN_DAERAH'] },
   {
     key: 'khalifahMudaComponents',
-    label: 'Komponen IHAB',
+    label: 'Komponen Sahsiah IHAB',
     href: '/komponen-khalifah-muda',
     roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'],
   },

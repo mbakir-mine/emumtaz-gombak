@@ -46,7 +46,7 @@ export async function addKhalifahMudaComponent(
 ): Promise<KhalifahComponentActionState> {
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
-    return { ok: false, message: 'Hanya admin sahaja boleh menambah Komponen IHAB.' };
+    return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh menambah Komponen Sahsiah IHAB.' };
   }
 
   const row = componentPayload(formData);
@@ -68,7 +68,7 @@ export async function addKhalifahMudaComponent(
 
   revalidatePath('/komponen-khalifah-muda');
   revalidatePath('/khalifah-muda');
-  return { ok: true, message: 'Komponen IHAB berjaya ditambah.' };
+  return { ok: true, message: 'Komponen Sahsiah IHAB berjaya ditambah.' };
 }
 
 export async function updateKhalifahMudaComponent(
@@ -77,7 +77,7 @@ export async function updateKhalifahMudaComponent(
 ): Promise<KhalifahComponentActionState> {
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
-    return { ok: false, message: 'Hanya admin sahaja boleh mengubah Komponen IHAB.' };
+    return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh mengubah Komponen Sahsiah IHAB.' };
   }
 
   const id = readText(formData, 'id');
@@ -95,5 +95,5 @@ export async function updateKhalifahMudaComponent(
 
   revalidatePath('/komponen-khalifah-muda');
   revalidatePath('/khalifah-muda');
-  return { ok: true, message: 'Komponen IHAB berjaya dikemas kini.' };
+  return { ok: true, message: 'Komponen Sahsiah IHAB berjaya dikemas kini.' };
 }

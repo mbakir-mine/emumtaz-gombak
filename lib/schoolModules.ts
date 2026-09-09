@@ -72,9 +72,9 @@ export const optionalSchoolModules = [
   {
     key: 'KHALIFAH_MUDA',
     navKey: 'khalifahMuda',
-    label: 'IHAB',
-    shortLabel: 'IHAB',
-    description: 'Rekod tarbiah, pemerhatian sahsiah dan bimbingan murid Tahun 6.',
+    label: 'Sahsiah IHAB',
+    shortLabel: 'Sahsiah IHAB',
+    description: 'Pentaksiran sahsiah, rekod tarbiah dan bimbingan murid Tahun 6 berasaskan panduan IHAB.',
   },
 ] as const;
 

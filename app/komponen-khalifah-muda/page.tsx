@@ -10,7 +10,7 @@ export default async function KomponenKhalifahMudaPage() {
 
   return (
     <AppFrame
-      title="Komponen IHAB"
+      title="Komponen Sahsiah IHAB"
       subtitle="Tetapan aktiviti kelas, indikator penghargaan dan indikator bimbingan."
       active="khalifahMudaComponents"
     >

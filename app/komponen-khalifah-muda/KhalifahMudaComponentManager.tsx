@@ -86,7 +86,7 @@ export default function KhalifahMudaComponentManager({ components }: { component
     return (
       <section className="panel">
         <h2>Akses Terhad</h2>
-        <p className="table-note">Hanya admin sahaja boleh mengubah kandungan aktiviti dan indikator IHAB.</p>
+        <p className="table-note">Hanya pentadbir yang dibenarkan boleh mengubah aktiviti dan indikator Sahsiah IHAB.</p>
       </section>
     );
   }
@@ -95,7 +95,7 @@ export default function KhalifahMudaComponentManager({ components }: { component
     <section className="panel khalifah-component-panel">
       <div className="panel-head">
         <div>
-          <h2>Komponen IHAB</h2>
+          <h2>Komponen Sahsiah IHAB</h2>
           <p className="table-note">Tambah atau kemas kini aktiviti kelas, indikator penghargaan dan indikator bimbingan.</p>
         </div>
         <span>{components.length} komponen</span>
