@@ -1105,7 +1105,14 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
     );
   }
 
-  if (profile && !isTeacher && insights.psraSelection) {
+  // Only system/area administrators should see the cross-school PSRA dashboard.
+  // School administrators must remain on their own school dashboard even when
+  // the latest selected exam happens to be a PSRA trial.
+  const isRegionalDashboard = profile?.role === 'OWNER'
+    || profile?.role === 'ADMIN_DAERAH'
+    || profile?.role === 'ADMIN_ZON';
+
+  if (profile && !isTeacher && isRegionalDashboard && insights.psraSelection) {
     return (
       <>
         {profile.nama && <h2 className="welcome-title">Selamat datang, {profile.nama}</h2>}

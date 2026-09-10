@@ -11,7 +11,7 @@ export default async function DashboardPage({
   const [counts, insights] = await Promise.all([getSetupCounts(), getDashboardInsights(params.exam)]);
 
   return (
-    <AppFrame title="Dashboard" subtitle="Ringkasan sistem e-Mumtaz UPI." active="dashboard">
+    <AppFrame title="Dashboard" subtitle="Ringkasan dashboard mengikut peranan dan sekolah." active="dashboard">
       <DashboardContent counts={counts} insights={insights} />
     </AppFrame>
   );
