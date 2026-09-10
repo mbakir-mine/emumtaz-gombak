@@ -11,6 +11,8 @@ import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 import { gradePointForMark } from './subjects';
 
+const PSRA_PAPER_CODES = new Set(['AS01', 'BA02', 'JIK03', 'TF04', 'TJ05']);
+
 export type SetupCounts = {
   schools: number;
   users: number;
@@ -1253,7 +1255,43 @@ export async function getMarksForSelection(
     .eq('kod_subjek', kodSubjek);
 
   if (error) return [];
-  return data ?? [];
+
+  const coreMarks = (data ?? []) as MarkRecord[];
+  const { data: exam } = await supabase
+    .from('exams')
+    .select('kod_peperiksaan')
+    .eq('id', examId)
+    .maybeSingle();
+
+  const examCode = String(exam?.kod_peperiksaan ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const session = examCode === 'PSRA1' ? 1 : examCode === 'PSRA2' ? 2 : null;
+  if (!session || !PSRA_PAPER_CODES.has(kodSubjek)) return coreMarks;
+
+  const { data: psraMarks, error: psraError } = await supabase
+    .from('psra_trial_paper_marks')
+    .select('id,student_id,kod_sekolah,class_id,paper_code,markah')
+    .eq('class_id', classId)
+    .eq('sesi', session)
+    .eq('paper_code', kodSubjek);
+
+  if (psraError) return coreMarks;
+
+  const byStudent = new Map(coreMarks.map((mark) => [mark.student_id, mark]));
+  for (const row of psraMarks ?? []) {
+    const existing = byStudent.get(row.student_id);
+    if (existing?.markah !== null && existing?.markah !== undefined) continue;
+    byStudent.set(row.student_id, {
+      id: `psra:${row.id}`,
+      exam_id: examId,
+      student_id: row.student_id,
+      kod_sekolah: row.kod_sekolah,
+      class_id: row.class_id,
+      kod_subjek: row.paper_code,
+      markah: row.markah === null ? null : Number(row.markah),
+    });
+  }
+
+  return [...byStudent.values()];
 }
 
 export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> {
