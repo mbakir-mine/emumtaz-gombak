@@ -16,7 +16,8 @@ alter table public.school_module_access
       'PELAPORAN_PBD',
       'PENILAIAN_UPKK',
       'KHALIFAH_MUDA',
-      'PERCUBAAN_PSRA'
+      'PERCUBAAN_PSRA',
+      'PERCUBAAN_UPKK'
     )
   );
 
