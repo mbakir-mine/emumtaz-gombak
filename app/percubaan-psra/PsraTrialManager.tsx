@@ -121,12 +121,40 @@ export default function PsraTrialManager({
   const [draft, setDraft] = useState<ScoreDraft>(blankDraft);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
+  const [restoredFromUrl, setRestoredFromUrl] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSchool = params.get('sekolah');
+    const urlYear = Number(params.get('tahun'));
+    const urlSession = Number(params.get('sesi'));
+    setSelectedSchool(urlSchool && selectableSchools.some((school) => school.kod_sekolah === urlSchool)
+      ? urlSchool
+      : selectableSchools[0]?.kod_sekolah ?? '');
+    setSelectedYear(years.includes(urlYear) ? urlYear : currentYear);
+    setSelectedClassId(params.get('kelas') ?? '');
+    setSelectedStudentId(params.get('murid') ?? '');
+    setSession(urlSession === 2 ? 2 : 1);
+    setRestoredFromUrl(true);
+  }, [currentYear, selectableSchools, years]);
+
+  useEffect(() => {
+    if (!restoredFromUrl) return;
+    const params = new URLSearchParams();
+    if (selectedSchool) params.set('sekolah', selectedSchool);
+    params.set('tahun', String(selectedYear));
+    if (selectedClassId) params.set('kelas', selectedClassId);
+    if (selectedStudentId) params.set('murid', selectedStudentId);
+    params.set('sesi', String(session));
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, [restoredFromUrl, selectedClassId, selectedSchool, selectedStudentId, selectedYear, session]);
+
+  useEffect(() => {
+    if (!restoredFromUrl) return;
     if (!selectableSchools.some((school) => school.kod_sekolah === selectedSchool)) {
       setSelectedSchool(selectableSchools[0]?.kod_sekolah ?? '');
     }
-  }, [selectableSchools, selectedSchool]);
+  }, [restoredFromUrl, selectableSchools, selectedSchool]);
 
   const hasModuleAccess =
     profile?.role === 'OWNER' ||
@@ -160,10 +188,11 @@ export default function PsraTrialManager({
   );
 
   useEffect(() => {
+    if (!restoredFromUrl) return;
     if (!yearSixClasses.some((classRecord) => classRecord.id === selectedClassId)) {
       setSelectedClassId(yearSixClasses[0]?.id ?? '');
     }
-  }, [selectedClassId, yearSixClasses]);
+  }, [restoredFromUrl, selectedClassId, yearSixClasses]);
 
   const studentsInClass = useMemo(
     () =>
@@ -179,10 +208,11 @@ export default function PsraTrialManager({
   );
 
   useEffect(() => {
+    if (!restoredFromUrl) return;
     if (!studentsInClass.some((student) => student.id === selectedStudentId)) {
       setSelectedStudentId(studentsInClass[0]?.id ?? '');
     }
-  }, [selectedStudentId, studentsInClass]);
+  }, [restoredFromUrl, selectedStudentId, studentsInClass]);
 
   const loadRecords = useCallback(async () => {
     setRecords([]);
