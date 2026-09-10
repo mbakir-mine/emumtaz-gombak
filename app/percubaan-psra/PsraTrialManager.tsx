@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   ClassRecord,
+  ExamRecord,
+  MarkRecord,
   School,
   SchoolModuleAccess,
   StudentRecord,
@@ -27,6 +29,11 @@ type Props = {
   students: StudentRecord[];
   classAssignments: TeacherClassAssignment[];
   subjectAssignments: TeacherSubjectAssignment[];
+  exams: ExamRecord[];
+};
+
+type LoadedPsraMark = PsraPaperMarkRecord & {
+  source: 'psra_trial_paper_marks' | 'marks';
 };
 
 type ScoreDraft = Record<PsraPaperKey, string>;
@@ -68,6 +75,7 @@ export default function PsraTrialManager({
   students,
   classAssignments,
   subjectAssignments,
+  exams,
 }: Props) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -109,7 +117,7 @@ export default function PsraTrialManager({
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [session, setSession] = useState<1 | 2>(1);
-  const [records, setRecords] = useState<PsraPaperMarkRecord[]>([]);
+  const [records, setRecords] = useState<LoadedPsraMark[]>([]);
   const [draft, setDraft] = useState<ScoreDraft>(blankDraft);
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
@@ -179,25 +187,66 @@ export default function PsraTrialManager({
   const loadRecords = useCallback(async () => {
     setRecords([]);
     if (!supabase || !hasModuleAccess || !selectedSchool || !selectedClassId) return;
-    const { data, error } = await supabase
-      .from('psra_trial_paper_marks')
-      .select('*')
-      .eq('kod_sekolah', selectedSchool)
-      .eq('tahun_akademik', selectedYear)
-      .eq('class_id', selectedClassId)
-      .eq('sesi', session)
-      .order('updated_at', { ascending: false });
+    const exam = exams.find(
+      (item) =>
+        Number(item.tahun_akademik) === selectedYear &&
+        item.kod_peperiksaan.toUpperCase().replace(/[^A-Z0-9]/g, '') === `PSRA${session}`,
+    );
+    const [paperResult, standardResult] = await Promise.all([
+      supabase
+        .from('psra_trial_paper_marks')
+        .select('*')
+        .eq('kod_sekolah', selectedSchool)
+        .eq('tahun_akademik', selectedYear)
+        .eq('class_id', selectedClassId)
+        .eq('sesi', session)
+        .order('updated_at', { ascending: false }),
+      exam
+        ? supabase
+            .from('marks')
+            .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
+            .eq('exam_id', exam.id)
+            .eq('kod_sekolah', selectedSchool)
+            .eq('class_id', selectedClassId)
+        : Promise.resolve({ data: [] as MarkRecord[], error: null }),
+    ]);
 
-    if (error) {
+    if (paperResult.error && standardResult.error) {
       setMessage(
-        error.message.includes('psra_trial_paper_marks')
+        paperResult.error.message.includes('psra_trial_paper_marks')
           ? 'Struktur tugasan guru PSRA belum tersedia. Jalankan SQL 041_psra_teacher_entry.sql di Supabase.'
-          : `Gagal memuatkan markah: ${error.message}`,
+          : `Gagal memuatkan markah: ${paperResult.error.message}`,
       );
       return;
     }
-    setRecords((data ?? []) as PsraPaperMarkRecord[]);
-  }, [hasModuleAccess, selectedClassId, selectedSchool, selectedYear, session]);
+    const paperCodes = new Set(PSRA_PAPERS.map((paper) => paper.subjectCode as string));
+    const dedicated = ((paperResult.data ?? []) as PsraPaperMarkRecord[]).map((record) => ({
+      ...record,
+      source: 'psra_trial_paper_marks' as const,
+    }));
+    const standard = ((standardResult.data ?? []) as MarkRecord[])
+      .filter((record) => record.markah !== null && paperCodes.has(record.kod_subjek))
+      .map((record) => ({
+        id: record.id,
+        kod_sekolah: record.kod_sekolah,
+        tahun_akademik: selectedYear,
+        class_id: record.class_id,
+        student_id: record.student_id,
+        sesi: session,
+        paper_code: record.kod_subjek,
+        markah: Number(record.markah),
+        entered_by: '',
+        updated_by: '',
+        updated_at: '',
+        source: 'marks' as const,
+      }));
+    // Markah daripada menu Pemarkahan mengatasi rekod khusus jika kedua-duanya wujud.
+    const merged = new Map<string, LoadedPsraMark>();
+    [...dedicated, ...standard].forEach((record) => {
+      merged.set(`${record.student_id}|${record.paper_code}`, record);
+    });
+    setRecords([...merged.values()]);
+  }, [exams, hasModuleAccess, selectedClassId, selectedSchool, selectedYear, session]);
 
   useEffect(() => {
     void loadRecords();
@@ -289,6 +338,12 @@ export default function PsraTrialManager({
     const results = await Promise.all(
       papersToSave.map(async (paper) => {
         const existing = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);
+        if (existing?.source === 'marks') {
+          return await client
+            .from('marks')
+            .update({ markah: scoreNumber(draft[paper.key]) })
+            .eq('id', existing.id);
+        }
         if (existing) {
           return await client
             .from('psra_trial_paper_marks')

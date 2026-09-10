@@ -1,18 +1,19 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ClassRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
+import type { ClassRecord, ExamRecord, MarkRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { DEFAULT_UPKK_GRADES, UPKK_WRITTEN_PAPERS, upkkGrade, type UpkkGradeSettings, type UpkkWrittenMark, type UpkkWrittenPaperKey } from '@/lib/upkkTrial';
 import { useAccessProfile } from '../ui/AuthGate';
 
-type Props = { schools: School[]; moduleAccesses: SchoolModuleAccess[]; classes: ClassRecord[]; students: StudentRecord[] };
+type Props = { schools: School[]; moduleAccesses: SchoolModuleAccess[]; classes: ClassRecord[]; students: StudentRecord[]; exams: ExamRecord[] };
+type LoadedUpkkMark = UpkkWrittenMark & { source: 'upkk_trial_paper_marks' | 'marks' };
 type Draft = Record<UpkkWrittenPaperKey, string>;
 const blankDraft = () => Object.fromEntries(UPKK_WRITTEN_PAPERS.map((paper) => [paper.key, ''])) as Draft;
 const active = (status: string | null | undefined) => (status ?? '').toUpperCase() === 'AKTIF';
 const whole = (value: string) => /^\d+$/.test(value) && Number(value) >= 0 && Number(value) <= 100;
 
-export default function UpkkTrialManager({ schools, moduleAccesses, classes, students }: Props) {
+export default function UpkkTrialManager({ schools, moduleAccesses, classes, students, exams }: Props) {
   const profile = useAccessProfile();
   const year = new Date().getFullYear();
   const canSelectSchool = profile?.role === 'OWNER' || profile?.role === 'ADMIN_DAERAH';
@@ -21,7 +22,7 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
   const [classId, setClassId] = useState('');
   const [studentId, setStudentId] = useState('');
   const [session, setSession] = useState<1 | 2>(1);
-  const [records, setRecords] = useState<UpkkWrittenMark[]>([]);
+  const [records, setRecords] = useState<LoadedUpkkMark[]>([]);
   const [grades, setGrades] = useState<UpkkGradeSettings>({ kod_sekolah: '', ...DEFAULT_UPKK_GRADES });
   const [draft, setDraft] = useState<Draft>(blankDraft);
   const [message, setMessage] = useState('');
@@ -37,15 +38,55 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
   const load = useCallback(async () => {
     setRecords([]);
     if (!supabase || !hasAccess || !schoolCode || !classId) return;
-    const [marksResult, gradesResult] = await Promise.all([
+    const exam = exams.find(
+      (item) =>
+        Number(item.tahun_akademik) === year &&
+        item.kod_peperiksaan.toUpperCase().replace(/[^A-Z0-9]/g, '') === `UPKK${session}`,
+    );
+    const [trialResult, standardResult, gradesResult] = await Promise.all([
       supabase.from('upkk_trial_paper_marks').select('*').eq('kod_sekolah', schoolCode).eq('tahun_akademik', year).eq('class_id', classId).eq('sesi', session),
+      exam
+        ? supabase
+            .from('marks')
+            .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
+            .eq('exam_id', exam.id)
+            .eq('kod_sekolah', schoolCode)
+            .eq('class_id', classId)
+        : Promise.resolve({ data: [] as MarkRecord[], error: null }),
       supabase.from('upkk_trial_grade_settings').select('*').eq('kod_sekolah', schoolCode).maybeSingle(),
     ]);
-    if (marksResult.error) setMessage(`Gagal memuatkan markah UPKK: ${marksResult.error.message}`);
-    else setRecords((marksResult.data ?? []) as UpkkWrittenMark[]);
+    if (trialResult.error && standardResult.error) {
+      setMessage(`Gagal memuatkan markah UPKK: ${trialResult.error.message}`);
+    } else {
+      const dedicated = ((trialResult.data ?? []) as UpkkWrittenMark[]).map((record) => ({
+        ...record,
+        source: 'upkk_trial_paper_marks' as const,
+      }));
+      const paperBySubject = new Map(UPKK_WRITTEN_PAPERS.map((paper) => [paper.subjectCode as string, paper.paperCode]));
+      const standard = ((standardResult.data ?? []) as MarkRecord[])
+        .filter((record) => record.markah !== null && paperBySubject.has(record.kod_subjek))
+        .map((record) => ({
+          id: record.id,
+          kod_sekolah: record.kod_sekolah,
+          tahun_akademik: year,
+          class_id: record.class_id,
+          student_id: record.student_id,
+          sesi: session,
+          paper_code: paperBySubject.get(record.kod_subjek)!,
+          markah: Number(record.markah),
+          updated_at: '',
+          source: 'marks' as const,
+        }));
+      // Markah daripada menu Pemarkahan mengatasi rekod khusus jika kedua-duanya wujud.
+      const merged = new Map<string, LoadedUpkkMark>();
+      [...dedicated, ...standard].forEach((record) => {
+        merged.set(`${record.student_id}|${record.paper_code}`, record);
+      });
+      setRecords([...merged.values()]);
+    }
     if (gradesResult.data) setGrades(gradesResult.data as UpkkGradeSettings);
     else setGrades({ kod_sekolah: schoolCode, ...DEFAULT_UPKK_GRADES });
-  }, [classId, hasAccess, schoolCode, session, year]);
+  }, [classId, exams, hasAccess, schoolCode, session, year]);
   useEffect(() => { void load(); }, [load]);
 
   const recordMap = useMemo(() => new Map(records.map((item) => [`${item.student_id}|${item.paper_code}`, item])), [records]);
@@ -60,12 +101,27 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
 
   async function saveMarks() {
     if (!supabase || !schoolCode || !classId || !studentId) return;
+    const client = supabase;
     const papers = UPKK_WRITTEN_PAPERS.filter((paper) => draft[paper.key] !== '');
     const invalid = papers.find((paper) => !whole(draft[paper.key]));
     if (!papers.length || invalid) return setMessage(invalid ? `Markah ${invalid.label} mesti nombor bulat 0 hingga 100.` : 'Masukkan sekurang-kurangnya satu markah.');
     setPending(true); setMessage('');
-    const rows = papers.map((paper) => ({ kod_sekolah: schoolCode, tahun_akademik: year, class_id: classId, student_id: studentId, sesi: session, paper_code: paper.paperCode, markah: Number(draft[paper.key]) }));
-    const { error } = await supabase.from('upkk_trial_paper_marks').upsert(rows, { onConflict: 'tahun_akademik,student_id,sesi,paper_code' });
+    const results = await Promise.all(papers.map((paper) => {
+      const existing = recordMap.get(`${studentId}|${paper.paperCode}`);
+      if (existing?.source === 'marks') {
+        return client.from('marks').update({ markah: Number(draft[paper.key]) }).eq('id', existing.id);
+      }
+      return client.from('upkk_trial_paper_marks').upsert({
+        kod_sekolah: schoolCode,
+        tahun_akademik: year,
+        class_id: classId,
+        student_id: studentId,
+        sesi: session,
+        paper_code: paper.paperCode,
+        markah: Number(draft[paper.key]),
+      }, { onConflict: 'tahun_akademik,student_id,sesi,paper_code' });
+    }));
+    const error = results.find((result) => result.error)?.error;
     setMessage(error ? `Gagal menyimpan markah: ${error.message}` : `${papers.length} markah Percubaan UPKK ${session} berjaya disimpan.`);
     if (!error) await load();
     setPending(false);

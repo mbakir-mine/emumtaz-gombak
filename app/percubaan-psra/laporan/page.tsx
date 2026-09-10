@@ -1,6 +1,7 @@
 import AppFrame from '../../ui/AppFrame';
 import {
   getClasses,
+  getExams,
   getSchoolModuleAccesses,
   getSchools,
   getStudents,
@@ -13,13 +14,14 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PsraReportPage() {
-  const [schools, moduleAccesses, classes, students, classAssignments, subjectAssignments] = await Promise.all([
+  const [schools, moduleAccesses, classes, students, classAssignments, subjectAssignments, exams] = await Promise.all([
     getSchools(),
     getSchoolModuleAccesses(),
     getClasses(),
     getStudents(),
     getTeacherClassAssignments(),
     getTeacherSubjectAssignments(),
+    getExams(),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function PsraReportPage() {
         students={students}
         classAssignments={classAssignments}
         subjectAssignments={subjectAssignments}
+        exams={exams}
       />
     </AppFrame>
   );

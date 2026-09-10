@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   ClassRecord,
+  ExamRecord,
+  MarkRecord,
   School,
   SchoolModuleAccess,
   StudentRecord,
@@ -23,6 +25,7 @@ type Props = {
   students: StudentRecord[];
   classAssignments: TeacherClassAssignment[];
   subjectAssignments: TeacherSubjectAssignment[];
+  exams: ExamRecord[];
 };
 
 type ReportType = 'darjah' | 'kelas' | 'individu' | 'subjek' | 'gred';
@@ -90,6 +93,7 @@ export default function PsraReportManager({
   students,
   classAssignments,
   subjectAssignments,
+  exams,
 }: Props) {
   const profile = useAccessProfile();
   const currentYear = new Date().getFullYear();
@@ -200,18 +204,55 @@ export default function PsraReportManager({
     setMessage('');
     if (!supabase || !selectedSchool || !hasModuleAccess) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('psra_trial_paper_marks')
-      .select('*')
-      .eq('kod_sekolah', selectedSchool)
-      .eq('tahun_akademik', selectedYear)
-      .eq('sesi', session);
-    if (error) {
-      setMessage(`Laporan tidak dapat dimuatkan: ${error.message}`);
+    const exam = exams.find(
+      (item) =>
+        Number(item.tahun_akademik) === selectedYear &&
+        item.kod_peperiksaan.toUpperCase().replace(/[^A-Z0-9]/g, '') === `PSRA${session}`,
+    );
+    const [paperResult, standardResult] = await Promise.all([
+      supabase
+        .from('psra_trial_paper_marks')
+        .select('*')
+        .eq('kod_sekolah', selectedSchool)
+        .eq('tahun_akademik', selectedYear)
+        .eq('sesi', session),
+      exam
+        ? supabase
+            .from('marks')
+            .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
+            .eq('exam_id', exam.id)
+            .eq('kod_sekolah', selectedSchool)
+        : Promise.resolve({ data: [] as MarkRecord[], error: null }),
+    ]);
+    if (paperResult.error && standardResult.error) {
+      setMessage(`Laporan tidak dapat dimuatkan: ${paperResult.error.message}`);
     } else {
       const allowedClassIds = new Set(yearSixClasses.map((item) => item.id));
+      const paperCodes = new Set(PSRA_PAPERS.map((paper) => paper.subjectCode as string));
+      const dedicated = (paperResult.data ?? []) as PsraPaperMarkRecord[];
+      const standard = ((standardResult.data ?? []) as MarkRecord[])
+        .filter((record) => record.markah !== null && paperCodes.has(record.kod_subjek))
+        .map((record) => ({
+          id: record.id,
+          kod_sekolah: record.kod_sekolah,
+          tahun_akademik: selectedYear,
+          class_id: record.class_id,
+          student_id: record.student_id,
+          sesi: session,
+          paper_code: record.kod_subjek,
+          markah: Number(record.markah),
+          entered_by: '',
+          updated_by: '',
+          updated_at: '',
+        } as PsraPaperMarkRecord));
+
+      // Markah daripada menu Pemarkahan mengatasi rekod khusus jika kedua-duanya wujud.
+      const merged = new Map<string, PsraPaperMarkRecord>();
+      [...dedicated, ...standard].forEach((record) => {
+        merged.set(`${record.student_id}|${record.paper_code}`, record);
+      });
       setRecords(
-        ((data ?? []) as PsraPaperMarkRecord[]).filter((record) => {
+        [...merged.values()].filter((record) => {
           if (!allowedClassIds.has(record.class_id)) return false;
           if (canManageAll || assignedClassIds.has(record.class_id)) return true;
           return subjectCodesByClass.get(record.class_id)?.has(record.paper_code) ?? false;
@@ -222,6 +263,7 @@ export default function PsraReportManager({
   }, [
     assignedClassIds,
     canManageAll,
+    exams,
     hasModuleAccess,
     selectedSchool,
     selectedYear,
