@@ -85,5 +85,11 @@ export async function DELETE(request: Request) {
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
-  return noStoreJson({ hasSessionCookie: Boolean(token) });
+  if (!token || !supabaseUrl || !supabaseAnonKey) return noStoreJson({ hasSessionCookie: Boolean(token), studentCount: 0 });
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { count } = await client.from('students').select('id', { count: 'exact', head: true });
+  return noStoreJson({ hasSessionCookie: true, studentCount: count ?? 0 });
 }
