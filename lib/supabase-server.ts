@@ -16,7 +16,11 @@ export async function getSupabaseServerClient() {
   return createClient(supabaseUrl as string, supabaseAnonKey as string, {
     global: {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+        return fetch(input, { ...init, headers, cache: 'no-store' });
+      },
     },
     auth: { autoRefreshToken: false, persistSession: false },
   });
