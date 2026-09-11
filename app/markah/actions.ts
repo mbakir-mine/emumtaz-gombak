@@ -139,9 +139,11 @@ export async function saveMarks(
     }
 
     const componentRows = studentIds.flatMap((studentId) =>
-      componentCodes.map((componentCode) => {
+      componentCodes.flatMap((componentCode) => {
         const markah = wholeMark(formData.get(`component_markah_${studentId}_${componentCode}`));
-        return {
+        const existed = formData.get(`existing_component_${studentId}_${componentCode}`) === '1';
+        if (markah === null && !existed) return [];
+        return [{
           exam_id: examId,
           student_id: studentId,
           kod_sekolah: kodSekolah,
@@ -149,7 +151,7 @@ export async function saveMarks(
           kod_subjek: kodSubjek,
           kod_komponen: componentCode,
           markah,
-        };
+        }];
       }),
     );
 
@@ -163,9 +165,11 @@ export async function saveMarks(
       return { ok: false, message: `Markah ${invalidComponent.kod_komponen} mesti nombor bulat antara 0 hingga ${maxMark}.` };
     }
 
-    const { error: componentError } = await supabase.from('mark_components').upsert(componentRows, {
-      onConflict: 'exam_id,student_id,kod_subjek,kod_komponen',
-    });
+    const { error: componentError } = componentRows.length > 0
+      ? await supabase.from('mark_components').upsert(componentRows, {
+          onConflict: 'exam_id,student_id,kod_subjek,kod_komponen',
+        })
+      : { error: null };
 
     if (componentError) {
       return {
@@ -174,26 +178,32 @@ export async function saveMarks(
       };
     }
 
-    const rows = studentIds.map((studentId) => {
+    const rows = studentIds.flatMap((studentId) => {
       const values = componentCodes.map((componentCode) => {
         return wholeMark(formData.get(`component_markah_${studentId}_${componentCode}`));
       });
+      const hasExistingComponents = componentCodes.some(
+        (componentCode) => formData.get(`existing_component_${studentId}_${componentCode}`) === '1',
+      );
       const numericValues = values.filter((value): value is number => value !== null && Number.isFinite(value));
+      if (numericValues.length === 0 && !hasExistingComponents) return [];
       const complete = numericValues.length === componentCodes.length;
       const markah = complete ? numericValues.reduce((sum, value) => sum + value, 0) : null;
-      return {
+      return [{
         exam_id: examId,
         student_id: studentId,
         kod_sekolah: kodSekolah,
         class_id: classId,
         kod_subjek: kodSubjek,
         markah,
-      };
+      }];
     });
 
-    const { error } = await supabase.from('marks').upsert(rows, {
-      onConflict: 'exam_id,student_id,kod_subjek',
-    });
+    const { error } = rows.length > 0
+      ? await supabase.from('marks').upsert(rows, {
+          onConflict: 'exam_id,student_id,kod_subjek',
+        })
+      : { error: null };
 
     if (error) {
       return { ok: false, message: `Komponen berjaya disimpan, tetapi jumlah induk gagal dikemaskini: ${error.message}` };

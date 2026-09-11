@@ -102,16 +102,20 @@ export default function MarkEntryForm({
   function totalForStudent(studentId: string) {
     if (!hasComponents) return marksByStudent.get(studentId) ?? null;
     let total = 0;
+    let filledComponents = 0;
 
     for (const component of activeComponents) {
       const raw = componentValues[`${studentId}|${component.kod_komponen}`] ?? '';
-      if (raw.trim() === '') return null;
+      if (raw.trim() === '') continue;
       const markah = Number(raw);
       if (!Number.isFinite(markah)) return null;
       total += markah;
+      filledComponents += 1;
     }
 
-    return total;
+    if (filledComponents === activeComponents.length) return total;
+    if (filledComponents === 0) return marksByStudent.get(studentId) ?? null;
+    return null;
   }
 
   return (
@@ -193,6 +197,13 @@ export default function MarkEntryForm({
                   <>
                     {activeComponents.map((component) => (
                       <td key={component.kod_komponen}>
+                        {componentMarksByKey.has(`${student.id}|${component.kod_komponen}`) && (
+                          <input
+                            type="hidden"
+                            name={`existing_component_${student.id}_${component.kod_komponen}`}
+                            value="1"
+                          />
+                        )}
                         <input
                           className="mark-input component-mark-input"
                           name={`component_markah_${student.id}_${component.kod_komponen}`}
@@ -210,7 +221,18 @@ export default function MarkEntryForm({
                         />
                       </td>
                     ))}
-                    <td className="mark-total-cell">{totalMark ?? '-'}</td>
+                    <td
+                      className="mark-total-cell"
+                      title={
+                        activeComponents.every(
+                          (component) => (componentValues[`${student.id}|${component.kod_komponen}`] ?? '').trim() === '',
+                        ) && markah !== null
+                          ? 'Jumlah rasmi sedia ada. Pecahan komponen belum direkodkan.'
+                          : undefined
+                      }
+                    >
+                      {totalMark ?? '-'}
+                    </td>
                     <td>{displayGrade(totalMark)}</td>
                   </>
                 ) : (

@@ -1273,9 +1273,7 @@ export async function getMarksForSelection(
     .eq('class_id', classId)
     .eq('kod_subjek', kodSubjek);
 
-  if (error) return [];
-
-  const coreMarks = (data ?? []) as MarkRecord[];
+  const coreMarks = error ? [] : ((data ?? []) as MarkRecord[]);
   const { data: exam } = await supabase
     .from('exams')
     .select('kod_peperiksaan')
