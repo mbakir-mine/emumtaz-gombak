@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const { data: userData } = await client.auth.getUser(token);
   const { count } = await client.from('students').select('id', { count: 'exact', head: true });
-  return noStoreJson({ hasSessionCookie: true, studentCount: count ?? 0 });
+  return noStoreJson({ hasSessionCookie: true, studentCount: count ?? 0, userId: userData.user?.id ?? null, email: userData.user?.email ?? null });
 }
