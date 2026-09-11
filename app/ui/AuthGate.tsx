@@ -34,7 +34,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Supabase may briefly emit a null session while initializing or refreshing.
+      // Never clear the server cookie unless the user explicitly signed out.
+      if (!session && event !== 'SIGNED_OUT') return;
       window.setTimeout(() => {
         void syncServerSession(session?.access_token ?? null)
           .then((changed) => {
