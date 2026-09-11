@@ -70,8 +70,15 @@ export default function LoginPage() {
       return;
     }
 
+    try {
+      await syncServerSession(data.session?.access_token ?? null);
+    } catch {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setMessage('Sesi gagal disediakan. Sila cuba semula.');
+      return;
+    }
     setLoading(false);
-    await syncServerSession(data.session?.access_token ?? null);
     window.localStorage.removeItem('emumtaz_selected_profile_id');
     router.push('/');
   }
