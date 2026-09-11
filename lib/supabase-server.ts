@@ -30,9 +30,17 @@ export async function getSupabaseServerClient() {
       if (ownerProfiles?.length) return adminClient;
     }
   }
+  const authenticatedHeaders: Record<string, string> = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
   const options = {
     global: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: 'no-store' }),
+      headers: authenticatedHeaders,
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+        return fetch(input, { ...init, headers, cache: 'no-store' });
+      },
     },
     auth: { autoRefreshToken: false, persistSession: false },
     ...(accessToken ? { accessToken: async () => accessToken } : {}),
