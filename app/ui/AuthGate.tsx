@@ -8,8 +8,33 @@ import { optionalSchoolModules } from '@/lib/schoolModules';
 import type { OptionalSchoolModuleKey } from '@/lib/schoolModules';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
+const serverSessionReadyKey = 'emumtaz_server_session_ready';
 const publicPaths = ['/login', '/daftar', '/akses'];
 const AccessProfileContext = createContext<AccessProfile | null>(null);
+
+function hasConfirmedServerSession() {
+  try {
+    return window.sessionStorage.getItem(serverSessionReadyKey) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function confirmServerSession() {
+  try {
+    window.sessionStorage.setItem(serverSessionReadyKey, '1');
+  } catch {
+    // A reload still gives the server a chance to read the newly-set cookie.
+  }
+}
+
+function clearConfirmedServerSession() {
+  try {
+    window.sessionStorage.removeItem(serverSessionReadyKey);
+  } catch {
+    // Storage may be disabled by the browser.
+  }
+}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs = 20000): Promise<T> {
   return await Promise.race([
@@ -38,10 +63,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       // Supabase may briefly emit a null session while initializing or refreshing.
       // Never clear the server cookie unless the user explicitly signed out.
       if (!session && event !== 'SIGNED_OUT') return;
+      if (event === 'SIGNED_OUT') clearConfirmedServerSession();
       window.setTimeout(() => {
         void syncServerSession(session?.access_token ?? null)
           .then((changed) => {
-            if (changed) window.location.reload();
+            if (changed) {
+              confirmServerSession();
+              window.location.reload();
+            }
           })
           .catch(() => undefined);
       }, 0);
@@ -78,7 +107,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
         const serverSessionChanged = await syncServerSession(sessionData.session?.access_token ?? null);
-        if (serverSessionChanged) {
+        // The page can be prefetched before the HttpOnly session cookie is available to server components.
+        // Reload once per browser tab after the cookie is confirmed so protected data is not rendered as empty.
+        if (serverSessionChanged || !hasConfirmedServerSession()) {
+          confirmServerSession();
           window.location.reload();
           return;
         }
