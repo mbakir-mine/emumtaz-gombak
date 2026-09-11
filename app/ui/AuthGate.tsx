@@ -78,7 +78,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
         const serverSessionChanged = await syncServerSession(sessionData.session?.access_token ?? null);
-        if (serverSessionChanged) window.location.reload();
+        if (serverSessionChanged) {
+          window.location.reload();
+          return;
+        }
         const profileFilter = user?.id
           ? `auth_user_id.eq.${user.id},email.ilike.${email.toLowerCase()}`
           : `email.ilike.${email.toLowerCase()}`;

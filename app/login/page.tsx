@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -80,7 +78,8 @@ export default function LoginPage() {
     }
     setLoading(false);
     window.localStorage.removeItem('emumtaz_selected_profile_id');
-    router.push('/');
+    // Avoid a prefetched page rendered before the HTTP-only session cookie existed.
+    window.location.assign(new URL('/', window.location.origin).href);
   }
 
   return (
