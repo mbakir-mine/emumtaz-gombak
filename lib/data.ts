@@ -1,4 +1,5 @@
 import { getSupabaseServerClient, hasSupabaseServerEnv as hasSupabaseEnv } from './supabase-server';
+import { cache } from 'react';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
 import {
   khalifahMudaClassActivities,
@@ -970,7 +971,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
   return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender, classesByYear };
 }
 
-export async function getSchools(): Promise<School[]> {
+async function getSchoolsUncached(): Promise<School[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -981,6 +982,7 @@ export async function getSchools(): Promise<School[]> {
   if (error) return [];
   return data ?? [];
 }
+export const getSchools = cache(getSchoolsUncached);
 
 export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
   const supabase = await getSupabaseServerClient();
@@ -996,7 +998,7 @@ export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
   return (data ?? []) as SchoolModuleAccess[];
 }
 
-export async function getClasses(): Promise<ClassRecord[]> {
+async function getClassesUncached(): Promise<ClassRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1009,6 +1011,7 @@ export async function getClasses(): Promise<ClassRecord[]> {
   if (error) return [];
   return data ?? [];
 }
+export const getClasses = cache(getClassesUncached);
 
 export async function getStudents(): Promise<StudentRecord[]> {
   return fetchStudentsInBatches();
@@ -1222,7 +1225,7 @@ export async function getTeacherClassAssignments(): Promise<TeacherClassAssignme
   })) as TeacherClassAssignment[];
 }
 
-export async function getSubjects(): Promise<SubjectRecord[]> {
+async function getSubjectsUncached(): Promise<SubjectRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1234,8 +1237,9 @@ export async function getSubjects(): Promise<SubjectRecord[]> {
   if (error) return [];
   return data ?? [];
 }
+export const getSubjects = cache(getSubjectsUncached);
 
-export async function getExams(): Promise<ExamRecord[]> {
+async function getExamsUncached(): Promise<ExamRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1247,6 +1251,7 @@ export async function getExams(): Promise<ExamRecord[]> {
   if (error) return [];
   return data ?? [];
 }
+export const getExams = cache(getExamsUncached);
 
 export async function getStudentsByClass(classId: string): Promise<StudentRecord[]> {
   const supabase = await getSupabaseServerClient();
