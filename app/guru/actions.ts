@@ -102,8 +102,10 @@ export async function createTeacher(
       email,
       role,
       kod_sekolah: kodSekolah,
-      status: 'AKTIF',
-      must_change_password: true,
+      // Creating a profile here does not create an Auth password. Keep it pending
+      // until Pengesahan provisions a temporary password for the teacher.
+      status: 'MENUNGGU',
+      must_change_password: false,
     },
     {
       onConflict: 'email,role,kod_sekolah',
@@ -116,7 +118,10 @@ export async function createTeacher(
 
   revalidatePath('/guru');
   revalidatePath('/');
-  return { ok: true, message: `${nama} berjaya disimpan.` };
+  return {
+    ok: true,
+    message: `${nama} berjaya didaftarkan. Aktifkan di Pengesahan untuk menjana kata laluan sementara.`,
+  };
 }
 
 const allowedImportRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];

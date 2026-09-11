@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useState } from 'react';
 import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
@@ -129,6 +130,11 @@ export default function ChangePasswordForm() {
           {loading ? 'Menyimpan...' : 'Tukar Kata Laluan'}
         </button>
         {message && <p className={success ? 'form-success' : 'form-message'}>{message}</p>}
+        {!success && (
+          <Link className="forgot-link" href="/lupa-password">
+            Lupa kata laluan semasa?
+          </Link>
+        )}
       </div>
     </form>
   );
