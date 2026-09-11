@@ -82,3 +82,8 @@ export async function DELETE(request: Request) {
   response.cookies.set(COOKIE_NAME, '', { httpOnly: true, sameSite: 'strict', path: '/', maxAge: 0 });
   return response;
 }
+
+export async function GET(request: NextRequest) {
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  return noStoreJson({ hasSessionCookie: Boolean(token) });
+}
