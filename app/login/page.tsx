@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
 
 export default function LoginPage() {
@@ -71,6 +71,7 @@ export default function LoginPage() {
     }
 
     setLoading(false);
+    await syncServerSession(data.session?.access_token ?? null);
     window.localStorage.removeItem('emumtaz_selected_profile_id');
     router.push('/');
   }

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import { canAccessPath, choosePrimaryProfile, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
 import { optionalSchoolModules } from '@/lib/schoolModules';
 import type { OptionalSchoolModuleKey } from '@/lib/schoolModules';
@@ -32,6 +32,22 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AccessProfile | null>(null);
 
   useEffect(() => {
+    if (!supabase) return;
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      window.setTimeout(() => {
+        void syncServerSession(session?.access_token ?? null)
+          .then((changed) => {
+            if (changed) router.refresh();
+          })
+          .catch(() => undefined);
+      }, 0);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function checkAccess() {
@@ -58,6 +74,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           router.replace('/login');
           return;
         }
+        const serverSessionChanged = await syncServerSession(sessionData.session?.access_token ?? null);
+        if (serverSessionChanged) router.refresh();
         const profileFilter = user?.id
           ? `auth_user_id.eq.${user.id},email.ilike.${email.toLowerCase()}`
           : `email.ilike.${email.toLowerCase()}`;
@@ -210,6 +228,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={async () => {
               await supabase?.auth.signOut();
+              await syncServerSession(null);
               router.replace('/login');
             }}
           >

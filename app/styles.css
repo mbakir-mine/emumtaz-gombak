@@ -3074,6 +3074,18 @@ table {
   border-collapse: collapse;
 }
 
+.audit-record-id {
+  display: block;
+  max-width: 240px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-number-button {
   padding: 0;
   border: 0;
@@ -8919,4 +8931,11 @@ tbody tr:hover {
     margin-left: 16px;
     margin-right: 16px;
   }
+}
+.registration-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
 }

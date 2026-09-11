@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useActionState, useMemo, useState } from 'react';
 import type { School, UserRecord } from '@/lib/data';
 import { bulkUpdateUserStatusOnly, updateUserStatusOnly } from './actions';
+import { useAccessToken } from '../ui/useAccessToken';
 
 const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
 const bulkStatusInitialState = {
@@ -58,12 +59,13 @@ function compactActionMessage(message: string) {
   return message.length > 120 ? `${message.slice(0, 117)}...` : message;
 }
 
-function UserStatusSelect({ user }: { user: UserRecord }) {
+function UserStatusSelect({ user, accessToken }: { user: UserRecord; accessToken: string }) {
   const [state, action] = useActionState(updateUserStatusOnly, bulkStatusInitialState);
 
   return (
     <form action={action} className="status-select-form">
       <input type="hidden" name="id" value={user.id} />
+      <input type="hidden" name="access_token" value={accessToken} />
       <select
         name="status"
         defaultValue={user.status}
@@ -98,11 +100,13 @@ function UserTable({
   schoolNames,
   emptyText,
   bulkLabel,
+  accessToken,
 }: {
   users: UserRecord[];
   schoolNames: Map<string, string>;
   emptyText: string;
   bulkLabel: string;
+  accessToken: string;
 }) {
   const [bulkStatusState, bulkStatusAction] = useActionState(bulkUpdateUserStatusOnly, bulkStatusInitialState);
   const editableUsers = users.filter((user) => user.role !== 'OWNER');
@@ -115,6 +119,7 @@ function UserTable({
     <>
       {editableUsers.length > 0 && (
         <form action={bulkStatusAction} className="teacher-status-toolbar user-status-toolbar">
+          <input type="hidden" name="access_token" value={accessToken} />
           <label>
             <span>{bulkLabel}</span>
             <select
@@ -172,7 +177,7 @@ function UserTable({
                       {statusLabel(user.status)}
                     </span>
                   ) : (
-                    <UserStatusSelect user={user} />
+                    <UserStatusSelect user={user} accessToken={accessToken} />
                   )}
                 </td>
                 <td>
@@ -193,6 +198,7 @@ function UserTable({
 }
 
 export default function UserApprovalList({ users, schools }: { users: UserRecord[]; schools: School[] }) {
+  const accessToken = useAccessToken();
   const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const schoolNames = useMemo(() => new Map(schools.map((school) => [school.kod_sekolah, school.nama_sekolah])), [schools]);
@@ -273,6 +279,7 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
           schoolNames={schoolNames}
           emptyText="Tiada permohonan baru."
           bulkLabel="Status Semua"
+          accessToken={accessToken}
         />
       </section>
 
@@ -286,6 +293,7 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
           schoolNames={schoolNames}
           emptyText="Belum ada pengguna aktif."
           bulkLabel="Status Semua"
+          accessToken={accessToken}
         />
       </section>
 
@@ -300,6 +308,7 @@ export default function UserApprovalList({ users, schools }: { users: UserRecord
             schoolNames={schoolNames}
             emptyText="Tiada pengguna digantung."
             bulkLabel="Status Semua"
+            accessToken={accessToken}
           />
         </section>
       )}

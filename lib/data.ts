@@ -1,4 +1,4 @@
-import { hasSupabaseEnv, supabase } from './supabase';
+import { getSupabaseServerClient, hasSupabaseServerEnv as hasSupabaseEnv } from './supabase-server';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
 import {
   khalifahMudaClassActivities,
@@ -561,6 +561,7 @@ type SubjectGradeRule = {
 };
 
 async function countTable(table: string) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return 0;
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
   if (error) throw error;
@@ -594,6 +595,7 @@ async function getStudentGenderCounts() {
 }
 
 async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const pageSize = 1000;
@@ -619,6 +621,7 @@ async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
 }
 
 async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const pageSize = 1000;
@@ -645,6 +648,7 @@ async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]>
 }
 
 async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !examId) return [];
 
   const pageSize = 1000;
@@ -669,6 +673,7 @@ async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> 
 }
 
 async function getSubjectGradeRules(): Promise<SubjectGradeRule[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('subject_grade_rules')
@@ -690,6 +695,7 @@ async function getTeacherDashboardRows(
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
 }> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { teacherClasses: [], teacherSubjects: [] };
 
   const [{ data: classAssignments }, { data: subjectAssignments }] = await Promise.all([
@@ -965,6 +971,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
 }
 
 export async function getSchools(): Promise<School[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('schools')
@@ -976,6 +983,7 @@ export async function getSchools(): Promise<School[]> {
 }
 
 export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -989,6 +997,7 @@ export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
 }
 
 export async function getClasses(): Promise<ClassRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('classes')
@@ -1049,6 +1058,7 @@ function normalizeUpkkRecord(row: any): UpkkAmaliSolatRecord {
 }
 
 export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -1062,6 +1072,7 @@ export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> 
 }
 
 export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -1075,6 +1086,7 @@ export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
 }
 
 export async function getStudentsPage(options: StudentPageOptions = {}): Promise<StudentPageResult> {
+  const supabase = await getSupabaseServerClient();
   const page = Math.max(1, options.page ?? 1);
   const pageSize = Math.min(500, Math.max(1, options.pageSize ?? 100));
   const from = (page - 1) * pageSize;
@@ -1108,6 +1120,7 @@ export async function getStudentsPage(options: StudentPageOptions = {}): Promise
 export async function getStudentSchoolSummaries(
   options: StudentSchoolSummaryOptions = {},
 ): Promise<StudentSchoolSummary[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   let query = supabase
@@ -1124,6 +1137,7 @@ export async function getStudentSchoolSummaries(
 }
 
 export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('v_student_enrollment_detail')
@@ -1139,6 +1153,7 @@ export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]
 }
 
 export async function getSchoolUsers(): Promise<UserRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
@@ -1154,6 +1169,7 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
 }
 
 export async function getAllAppUsers(): Promise<UserRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('app_users')
@@ -1168,6 +1184,7 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
 }
 
 export async function getAppUserById(id: string): Promise<UserRecord | null> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !id) return null;
   const { data, error } = await supabase
     .from('app_users')
@@ -1180,6 +1197,7 @@ export async function getAppUserById(id: string): Promise<UserRecord | null> {
 }
 
 export async function getTeacherClassAssignments(): Promise<TeacherClassAssignment[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('teacher_class_assignments')
@@ -1205,6 +1223,7 @@ export async function getTeacherClassAssignments(): Promise<TeacherClassAssignme
 }
 
 export async function getSubjects(): Promise<SubjectRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('subjects')
@@ -1217,6 +1236,7 @@ export async function getSubjects(): Promise<SubjectRecord[]> {
 }
 
 export async function getExams(): Promise<ExamRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('exams')
@@ -1229,6 +1249,7 @@ export async function getExams(): Promise<ExamRecord[]> {
 }
 
 export async function getStudentsByClass(classId: string): Promise<StudentRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !classId) return [];
   const { data, error } = await supabase
     .from('students')
@@ -1246,6 +1267,7 @@ export async function getMarksForSelection(
   classId: string,
   kodSubjek: string,
 ): Promise<MarkRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !examId || !classId || !kodSubjek) return [];
   const { data, error } = await supabase
     .from('marks')
@@ -1274,10 +1296,38 @@ export async function getMarksForSelection(
     .eq('sesi', session)
     .eq('paper_code', kodSubjek);
 
-  if (psraError) return coreMarks;
+  let paperRows = psraMarks ?? [];
+  if (psraError || paperRows.length === 0) {
+    const legacyColumnBySubject: Record<string, string> = {
+      AS01: 'akhlak_sirah',
+      BA02: 'bahasa_arab',
+      JIK03: 'jawi_imlak_khat',
+      TF04: 'tauhid_fekah',
+      TJ05: 'tajwid',
+    };
+    const legacyColumn = legacyColumnBySubject[kodSubjek];
+    if (legacyColumn) {
+      const { data: legacyRows, error: legacyError } = await supabase
+        .from('psra_trial_marks')
+        .select(`id,student_id,kod_sekolah,class_id,sesi,${legacyColumn}`)
+        .eq('class_id', classId)
+        .eq('sesi', session);
+
+      if (!legacyError) {
+        paperRows = (legacyRows ?? []).map((row: any) => ({
+          id: row.id,
+          student_id: row.student_id,
+          kod_sekolah: row.kod_sekolah,
+          class_id: row.class_id,
+          paper_code: kodSubjek,
+          markah: row[legacyColumn],
+        }));
+      }
+    }
+  }
 
   const byStudent = new Map(coreMarks.map((mark) => [mark.student_id, mark]));
-  for (const row of psraMarks ?? []) {
+  for (const row of paperRows) {
     const existing = byStudent.get(row.student_id);
     if (existing?.markah !== null && existing?.markah !== undefined) continue;
     byStudent.set(row.student_id, {
@@ -1295,6 +1345,7 @@ export async function getMarksForSelection(
 }
 
 export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return mergeSubjectComponents([]);
   const { data, error } = await supabase
     .from('subject_components')
@@ -1308,6 +1359,7 @@ export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> 
 }
 
 export async function getSubjectComponentMarkSettings(): Promise<SubjectComponentMarkSetting[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('subject_component_mark_settings')
@@ -1330,6 +1382,7 @@ export async function getMarkComponentsForSelection(
   classId: string,
   kodSubjek: string,
 ): Promise<MarkComponentRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !examId || !classId || !kodSubjek) return [];
   const { data, error } = await supabase
     .from('mark_components')
@@ -1343,6 +1396,7 @@ export async function getMarkComponentsForSelection(
 }
 
 export async function getAttendanceRecords(attendanceDate?: string): Promise<AttendanceRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   let query = supabase
     .from('daily_attendance')
@@ -1357,6 +1411,7 @@ export async function getAttendanceRecords(attendanceDate?: string): Promise<Att
 }
 
 export async function getTakwimEvents(): Promise<TakwimEvent[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('takwim_events')
@@ -1369,6 +1424,7 @@ export async function getTakwimEvents(): Promise<TakwimEvent[]> {
 }
 
 export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('amal_khair_categories')
@@ -1381,6 +1437,7 @@ export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {
 }
 
 export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('amal_khair_records')
@@ -1413,6 +1470,7 @@ export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
 }
 
 export async function getKhalifahMudaRecords(): Promise<KhalifahMudaRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -1463,6 +1521,7 @@ function defaultKhalifahMudaComponents(): KhalifahMudaComponent[] {
 }
 
 export async function getKhalifahMudaComponents(): Promise<KhalifahMudaComponent[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return defaultKhalifahMudaComponents();
 
   const { data, error } = await supabase
@@ -1492,6 +1551,7 @@ export async function getSahsiahIhabAssessments(options?: {
   tahunAkademik?: number;
   bulan?: number;
 }): Promise<SahsiahIhabAssessment[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   let query = supabase
     .from('sahsiah_ihab_assessments')
@@ -1532,6 +1592,7 @@ export async function getSahsiahIhabAssessments(options?: {
 }
 
 export async function getTimetableSlots(): Promise<TimetableSlot[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_slots')
@@ -1546,6 +1607,7 @@ export async function getTimetableSlots(): Promise<TimetableSlot[]> {
 }
 
 export async function getTimetableEntries(): Promise<TimetableEntry[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_entries')
@@ -1567,6 +1629,7 @@ export async function getTimetableEntries(): Promise<TimetableEntry[]> {
 }
 
 export async function getTimetableRequirements(): Promise<TimetableRequirement[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('timetable_requirements')
@@ -1590,6 +1653,7 @@ export async function getTimetableRequirements(): Promise<TimetableRequirement[]
 }
 
 export async function getRphRecords(): Promise<RphRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('rph_records')
@@ -1613,6 +1677,7 @@ export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
 }
 
 export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: string): Promise<StudentSummaryRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase || !mykid) return [];
   let query = supabase
     .from('v_student_exam_summary')
@@ -1632,6 +1697,7 @@ export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: str
 }
 
 export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('v_school_exam_summary')
@@ -1943,6 +2009,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
 }
 
 export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('v_subject_exam_summary')
@@ -1957,6 +2024,7 @@ export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
 }
 
 export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const pageSize = 1000;
@@ -2010,6 +2078,7 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
 }
 
 export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('pbd_marks')
@@ -2067,6 +2136,7 @@ export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
 }
 
 export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssignment[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('teacher_subject_assignments')
@@ -2098,6 +2168,7 @@ export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssi
 }
 
 export async function getTeacherSubjectComponentAssignments(): Promise<TeacherSubjectComponentAssignment[]> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('teacher_subject_component_assignments')
@@ -2122,4 +2193,30 @@ export async function getTeacherSubjectComponentAssignments(): Promise<TeacherSu
     kod_komponen: item.kod_komponen,
     users: Array.isArray(item.users) ? item.users[0] : item.users,
   })) as TeacherSubjectComponentAssignment[];
+}
+
+export type SecurityAuditLog = {
+  id: number;
+  created_at: string;
+  actor_email: string | null;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  table_name: string;
+  record_id: string | null;
+  kod_sekolah: string | null;
+  changed_fields: string[];
+};
+
+export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLog[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 500));
+  const { data, error } = await supabase
+    .from('security_audit_logs')
+    .select('id,created_at,actor_email,action,table_name,record_id,kod_sekolah,changed_fields')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) return [];
+  return (data ?? []) as SecurityAuditLog[];
 }

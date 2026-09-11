@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type TeacherClassActionState = {
   ok: boolean;
@@ -12,6 +12,7 @@ export async function assignTeacherClass(
   _previousState: TeacherClassActionState,
   formData: FormData,
 ): Promise<TeacherClassActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -40,4 +41,3 @@ export async function assignTeacherClass(
   revalidatePath('/guru-kelas');
   return { ok: true, message: 'Guru kelas berjaya ditetapkan.' };
 }
-

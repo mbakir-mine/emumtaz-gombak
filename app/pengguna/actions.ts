@@ -2,7 +2,7 @@
 
 import { refresh, revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { navItems } from '@/lib/access';
 import { sendActivationEmail } from '@/lib/activationEmail';
 import {
@@ -21,6 +21,12 @@ export type UserStatusActionState = {
   ok: boolean;
   message: string;
 };
+
+async function requireOwner(formData: FormData): Promise<UserStatusActionState | null> {
+  const accessToken = String(formData.get('access_token') ?? '').trim();
+  if (await verifyOwnerAccessToken(accessToken)) return null;
+  return { ok: false, message: 'Sesi Pentadbir Utama tidak sah. Sila log masuk semula.' };
+}
 
 function cleanStatus(value: FormDataEntryValue | null) {
   return String(value ?? '').trim().toUpperCase();
@@ -62,6 +68,9 @@ export async function updateUserStatusOnly(
   _previousState: UserStatusActionState,
   formData: FormData,
 ): Promise<UserStatusActionState> {
+  const supabase = await getSupabaseServerClient();
+  const denied = await requireOwner(formData);
+  if (denied) return denied;
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -107,6 +116,9 @@ export async function bulkUpdateUserStatusOnly(
   _previousState: UserStatusActionState,
   formData: FormData,
 ): Promise<UserStatusActionState> {
+  const supabase = await getSupabaseServerClient();
+  const denied = await requireOwner(formData);
+  if (denied) return denied;
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -196,6 +208,9 @@ export async function updateUserStatus(
   _previousState: UserStatusActionState,
   formData: FormData,
 ): Promise<UserStatusActionState> {
+  const supabase = await getSupabaseServerClient();
+  const denied = await requireOwner(formData);
+  if (denied) return denied;
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -298,10 +313,9 @@ export async function resetUserPassword(
   _previousState: UserStatusActionState,
   formData: FormData,
 ): Promise<UserStatusActionState> {
-  const accessToken = String(formData.get('access_token') ?? '').trim();
-  if (!(await verifyOwnerAccessToken(accessToken))) {
-    return { ok: false, message: 'Sesi Pentadbir Utama tidak sah. Sila log masuk semula.' };
-  }
+  const supabase = await getSupabaseServerClient();
+  const denied = await requireOwner(formData);
+  if (denied) return denied;
 
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   const id = String(formData.get('id') ?? '').trim();
@@ -333,6 +347,8 @@ export async function resetUserPassword(
 }
 
 export async function deleteUserProfile(formData: FormData) {
+  const supabase = await getSupabaseServerClient();
+  if (await requireOwner(formData)) return;
   if (!supabase) {
     return;
   }

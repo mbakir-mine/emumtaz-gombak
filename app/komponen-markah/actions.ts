@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type ComponentMarkActionState = {
   ok: boolean;
@@ -16,6 +16,7 @@ export async function saveComponentMarkSettings(
   _previousState: ComponentMarkActionState,
   formData: FormData,
 ): Promise<ComponentMarkActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

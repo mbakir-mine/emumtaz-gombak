@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { roleLabel, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 
@@ -118,6 +118,7 @@ export default function AksesPage() {
           onClick={async () => {
             window.localStorage.removeItem(selectedProfileKey);
             await supabase?.auth.signOut();
+            await syncServerSession(null);
             router.replace('/login');
           }}
         >

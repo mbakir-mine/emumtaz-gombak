@@ -1,11 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 const allowedZones = ['BARAT', 'TIMUR', 'TENGAH', ''];
 
 export async function updateSchoolZone(formData: FormData) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return;
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim().toUpperCase();

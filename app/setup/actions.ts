@@ -1,9 +1,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export async function updateExamAccess(formData: FormData) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return;
 
   const id = String(formData.get('id') ?? '').trim();

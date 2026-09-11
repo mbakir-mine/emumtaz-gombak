@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type PromotionActionState = {
   ok: boolean;
@@ -63,6 +63,7 @@ function selectedTarget(formData: FormData, studentId: string, targetClasses: Ta
 }
 
 async function resolveTargetClass(formData: FormData, studentId: string, targetClasses: TargetClass[]) {
+  const supabase = await getSupabaseServerClient();
   const targetClassId = String(formData.get(`target_class_id__${studentId}`) ?? '').trim();
   if (!targetClassId || !supabase) return null;
 
@@ -99,6 +100,7 @@ export async function promoteStudents(
   _previousState: PromotionActionState,
   formData: FormData,
 ): Promise<PromotionActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

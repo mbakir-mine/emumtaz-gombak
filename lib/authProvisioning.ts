@@ -151,7 +151,7 @@ export async function provisionAuthUser(profile: AuthProvisionProfile): Promise<
     email,
     password: temporaryPassword,
     email_confirm: true,
-    user_metadata: {
+    app_metadata: {
       nama: profile.nama,
       role: profile.role,
       kod_sekolah: profile.kod_sekolah ?? null,
@@ -204,7 +204,7 @@ async function updateAuthPassword(
   return await admin.auth.admin.updateUserById(authUserId, {
     password: temporaryPassword,
     email_confirm: true,
-    user_metadata: {
+    app_metadata: {
       nama: profile.nama,
       role: profile.role,
       kod_sekolah: profile.kod_sekolah ?? null,
@@ -245,7 +245,7 @@ export async function ensureTemporaryAuthLogin(profile: AuthProvisionProfile): P
       email,
       password: temporaryPassword,
       email_confirm: true,
-      user_metadata: {
+      app_metadata: {
         nama: profile.nama,
         role: profile.role,
         kod_sekolah: profile.kod_sekolah ?? null,
@@ -317,7 +317,7 @@ export async function resetAuthUserPassword(profile: AuthProvisionProfile): Prom
     const { error } = await admin.auth.admin.updateUserById(authUserId, {
       password: temporaryPassword,
       email_confirm: true,
-      user_metadata: metadata,
+      app_metadata: metadata,
     });
     if (error) return { ok: false, message: `Gagal menetapkan kata laluan sementara: ${error.message}` };
   } else {
@@ -325,7 +325,7 @@ export async function resetAuthUserPassword(profile: AuthProvisionProfile): Prom
       email,
       password: temporaryPassword,
       email_confirm: true,
-      user_metadata: metadata,
+      app_metadata: metadata,
     });
     if (error || !data.user) {
       return { ok: false, message: `Gagal mencipta akaun Auth: ${error?.message ?? 'Ralat tidak diketahui.'}` };
@@ -352,7 +352,9 @@ export async function createPendingSelfRegisteredAuthUser(
 ): Promise<AuthProvisionResult> {
   const email = profile.email.trim().toLowerCase();
   if (!email) return { ok: false, message: 'Email pengguna tidak lengkap.' };
-  if (password.length < 8) return { ok: false, message: 'Password mesti sekurang-kurangnya 8 aksara.' };
+  if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return { ok: false, message: 'Password mesti sekurang-kurangnya 12 aksara serta mengandungi huruf besar, huruf kecil, nombor dan simbol.' };
+  }
 
   const admin = createSupabaseAdmin();
   if (!admin) return { ok: false, message: missingServiceRoleMessage() };
@@ -372,7 +374,7 @@ export async function createPendingSelfRegisteredAuthUser(
     email,
     password,
     email_confirm: true,
-    user_metadata: {
+    app_metadata: {
       nama: profile.nama,
       role: profile.role,
       kod_sekolah: profile.kod_sekolah ?? null,

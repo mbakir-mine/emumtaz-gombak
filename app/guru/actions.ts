@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { parseCsv, pickValue } from '@/lib/csv';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type TeacherActionState = {
   ok: boolean;
@@ -16,6 +16,7 @@ function normalizeStatus(value: FormDataEntryValue | null) {
 }
 
 export async function updateTeacherStatus(formData: FormData) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return;
 
   const id = String(formData.get('id') ?? '').trim();
@@ -38,6 +39,7 @@ export async function bulkUpdateTeacherStatus(
   _previousState: TeacherActionState,
   formData: FormData,
 ): Promise<TeacherActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -76,6 +78,7 @@ export async function createTeacher(
   _previousState: TeacherActionState,
   formData: FormData,
 ): Promise<TeacherActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -135,6 +138,7 @@ export async function importTeachers(
   _previousState: TeacherActionState,
   formData: FormData,
 ): Promise<TeacherActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

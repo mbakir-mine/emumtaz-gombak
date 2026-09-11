@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { calculateSahsiahIhab, parseSahsiahIhabInput } from '@/lib/sahsiahIhab';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type SahsiahIhabActionState = { ok: boolean; message: string };
 
@@ -12,6 +12,7 @@ export async function saveSahsiahIhabAssessment(
   _previousState: SahsiahIhabActionState,
   formData: FormData,
 ): Promise<SahsiahIhabActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   const kodSekolah = text(formData, 'kod_sekolah');
   const classId = text(formData, 'class_id');

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type TakwimActionState = {
   ok: boolean;
@@ -16,6 +16,7 @@ export async function saveTakwimEvent(
   _previousState: TakwimActionState,
   formData: FormData,
 ): Promise<TakwimActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

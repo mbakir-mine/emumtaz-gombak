@@ -2,6 +2,7 @@
 
 import { useFormStatus } from 'react-dom';
 import { deleteUserProfile } from './actions';
+import { useAccessToken } from '../ui/useAccessToken';
 
 function SubmitButton({ userName }: { userName: string }) {
   const { pending } = useFormStatus();
@@ -32,6 +33,8 @@ export default function DeleteUserButton({
   userName: string;
   locked?: boolean;
 }) {
+  const accessToken = useAccessToken();
+
   if (locked) {
     return <span className="table-note">Akaun Pentadbir Utama tidak boleh dipadam.</span>;
   }
@@ -39,6 +42,7 @@ export default function DeleteUserButton({
   return (
     <form action={deleteUserProfile}>
       <input name="id" type="hidden" value={userId} />
+      <input name="access_token" type="hidden" value={accessToken} />
       <SubmitButton userName={userName} />
     </form>
   );

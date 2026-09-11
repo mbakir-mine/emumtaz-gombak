@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type KhalifahComponentActionState = {
   ok: boolean;
@@ -44,6 +44,7 @@ export async function addKhalifahMudaComponent(
   _previousState: KhalifahComponentActionState,
   formData: FormData,
 ): Promise<KhalifahComponentActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
     return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh menambah Komponen Sahsiah IHAB.' };
@@ -75,6 +76,7 @@ export async function updateKhalifahMudaComponent(
   _previousState: KhalifahComponentActionState,
   formData: FormData,
 ): Promise<KhalifahComponentActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
     return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh mengubah Komponen Sahsiah IHAB.' };

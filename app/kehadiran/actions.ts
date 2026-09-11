@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type AttendanceActionState = {
   ok: boolean;
@@ -14,6 +14,7 @@ export async function saveDailyAttendance(
   _previousState: AttendanceActionState,
   formData: FormData,
 ): Promise<AttendanceActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const attendanceDate = String(formData.get('attendance_date') ?? '').trim();

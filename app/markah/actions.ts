@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { examAccessStatus } from '@/lib/examAccess';
 import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { defaultComponentsForSubject } from '@/lib/subjectComponents';
@@ -33,6 +33,7 @@ export async function saveMarks(
   _previousState: MarkActionState,
   formData: FormData,
 ): Promise<MarkActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

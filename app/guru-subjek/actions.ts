@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type TeacherSubjectActionState = {
   ok: boolean;
@@ -43,6 +43,7 @@ export async function assignTeacherSubject(
   _previousState: TeacherSubjectActionState,
   formData: FormData,
 ): Promise<TeacherSubjectActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -78,6 +79,7 @@ export async function bulkAssignTeacherClasses(
   _previousState: TeacherSubjectActionState,
   formData: FormData,
 ): Promise<TeacherSubjectActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -125,6 +127,7 @@ export async function bulkAssignTeacherSubjects(
   _previousState: TeacherSubjectActionState,
   formData: FormData,
 ): Promise<TeacherSubjectActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

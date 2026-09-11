@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type AmalKhairActionState = {
   ok: boolean;
@@ -12,6 +12,7 @@ export async function createAmalKhairRecord(
   _previousState: AmalKhairActionState,
   formData: FormData,
 ): Promise<AmalKhairActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const studentId = String(formData.get('student_id') ?? '').trim();

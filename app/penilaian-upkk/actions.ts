@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { calculateUpkkAmaliTotal, UPKK_AMALI_SOLAT_ITEMS } from '@/lib/upkkAmaliSolat';
 import { calculateUpkkPchiTotal, UPKK_PCHI_ITEMS } from '@/lib/upkkPchi';
 
@@ -42,6 +42,7 @@ async function saveUpkkMarkRecord(
   tableName: 'upkk_amali_solat_marks' | 'upkk_pchi_marks',
   payload: UpkkMarkPayload,
 ) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     throw new Error('Supabase belum disambungkan.');
   }
@@ -84,6 +85,7 @@ export async function saveUpkkAmaliSolat(
 }
 
 async function saveUpkkAmaliSolatRecord(formData: FormData): Promise<UpkkActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -177,6 +179,7 @@ export async function saveUpkkPchi(
 }
 
 async function saveUpkkPchiRecord(formData: FormData): Promise<UpkkActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

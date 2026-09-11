@@ -1,9 +1,9 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useActionState } from 'react';
 import { resetUserPassword } from './actions';
 import { useAccessProfile } from '../ui/AuthGate';
+import { useAccessToken } from '../ui/useAccessToken';
 
 const initialState = { ok: false, message: '' };
 
@@ -18,24 +18,7 @@ export default function PasswordResetButton({
 }) {
   const profile = useAccessProfile();
   const [state, action, pending] = useActionState(resetUserPassword, initialState);
-  const [accessToken, setAccessToken] = useState('');
-
-  useEffect(() => {
-    if (!supabase) return;
-    let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setAccessToken(data.session?.access_token ?? '');
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setAccessToken(session?.access_token ?? '');
-    });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  const accessToken = useAccessToken();
 
   if (locked || profile?.role !== 'OWNER') return null;
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type RphActionState = {
   ok: boolean;
@@ -43,6 +43,7 @@ export async function createRphDraft(
   _previousState: RphActionState,
   formData: FormData,
 ): Promise<RphActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { optionalSchoolModules } from '@/lib/schoolModules';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type SchoolModuleActionState = {
   ok: boolean;
@@ -15,6 +15,7 @@ export async function updateSchoolModuleAccess(
   _previousState: SchoolModuleActionState,
   formData: FormData,
 ): Promise<SchoolModuleActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

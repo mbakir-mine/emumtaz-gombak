@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
 
 export default function ResetPasswordPage() {
@@ -91,6 +91,7 @@ export default function ResetPasswordPage() {
     }
 
     await supabase.auth.signOut({ scope: 'global' });
+    await syncServerSession(null);
     setLoading(false);
     setReady(false);
 

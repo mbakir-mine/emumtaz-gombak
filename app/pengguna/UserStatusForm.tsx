@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { defaultAllowedNavForRole, navItems, type UserRole } from '@/lib/access';
 import { updateUserStatus } from './actions';
+import { useAccessToken } from '../ui/useAccessToken';
 
 const initialState = {
   ok: false,
@@ -71,6 +72,7 @@ export default function UserStatusForm({
   const [status, setStatus] = useState(currentStatus);
   const [selectedAccess, setSelectedAccess] = useState<string[]>(getSavedAccess(currentRole, currentAllowedNav));
   const [state, action] = useActionState(updateUserStatus, initialState);
+  const accessToken = useAccessToken();
 
   function handleRoleChange(nextRole: string) {
     setRole(nextRole);
@@ -97,6 +99,7 @@ export default function UserStatusForm({
   return (
     <form action={action} className="status-form">
       <input name="id" type="hidden" value={userId} />
+      <input name="access_token" type="hidden" value={accessToken} />
       <select name="role" value={role} onChange={(event) => handleRoleChange(event.target.value)} aria-label="Role pengguna">
         {roleOptions.map((option) => (
           <option key={option.value} value={option.value}>

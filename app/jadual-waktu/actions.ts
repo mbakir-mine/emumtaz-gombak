@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type TimetableActionState = {
   ok: boolean;
@@ -31,6 +31,7 @@ function requirementMissingMessage() {
 }
 
 async function ensureDefaultSlots(kodSekolah: string) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { error: null };
 
   const { count, error: lookupError } = await supabase
@@ -63,6 +64,7 @@ export async function generateDefaultTimetableSlots(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -103,6 +105,7 @@ export async function saveTimetableSlotSettings(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -176,6 +179,7 @@ export async function addTimetableSlotSetting(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -244,6 +248,7 @@ export async function deleteTimetableSlotSetting(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -275,6 +280,7 @@ export async function saveTimetableRequirement(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -319,6 +325,7 @@ export async function saveTimetableRequirements(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -494,6 +501,7 @@ export async function generateAutoTimetable(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
@@ -709,6 +717,7 @@ export async function saveTimetableEntry(
   _previousState: TimetableActionState,
   formData: FormData,
 ): Promise<TimetableActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();

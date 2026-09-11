@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { KHALIFAH_MUDA_MODULE_KEY, findKhalifahMudaIndicator } from '@/lib/khalifahMuda';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type KhalifahMudaActionState = {
   ok: boolean;
@@ -14,6 +14,7 @@ function readText(formData: FormData, key: string) {
 }
 
 async function ensureModuleAccess(kodSekolah: string, accessRole: string) {
+  const supabase = await getSupabaseServerClient();
   if (accessRole === 'OWNER') return true;
   if (!supabase) return false;
   const { data, error } = await supabase
@@ -28,6 +29,7 @@ async function ensureModuleAccess(kodSekolah: string, accessRole: string) {
 }
 
 async function ensureYearSixClass(classId: string, kodSekolah: string) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('classes')
@@ -41,6 +43,7 @@ async function ensureYearSixClass(classId: string, kodSekolah: string) {
 }
 
 async function getActiveClassStudents(classId: string, kodSekolah: string) {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('students')
@@ -54,6 +57,7 @@ async function getActiveClassStudents(classId: string, kodSekolah: string) {
 }
 
 async function getKhalifahMudaIndicator(indicatorKey: string) {
+  const supabase = await getSupabaseServerClient();
   const fallback = findKhalifahMudaIndicator(indicatorKey);
   if (!supabase || !indicatorKey) return fallback;
 
@@ -78,6 +82,7 @@ export async function createKhalifahMudaClassRecord(
   _previousState: KhalifahMudaActionState,
   formData: FormData,
 ): Promise<KhalifahMudaActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = readText(formData, 'kod_sekolah');
@@ -137,6 +142,7 @@ export async function createKhalifahMudaStudentRecord(
   _previousState: KhalifahMudaActionState,
   formData: FormData,
 ): Promise<KhalifahMudaActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
 
   const kodSekolah = readText(formData, 'kod_sekolah');

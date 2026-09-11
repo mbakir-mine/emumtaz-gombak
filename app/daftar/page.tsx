@@ -67,6 +67,14 @@ export default function DaftarPage() {
         )}
 
         <form action={formAction} className="login-form">
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="registration-honeypot"
+          />
           <label>
             Nama Penuh
             <input

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { parseCsv, pickValue } from '@/lib/csv';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 
 export type StudentActionState = {
   ok: boolean;
@@ -91,6 +91,7 @@ export async function createStudent(
   _previousState: StudentActionState,
   formData: FormData,
 ): Promise<StudentActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }
@@ -190,6 +191,7 @@ export async function importStudents(
   _previousState: StudentActionState,
   formData: FormData,
 ): Promise<StudentActionState> {
+  const supabase = await getSupabaseServerClient();
   if (!supabase) {
     return { ok: false, message: 'Supabase belum disambungkan.' };
   }

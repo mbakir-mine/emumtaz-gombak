@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { navItems, visibleNavItems } from '@/lib/access';
-import { supabase } from '@/lib/supabase';
+import { supabase, syncServerSession } from '@/lib/supabase';
 import { useAccessProfile } from './AuthGate';
 
 const groupedMenu = [
@@ -109,6 +109,7 @@ export default function SidebarNav({ active }: { active: string }) {
 
   async function logout() {
     await supabase?.auth.signOut();
+    await syncServerSession(null);
     router.replace('/login');
   }
 
