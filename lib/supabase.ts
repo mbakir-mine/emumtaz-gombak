@@ -14,6 +14,7 @@ export async function syncServerSession(accessToken: string | null) {
     method: accessToken ? 'POST' : 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: accessToken ? JSON.stringify({ accessToken }) : undefined,
+    credentials: 'same-origin',
     cache: 'no-store',
   });
   if (!response.ok) throw new Error('Sesi server gagal diselaraskan.');
