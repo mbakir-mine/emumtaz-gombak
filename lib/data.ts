@@ -474,7 +474,7 @@ export type DashboardInsights = {
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
   scopeCounts: DashboardScopeCounts;
-  psraSelection: { year: number; session: 1 | 2 } | null;
+  psraSelection: { year: number; session: 1 | 2; examId: string | null } | null;
   psraAvailableDistricts: string[];
   psraSchools: Array<{
     kod_sekolah: string;
@@ -1756,7 +1756,16 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
   const availableExamKeys = new Set(standardExams.map((exam) => `${exam.tahun_akademik}-${exam.kod_peperiksaan}`));
   const psraMatch = selectedExamKey?.match(/^PSRA-(\d{4})-([12])$/);
   const psraSelection = psraMatch
-    ? { year: Number(psraMatch[1]), session: Number(psraMatch[2]) as 1 | 2 }
+    ? (() => {
+        const year = Number(psraMatch[1]);
+        const session = Number(psraMatch[2]) as 1 | 2;
+        const exam = exams.find(
+          (item) =>
+            Number(item.tahun_akademik) === year &&
+            item.kod_peperiksaan.toUpperCase().replace(/[^A-Z0-9]/g, '') === `PSRA${session}`,
+        );
+        return { year, session, examId: exam?.id ?? null };
+      })()
     : null;
   const key = psraSelection
     ? selectedExamKey ?? null

@@ -768,8 +768,9 @@ function PsraDashboard({
 
       setLoading(true);
       setErrorMessage('');
-      const rows: PsraPaperMarkRecord[] = [];
+      const dedicatedRows: PsraPaperMarkRecord[] = [];
       const pageSize = 1000;
+      let dedicatedError = '';
 
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
@@ -782,19 +783,69 @@ function PsraDashboard({
 
         if (cancelled) return;
         if (error) {
-          setErrorMessage(`Data Percubaan PSRA tidak dapat dimuatkan: ${error.message}`);
-          setRecords([]);
-          setLoading(false);
-          return;
+          dedicatedError = error.message;
+          break;
         }
 
         const batch = (data ?? []) as PsraPaperMarkRecord[];
-        rows.push(...batch);
+        dedicatedRows.push(...batch);
         if (batch.length < pageSize) break;
       }
 
+      const standardRows: PsraPaperMarkRecord[] = [];
+      let standardError = '';
+      if (selection.examId) {
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await supabase
+            .from('marks')
+            .select('id,kod_sekolah,class_id,student_id,kod_subjek,markah')
+            .eq('exam_id', selection.examId)
+            .order('id')
+            .range(from, from + pageSize - 1);
+
+          if (cancelled) return;
+          if (error) {
+            standardError = error.message;
+            break;
+          }
+
+          const batch = data ?? [];
+          standardRows.push(
+            ...batch
+              .filter((record) => record.markah !== null)
+              .map((record) => ({
+                id: record.id,
+                kod_sekolah: record.kod_sekolah,
+                tahun_akademik: selection.year,
+                class_id: record.class_id,
+                student_id: record.student_id,
+                sesi: selection.session,
+                paper_code: record.kod_subjek,
+                markah: Number(record.markah),
+                entered_by: '',
+                updated_by: '',
+                updated_at: '',
+              })),
+          );
+          if (batch.length < pageSize) break;
+        }
+      }
+
       if (!cancelled) {
-        setRecords(rows);
+        const paperCodes = new Set(PSRA_PAPERS.map((paper) => paper.subjectCode as string));
+        const merged = new Map<string, PsraPaperMarkRecord>();
+        dedicatedRows.forEach((record) => {
+          if (paperCodes.has(record.paper_code)) merged.set(`${record.student_id}|${record.paper_code}`, record);
+        });
+        standardRows.forEach((record) => {
+          if (paperCodes.has(record.paper_code)) merged.set(`${record.student_id}|${record.paper_code}`, record);
+        });
+        setRecords([...merged.values()]);
+        if (dedicatedError && standardError) {
+          setErrorMessage(`Data Percubaan PSRA tidak dapat dimuatkan: ${standardError}`);
+        } else if (dedicatedError || standardError) {
+          setErrorMessage('Sebahagian sumber data Percubaan PSRA tidak dapat dicapai. Rekod yang tersedia masih dipaparkan.');
+        }
         setLoading(false);
       }
     }

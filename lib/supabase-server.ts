@@ -12,16 +12,13 @@ export async function getSupabaseServerClient() {
   if (!hasSupabaseServerEnv) return null;
 
   const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
-
-  return createClient(supabaseUrl as string, supabaseAnonKey as string, {
+  const options = {
     global: {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      fetch: (input, init) => {
-        const headers = new Headers(init?.headers);
-        if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-        return fetch(input, { ...init, headers, cache: 'no-store' });
-      },
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: 'no-store' }),
     },
     auth: { autoRefreshToken: false, persistSession: false },
-  });
+    ...(accessToken ? { accessToken: async () => accessToken } : {}),
+  };
+
+  return createClient(supabaseUrl as string, supabaseAnonKey as string, options);
 }
