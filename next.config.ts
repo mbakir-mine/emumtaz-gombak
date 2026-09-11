@@ -24,8 +24,8 @@ const contentSecurityPolicy = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
-  // cPanel Node.js App runs the generated standalone server directly.
-  output: 'standalone',
+  // cPanel runs the generated standalone server; Vercel supplies its own adapter.
+  output: process.env.VERCEL ? undefined : 'standalone',
   poweredByHeader: false,
   async headers() {
     return [
