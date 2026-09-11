@@ -134,6 +134,7 @@ export default function PsraReportManager({
   const [reportType, setReportType] = useState<ReportType>(isSubjectOnly ? 'subjek' : 'darjah');
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [schoolStudents, setSchoolStudents] = useState<StudentRecord[]>(students);
   const [records, setRecords] = useState<PsraPaperMarkRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -175,6 +176,36 @@ export default function PsraReportManager({
   );
 
   useEffect(() => {
+    let cancelled = false;
+    const serverSchoolStudents = students.filter(
+      (student) => student.kod_sekolah === selectedSchool && isActive(student.status),
+    );
+
+    async function loadSchoolStudents() {
+      if (!supabase || !selectedSchool || !hasModuleAccess) {
+        if (!cancelled) setSchoolStudents(serverSchoolStudents);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('students')
+        .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
+        .eq('kod_sekolah', selectedSchool)
+        .eq('status', 'AKTIF')
+        .order('nama_murid');
+
+      if (!cancelled) {
+        setSchoolStudents(error ? serverSchoolStudents : ((data ?? []) as StudentRecord[]));
+      }
+    }
+
+    void loadSchoolStudents();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasModuleAccess, selectedSchool, students]);
+
+  useEffect(() => {
     if (!yearSixClasses.some((item) => item.id === selectedClassId)) {
       setSelectedClassId(yearSixClasses[0]?.id ?? '');
     }
@@ -182,10 +213,10 @@ export default function PsraReportManager({
 
   const visibleStudents = useMemo(() => {
     const classIds = new Set(yearSixClasses.map((item) => item.id));
-    return students.filter(
+    return schoolStudents.filter(
       (item) => item.kod_sekolah === selectedSchool && Boolean(item.class_id && classIds.has(item.class_id)) && isActive(item.status),
     );
-  }, [selectedSchool, students, yearSixClasses]);
+  }, [schoolStudents, selectedSchool, yearSixClasses]);
   const studentsInSelectedClass = useMemo(
     () =>
       visibleStudents

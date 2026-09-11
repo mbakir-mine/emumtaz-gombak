@@ -117,6 +117,8 @@ export default function PsraTrialManager({
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [session, setSession] = useState<1 | 2>(1);
+  const [classCandidates, setClassCandidates] = useState<StudentRecord[]>([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [records, setRecords] = useState<LoadedPsraMark[]>([]);
   const [draft, setDraft] = useState<ScoreDraft>(blankDraft);
   const [message, setMessage] = useState('');
@@ -194,7 +196,7 @@ export default function PsraTrialManager({
     }
   }, [restoredFromUrl, selectedClassId, yearSixClasses]);
 
-  const studentsInClass = useMemo(
+  const serverClassCandidates = useMemo(
     () =>
       students
         .filter(
@@ -205,6 +207,49 @@ export default function PsraTrialManager({
         )
         .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid)),
     [selectedClassId, selectedSchool, students],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClassCandidates() {
+      if (!restoredFromUrl || !selectedSchool || !selectedClassId || !supabase) {
+        if (!cancelled) setClassCandidates(serverClassCandidates);
+        return;
+      }
+
+      setLoadingCandidates(true);
+      const { data, error } = await supabase
+        .from('students')
+        .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
+        .eq('kod_sekolah', selectedSchool)
+        .eq('class_id', selectedClassId)
+        .eq('status', 'AKTIF')
+        .order('nama_murid');
+
+      if (!cancelled) {
+        setClassCandidates(error ? serverClassCandidates : ((data ?? []) as StudentRecord[]));
+        setLoadingCandidates(false);
+      }
+    }
+
+    void loadClassCandidates();
+    return () => {
+      cancelled = true;
+    };
+  }, [restoredFromUrl, selectedClassId, selectedSchool, serverClassCandidates]);
+
+  const studentsInClass = useMemo(
+    () =>
+      classCandidates
+        .filter(
+          (student) =>
+            student.kod_sekolah === selectedSchool &&
+            student.class_id === selectedClassId &&
+            isActive(student.status),
+        )
+        .sort((a, b) => a.nama_murid.localeCompare(b.nama_murid)),
+    [classCandidates, selectedClassId, selectedSchool],
   );
 
   useEffect(() => {
@@ -487,7 +532,7 @@ export default function PsraTrialManager({
            </div>
 
           <section className="psra-summary-grid">
-            <div><span>Calon Tahun 6</span><strong>{studentsInClass.length}</strong><small>murid berdaftar</small></div>
+            <div><span>Calon Tahun 6</span><strong>{loadingCandidates ? '…' : studentsInClass.length}</strong><small>{loadingCandidates ? 'sedang dimuatkan' : 'murid berdaftar'}</small></div>
             <div><span>Markah Lengkap</span><strong>{completedStudents.length}</strong><small>semua 5 kertas</small></div>
             <div><span>Purata Kelas</span><strong>{average.toFixed(1)}%</strong><small>{completedStudents.length ? psraGrade(average) : 'Belum lengkap'}</small></div>
             <div><span>Pencapaian Mumtaz</span><strong>{mumtaz}</strong><small>90% dan ke atas</small></div>
@@ -499,7 +544,7 @@ export default function PsraTrialManager({
             <div className="panel psra-student-panel">
               <div className="panel-head">
                 <h2>Senarai Calon</h2>
-                <span>{studentsInClass.length} murid</span>
+                <span>{loadingCandidates ? 'Memuatkan calon…' : `${studentsInClass.length} murid`}</span>
               </div>
               <div className="psra-student-list">
                 {studentSummaries.map(({ student, count, total, complete }, index) => (
