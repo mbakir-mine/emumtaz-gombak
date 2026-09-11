@@ -637,24 +637,16 @@ async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> 
   if (!supabase || !examId) return [];
 
   const pageSize = 1000;
-  let from = 0;
-  const rows: MarkRecord[] = [];
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('marks')
-      .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
-      .eq('exam_id', examId)
-      .range(from, from + pageSize - 1);
-
-    if (error) return rows;
-    if (!data || data.length === 0) return rows;
-
-    rows.push(...data);
-
-    if (data.length < pageSize) return rows;
-    from += pageSize;
-  }
+  const pages = await Promise.all(
+    Array.from({ length: 8 }, (_, page) =>
+      supabase
+        .from('marks')
+        .select('id,exam_id,student_id,kod_sekolah,class_id,kod_subjek,markah')
+        .eq('exam_id', examId)
+        .range(page * pageSize, (page + 1) * pageSize - 1),
+    ),
+  );
+  return pages.flatMap(({ data, error }) => (error || !data ? [] : (data as MarkRecord[])));
 }
 
 async function getSubjectGradeRules(): Promise<SubjectGradeRule[]> {
