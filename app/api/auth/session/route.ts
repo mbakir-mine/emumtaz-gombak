@@ -7,12 +7,15 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get('origin');
-  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const host = forwardedHost ?? request.headers.get('host');
-  if (!origin || !host) return false;
+  const hosts = [
+    request.headers.get('host'),
+    request.headers.get('x-forwarded-host')?.split(',')[0]?.trim(),
+    new URL(request.url).host,
+  ].filter((value): value is string => Boolean(value));
+  if (!origin || hosts.length === 0) return false;
 
   try {
-    return new URL(origin).host === host;
+    return hosts.includes(new URL(origin).host);
   } catch {
     return false;
   }
