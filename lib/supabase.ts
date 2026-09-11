@@ -12,7 +12,7 @@ export const supabase = hasSupabaseEnv
 export async function syncServerSession(accessToken: string | null) {
   const response = await fetch('/api/auth/session', {
     method: accessToken ? 'POST' : 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Emumtaz-CSRF': '1' },
     body: accessToken ? JSON.stringify({ accessToken }) : undefined,
     credentials: 'same-origin',
     cache: 'no-store',

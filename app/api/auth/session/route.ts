@@ -12,7 +12,12 @@ function sameOrigin(request: Request) {
     request.headers.get('x-forwarded-host')?.split(',')[0]?.trim(),
     new URL(request.url).host,
   ].filter((value): value is string => Boolean(value));
-  if (!origin || hosts.length === 0) return false;
+  if (!origin) {
+    const requestHost = hosts[0]?.toLowerCase();
+    return (requestHost === 'emumtaz.ismp.my' || requestHost === 'www.emumtaz.ismp.my') &&
+      request.headers.get('x-emumtaz-csrf') === '1';
+  }
+  if (hosts.length === 0) return false;
 
   try {
     const originHost = new URL(origin).host;
