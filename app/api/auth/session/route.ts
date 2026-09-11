@@ -15,7 +15,9 @@ function sameOrigin(request: Request) {
   if (!origin || hosts.length === 0) return false;
 
   try {
-    return hosts.includes(new URL(origin).host);
+    const originHost = new URL(origin).host;
+    const configuredHost = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host : '';
+    return hosts.includes(originHost) || originHost === 'emumtaz.ismp.my' || (configuredHost !== '' && configuredHost === originHost);
   } catch {
     return false;
   }
