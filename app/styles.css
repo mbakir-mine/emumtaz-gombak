@@ -8606,6 +8606,26 @@ h6 {
   letter-spacing: -0.02em;
 }
 
+.mark-entry-table .table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mark-entry-table .table-sort-button:hover,
+.mark-entry-table .table-sort-button:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 p {
   line-height: 1.55;
 }

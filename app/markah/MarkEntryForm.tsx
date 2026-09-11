@@ -62,6 +62,17 @@ export default function MarkEntryForm({
   });
   const hasComponents = activeComponents.length > 0;
   const [upkkGrades, setUpkkGrades] = useState<UpkkGradeSettings>({ kod_sekolah: kodSekolah, ...DEFAULT_UPKK_GRADES });
+  const [genderOrder, setGenderOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const displayedStudents = useMemo(() => {
+    if (genderOrder === 'none') return students;
+
+    return [...students].sort((left, right) => {
+      const genderComparison = (left.jantina ?? '').localeCompare(right.jantina ?? '', 'ms-MY');
+      const direction = genderOrder === 'asc' ? 1 : -1;
+      if (genderComparison !== 0) return genderComparison * direction;
+      return left.nama_murid.localeCompare(right.nama_murid, 'ms-MY');
+    });
+  }, [genderOrder, students]);
 
   useEffect(() => {
     if (!isUpkkTrial || !supabase || !kodSekolah) return;
@@ -166,7 +177,16 @@ export default function MarkEntryForm({
           <tr>
             <th>Bil</th>
             <th>Nama Murid</th>
-            <th>Jantina</th>
+            <th aria-sort={genderOrder === 'none' ? 'none' : genderOrder === 'asc' ? 'ascending' : 'descending'}>
+              <button
+                className="table-sort-button"
+                type="button"
+                onClick={() => setGenderOrder((current) => (current === 'asc' ? 'desc' : 'asc'))}
+                title="Susun mengikut jantina dan abjad nama"
+              >
+                Jantina {genderOrder === 'asc' ? '↑' : genderOrder === 'desc' ? '↓' : '↕'}
+              </button>
+            </th>
             {hasComponents ? (
               activeComponents.map((component) => (
                 <th key={component.kod_komponen}>
@@ -182,7 +202,7 @@ export default function MarkEntryForm({
           </tr>
         </thead>
         <tbody>
-          {students.map((student, index) => {
+          {displayedStudents.map((student, index) => {
             const markah = marksByStudent.get(student.id) ?? null;
             const totalMark = totalForStudent(student.id);
             return (
