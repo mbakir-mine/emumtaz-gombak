@@ -38,7 +38,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       window.setTimeout(() => {
         void syncServerSession(session?.access_token ?? null)
           .then((changed) => {
-            if (changed) router.refresh();
+            if (changed) window.location.reload();
           })
           .catch(() => undefined);
       }, 0);
@@ -75,7 +75,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
         const serverSessionChanged = await syncServerSession(sessionData.session?.access_token ?? null);
-        if (serverSessionChanged) router.refresh();
+        if (serverSessionChanged) window.location.reload();
         const profileFilter = user?.id
           ? `auth_user_id.eq.${user.id},email.ilike.${email.toLowerCase()}`
           : `email.ilike.${email.toLowerCase()}`;
