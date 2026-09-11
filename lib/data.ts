@@ -600,17 +600,25 @@ async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
   if (!supabase) return [];
 
   const pageSize = 1000;
-  const pages = await Promise.all(
-    Array.from({ length: 5 }, (_, page) =>
-      supabase
-        .from('students')
-        .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
-        .order('kod_sekolah')
-        .order('nama_murid')
-        .range(page * pageSize, (page + 1) * pageSize - 1),
-    ),
-  );
-  return pages.flatMap(({ data, error }) => (error || !data ? [] : (data as StudentRecord[])));
+  let from = 0;
+  const rows: StudentRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('students')
+      .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
+      .order('kod_sekolah')
+      .order('nama_murid')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
 }
 
 async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]> {
