@@ -6,6 +6,7 @@ import type { MarkComponentRecord, MarkRecord, StudentRecord, SubjectComponentRe
 import { gradeForMark } from '@/lib/subjects';
 import { DEFAULT_UPKK_GRADES, upkkGrade, type UpkkGradeSettings } from '@/lib/upkkTrial';
 import { supabase } from '@/lib/supabase';
+import { normalizeMark } from '@/lib/markSettings';
 
 const initialState = {
   ok: false,
@@ -25,6 +26,7 @@ export default function MarkEntryForm({
   marks,
   subjectComponents = [],
   componentMarks = [],
+  subjectFullMark = 100,
   isUpkkTrial = false,
 }: {
   examId: string;
@@ -35,6 +37,7 @@ export default function MarkEntryForm({
   marks: MarkRecord[];
   subjectComponents?: SubjectComponentRecord[];
   componentMarks?: MarkComponentRecord[];
+  subjectFullMark?: number;
   isUpkkTrial?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveMarks, initialState);
@@ -88,7 +91,9 @@ export default function MarkEntryForm({
 
   const displayGrade = (markah: number | null | undefined) => {
     if (markah === null || markah === undefined || Number.isNaN(markah)) return '';
-    return isUpkkTrial ? upkkGrade(Number(markah), upkkGrades) : gradeForMark(markah);
+    return isUpkkTrial
+      ? upkkGrade(Number(markah), upkkGrades)
+      : gradeForMark(normalizeMark(markah, subjectFullMark));
   };
 
   useEffect(() => {
@@ -135,6 +140,7 @@ export default function MarkEntryForm({
       <input type="hidden" name="class_id" value={classId} />
       <input type="hidden" name="kod_sekolah" value={kodSekolah} />
       <input type="hidden" name="kod_subjek" value={kodSubjek} />
+      <input type="hidden" name="subject_max" value={subjectFullMark} />
       {activeComponents.map((component) => (
         <input key={component.kod_komponen} type="hidden" name="component_code" value={component.kod_komponen} />
       ))}
@@ -197,7 +203,7 @@ export default function MarkEntryForm({
             ) : (
               <th>Markah</th>
             )}
-            {hasComponents && <th>Jumlah</th>}
+            {hasComponents && <th>Jumlah /{subjectFullMark}</th>}
             <th>Gred</th>
           </tr>
         </thead>
@@ -263,7 +269,7 @@ export default function MarkEntryForm({
                         name={`markah_${student.id}`}
                         type="number"
                         min="0"
-                        max="100"
+                        max={subjectFullMark}
                         step="1"
                         inputMode="numeric"
                         defaultValue={markah ?? ''}

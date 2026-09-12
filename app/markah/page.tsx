@@ -7,6 +7,8 @@ import {
   getMarkComponentsForSelection,
   getMarksForSelection,
   getSchoolModuleAccesses,
+  getSchoolSubjectComponentMarkSettings,
+  getSchoolSubjectMarkSettings,
   getSchools,
   getSubjectComponentMarkSettings,
   getStudentsByClass,
@@ -18,6 +20,7 @@ import {
 import { examAccessStatus } from '@/lib/examAccess';
 import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { applySubjectComponentMarkSettings } from '@/lib/subjectComponents';
+import { resolveSubjectFullMark } from '@/lib/markSettings';
 
 export default async function MarkahPage({
   searchParams,
@@ -32,6 +35,8 @@ export default async function MarkahPage({
     subjects,
     subjectComponents,
     componentMarkSettings,
+    schoolSubjectMarkSettings,
+    schoolComponentMarkSettings,
     subjectAssignments,
     componentAssignments,
     moduleAccesses,
@@ -42,6 +47,8 @@ export default async function MarkahPage({
     getSubjects(),
     getSubjectComponents(),
     getSubjectComponentMarkSettings(),
+    getSchoolSubjectMarkSettings(),
+    getSchoolSubjectComponentMarkSettings(),
     getTeacherSubjectAssignments(),
     getTeacherSubjectComponentAssignments(),
     getSchoolModuleAccesses(),
@@ -56,6 +63,20 @@ export default async function MarkahPage({
   const selectedYear = Number(params.tahun_akademik ?? currentYear);
   const selectedClass = classes.find((item) => item.id === selectedClassId);
   const selectedExam = exams.find((exam) => exam.id === selectedExamId);
+  const effectiveSchool = selectedClass?.kod_sekolah ?? selectedSchool;
+  const selectedSubjectFullMark = selectedSubject && selectedExam && selectedClass && effectiveSchool
+    ? resolveSubjectFullMark(
+        {
+          kodSekolah: effectiveSchool,
+          tahunAkademik: selectedYear,
+          kodPeperiksaan: selectedExam.kod_peperiksaan,
+          tahun: selectedClass.tahun,
+          kodSubjek: selectedSubject,
+        },
+        schoolSubjectMarkSettings,
+        subjects,
+      )
+    : Number(subjects.find((subject) => subject.kod_subjek === selectedSubject)?.markah_penuh ?? 100);
   const markAccess = examAccessStatus(selectedExam);
   const selectedPsraWithoutAccess = Boolean(
     selectedExam &&
@@ -85,7 +106,10 @@ export default async function MarkahPage({
     ? []
     : applySubjectComponentMarkSettings(
         subjectComponents.filter((component) => component.kod_subjek === selectedSubject),
-        componentMarkSettings,
+        [
+          ...componentMarkSettings,
+          ...schoolComponentMarkSettings.filter((setting) => setting.kod_sekolah === effectiveSchool),
+        ],
         {
           tahun_akademik: selectedYear,
           kod_peperiksaan: selectedExam?.kod_peperiksaan,
@@ -171,6 +195,7 @@ export default async function MarkahPage({
             marks={marks}
             subjectComponents={selectedSubjectComponents}
             componentMarks={componentMarks}
+            subjectFullMark={selectedSubjectFullMark}
             isUpkkTrial={isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)}
           />
         )}

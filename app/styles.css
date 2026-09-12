@@ -6662,7 +6662,7 @@ textarea {
 }
 
 .component-mark-toolbar {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .component-mark-form {
@@ -6739,6 +6739,26 @@ textarea {
   background: #fff;
   text-align: center;
   font-weight: 600;
+}
+
+.component-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.component-card-footer small {
+  color: var(--muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.component-card-footer .button {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
 }
 
 .timetable-view-tabs {
