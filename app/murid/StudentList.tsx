@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import type { AccessProfile } from '@/lib/access';
 import type { ClassRecord, School, StudentRecord, StudentSchoolSummary } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
@@ -10,6 +11,7 @@ import { scopeClasses, scopeSchools, scopeStudents } from '../ui/scopedData';
 import StudentForm from './StudentForm';
 import StudentImportForm from './StudentImportForm';
 import { SCHOOL_CATEGORY_ORDER } from '@/lib/schoolCategories';
+import { supabase } from '@/lib/supabase';
 
 const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
 const yearOrder = [1, 2, 3, 4, 5, 6];
@@ -313,10 +315,26 @@ export default function StudentList({
   schoolSummaries: StudentSchoolSummary[];
 }) {
   const profile = useAccessProfile();
+  const router = useRouter();
+  const hasRecoveredServerData = useRef(false);
   const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<StudentFilter | null>(null);
   const [showForms, setShowForms] = useState(false);
+
+  useEffect(() => {
+    if (!profile || students.length > 0 || hasRecoveredServerData.current || !supabase) return;
+
+    hasRecoveredServerData.current = true;
+    void supabase
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count, error }) => {
+        // A protected page may have been prefetched before its server session cookie was available.
+        // If the browser session can see students, refresh the server component once with that cookie.
+        if (!error && (count ?? 0) > 0) router.refresh();
+      });
+  }, [profile, router, students.length]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedStudents = useMemo(
     () => scopeStudents(profile, students, classes, schools),
