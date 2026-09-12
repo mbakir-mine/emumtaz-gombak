@@ -1,4 +1,8 @@
-import { getSupabaseServerClient, hasSupabaseServerEnv as hasSupabaseEnv } from './supabase-server';
+import {
+  getSupabaseServerClient,
+  getVerifiedStudentScope,
+  hasSupabaseServerEnv as hasSupabaseEnv,
+} from './supabase-server';
 import { cache } from 'react';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
 import {
@@ -596,20 +600,23 @@ async function getStudentGenderCounts() {
 }
 
 async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return [];
+  const scope = await getVerifiedStudentScope();
+  if (!scope || (scope.schoolCodes !== null && scope.schoolCodes.length === 0)) return [];
 
   const pageSize = 1000;
   let from = 0;
   const rows: StudentRecord[] = [];
 
   while (true) {
-    const { data, error } = await supabase
+    let query = scope.client
       .from('students')
       .select('id,mykid,nama_murid,jantina,kod_sekolah,class_id,status')
       .order('kod_sekolah')
-      .order('nama_murid')
-      .range(from, from + pageSize - 1);
+      .order('nama_murid');
+
+    if (scope.schoolCodes !== null) query = query.in('kod_sekolah', scope.schoolCodes);
+
+    const { data, error } = await query.range(from, from + pageSize - 1);
 
     if (error) return rows;
     if (!data || data.length === 0) return rows;
