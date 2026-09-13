@@ -228,7 +228,11 @@ export default function PsraTrialManager({
         .order('nama_murid');
 
       if (!cancelled) {
-        setClassCandidates(error ? serverClassCandidates : ((data ?? []) as StudentRecord[]));
+        // RLS can return an empty result without an error when the browser
+        // session is not yet propagated. Keep the server-rendered candidates
+        // in that case instead of replacing real data with an empty list.
+        const browserCandidates = (data ?? []) as StudentRecord[];
+        setClassCandidates(error || browserCandidates.length === 0 ? serverClassCandidates : browserCandidates);
         setLoadingCandidates(false);
       }
     }
