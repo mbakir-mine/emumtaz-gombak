@@ -105,7 +105,12 @@ export const navItems: NavItem[] = [
     moduleKey: 'RPH_AI',
   },
   { key: 'setup', label: 'Subjek', href: '/setup', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'] },
-  { key: 'componentMarks', label: 'Komponen Markah', href: '/komponen-markah', roles: ['OWNER', 'ADMIN_DAERAH'] },
+  {
+    key: 'componentMarks',
+    label: 'Markah Penuh & Komponen',
+    href: '/komponen-markah',
+    roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH'],
+  },
   {
     key: 'khalifahMudaComponents',
     label: 'Komponen Sahsiah IHAB',

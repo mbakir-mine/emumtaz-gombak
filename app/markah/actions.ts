@@ -42,6 +42,7 @@ export async function saveMarks(
   const classId = String(formData.get('class_id') ?? '').trim();
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
   const kodSubjek = String(formData.get('kod_subjek') ?? '').trim();
+  const subjectMax = positiveNumber(formData.get('subject_max'), 100);
   const studentIds = formData.getAll('student_id').map((value) => String(value));
   const componentCodes = [...new Set(formData.getAll('component_code').map((value) => String(value ?? '').trim()).filter(Boolean))];
 
@@ -111,9 +112,9 @@ export async function saveMarks(
         kod_subjek: kodSubjek,
         kod_komponen: componentCode,
         nama_komponen: componentName || componentCode,
-        markah_penuh: positiveNumber(
+        markah_penuh: defaultComponent?.markah_penuh ?? positiveNumber(
           formData.get(`component_max_${componentCode}`),
-          defaultComponent?.markah_penuh ?? 100,
+          100,
         ),
         susunan: positiveInteger(
           formData.get(`component_order_${componentCode}`),
@@ -123,7 +124,10 @@ export async function saveMarks(
       };
     });
     const componentMaxByCode = new Map(
-      componentDefinitions.map((component) => [component.kod_komponen, component.markah_penuh]),
+      componentCodes.map((componentCode) => [
+        componentCode,
+        positiveNumber(formData.get(`component_max_${componentCode}`), 100),
+      ]),
     );
 
     const { error: definitionError } = await supabase.from('subject_components').upsert(componentDefinitions, {
@@ -228,10 +232,10 @@ export async function saveMarks(
   });
 
   const invalid = rows.find(
-    (row) => row.markah !== null && (!Number.isInteger(row.markah) || row.markah < 0 || row.markah > 100),
+    (row) => row.markah !== null && (!Number.isInteger(row.markah) || row.markah < 0 || row.markah > subjectMax),
   );
   if (invalid) {
-    return { ok: false, message: 'Markah mesti nombor bulat antara 0 hingga 100.' };
+    return { ok: false, message: `Markah mesti nombor bulat antara 0 hingga ${subjectMax}.` };
   }
 
   const { error } = await supabase.from('marks').upsert(rows, {

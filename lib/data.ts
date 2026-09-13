@@ -335,11 +335,23 @@ export type SubjectComponentRecord = SubjectComponentDefinition & {
 
 export type SubjectComponentMarkSetting = {
   id: string;
+  kod_sekolah?: string | null;
   tahun_akademik: number;
   kod_peperiksaan: string;
   tahun: number;
   kod_subjek: string;
   kod_komponen: string;
+  markah_penuh: number;
+  status: string;
+};
+
+export type SchoolSubjectMarkSetting = {
+  id: string;
+  kod_sekolah: string;
+  tahun_akademik: number;
+  kod_peperiksaan: string;
+  tahun: number;
+  kod_subjek: string;
   markah_penuh: number;
   status: string;
 };
@@ -492,6 +504,8 @@ export type DashboardInsights = {
 export type MarkDetailRecord = {
   id: string;
   markah: number | null;
+  markah_asal?: number | null;
+  markah_penuh?: number;
   kod_subjek: string;
   kod_sekolah: string;
   exam_id: string;
@@ -638,7 +652,7 @@ async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]>
 
   while (true) {
     const { data, error } = await supabase
-      .from('v_student_exam_summary')
+      .from('v_school_student_exam_summary')
       .select('*')
       .order('tahun_akademik', { ascending: false })
       .order('kod_peperiksaan')
@@ -1387,6 +1401,44 @@ export async function getSubjectComponentMarkSettings(): Promise<SubjectComponen
   }));
 }
 
+export async function getSchoolSubjectMarkSettings(): Promise<SchoolSubjectMarkSetting[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('school_subject_mark_settings')
+    .select('id,kod_sekolah,tahun_akademik,kod_peperiksaan,tahun,kod_subjek,markah_penuh,status')
+    .eq('status', 'AKTIF')
+    .order('tahun_akademik', { ascending: false })
+    .order('kod_peperiksaan')
+    .order('tahun')
+    .order('kod_subjek');
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    ...item,
+    markah_penuh: Number(item.markah_penuh),
+  }));
+}
+
+export async function getSchoolSubjectComponentMarkSettings(): Promise<SubjectComponentMarkSetting[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('school_subject_component_mark_settings')
+    .select('id,kod_sekolah,tahun_akademik,kod_peperiksaan,tahun,kod_subjek,kod_komponen,markah_penuh,status')
+    .eq('status', 'AKTIF')
+    .order('tahun_akademik', { ascending: false })
+    .order('kod_peperiksaan')
+    .order('tahun')
+    .order('kod_subjek');
+
+  if (error) return [];
+  return (data ?? []).map((item: any) => ({
+    ...item,
+    markah_penuh: Number(item.markah_penuh),
+  }));
+}
+
 export async function getMarkComponentsForSelection(
   examId: string,
   classId: string,
@@ -1690,7 +1742,7 @@ export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: str
   const supabase = await getSupabaseServerClient();
   if (!supabase || !mykid) return [];
   let query = supabase
-    .from('v_student_exam_summary')
+    .from('v_school_student_exam_summary')
     .select('*')
     .eq('mykid', mykid);
 
@@ -1710,7 +1762,7 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
-    .from('v_school_exam_summary')
+    .from('v_school_exam_summary_normalized')
     .select('*')
     .order('tahun_akademik', { ascending: false })
     .order('kod_peperiksaan')
@@ -2031,7 +2083,7 @@ export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
-    .from('v_subject_exam_summary')
+    .from('v_school_subject_exam_summary_normalized')
     .select('*')
     .order('tahun_akademik', { ascending: false })
     .order('kod_peperiksaan')
@@ -2052,20 +2104,29 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
 
   while (true) {
     const { data, error } = await supabase
-      .from('marks')
+      .from('v_school_mark_percent')
       .select(
         `
         id,
-        markah,
+        markah_asal,
+        markah_penuh,
+        markah_peratus,
         kod_subjek,
         kod_sekolah,
         exam_id,
         student_id,
         class_id,
-        students(id,mykid,nama_murid,jantina,kod_sekolah,class_id,status),
-        subjects(kod_subjek,nama_subjek,markah_penuh,dikira_purata,susunan,status),
-        exams(id,kod_peperiksaan,nama_peperiksaan,tahun_akademik,status),
-        classes(id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status)
+        mykid,
+        nama_murid,
+        jantina,
+        nama_subjek,
+        dikira_purata,
+        susunan_subjek,
+        tahun_akademik,
+        kod_peperiksaan,
+        nama_peperiksaan,
+        tahun,
+        nama_kelas
       `,
       )
       .order('kod_sekolah')
@@ -2083,16 +2144,46 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
 
   return rows.map((item: any) => ({
     id: item.id,
-    markah: item.markah,
+    markah: item.markah_peratus === null ? null : Number(item.markah_peratus),
+    markah_asal: item.markah_asal === null ? null : Number(item.markah_asal),
+    markah_penuh: Number(item.markah_penuh),
     kod_subjek: item.kod_subjek,
     kod_sekolah: item.kod_sekolah,
     exam_id: item.exam_id,
     student_id: item.student_id,
     class_id: item.class_id,
-    students: Array.isArray(item.students) ? item.students[0] : item.students,
-    subjects: Array.isArray(item.subjects) ? item.subjects[0] : item.subjects,
-    exams: Array.isArray(item.exams) ? item.exams[0] : item.exams,
-    classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,
+    students: {
+      id: item.student_id,
+      mykid: item.mykid,
+      nama_murid: item.nama_murid,
+      jantina: item.jantina,
+      kod_sekolah: item.kod_sekolah,
+      class_id: item.class_id,
+      status: 'AKTIF',
+    },
+    subjects: {
+      kod_subjek: item.kod_subjek,
+      nama_subjek: item.nama_subjek,
+      markah_penuh: Number(item.markah_penuh),
+      dikira_purata: Boolean(item.dikira_purata),
+      susunan: Number(item.susunan_subjek ?? 0),
+      status: 'AKTIF',
+    },
+    exams: {
+      id: item.exam_id,
+      kod_peperiksaan: item.kod_peperiksaan,
+      nama_peperiksaan: item.nama_peperiksaan,
+      tahun_akademik: Number(item.tahun_akademik),
+      status: 'AKTIF',
+    },
+    classes: {
+      id: item.class_id,
+      kod_sekolah: item.kod_sekolah,
+      tahun_akademik: Number(item.tahun_akademik),
+      tahun: Number(item.tahun),
+      nama_kelas: item.nama_kelas,
+      status: 'AKTIF',
+    },
   })) as MarkDetailRecord[];
 }
 

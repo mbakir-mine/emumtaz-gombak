@@ -80,7 +80,7 @@ const childLabels: Record<string, string> = {
   timetable: 'Jadual Waktu',
   rph: 'RPH AI',
   setup: 'Akses Markah',
-  componentMarks: 'Komponen Markah',
+  componentMarks: 'Markah Penuh & Komponen',
   khalifahMudaComponents: 'Komponen Sahsiah IHAB',
   marks: 'Kelas',
   reports: 'Pusat Laporan',
