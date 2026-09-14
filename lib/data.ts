@@ -60,6 +60,20 @@ export type SchoolModuleAccess = {
   catatan: string | null;
 };
 
+export type SchoolLicense = {
+  id: string;
+  kod_sekolah: string;
+  plan_code: 'PERCUBAAN' | 'ASAS' | 'PRO' | 'ENTERPRISE';
+  status: 'PERCUBAAN' | 'AKTIF' | 'DIGANTUNG' | 'TAMAT';
+  starts_on: string;
+  ends_on: string | null;
+  max_students: number | null;
+  max_users: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ClassRecord = {
   id: string;
   kod_sekolah: string;
@@ -1017,6 +1031,17 @@ export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
 
   if (error) return [];
   return (data ?? []) as SchoolModuleAccess[];
+}
+
+export async function getSchoolLicenses(): Promise<SchoolLicense[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('school_licenses')
+    .select('id,kod_sekolah,plan_code,status,starts_on,ends_on,max_students,max_users,notes,created_at,updated_at')
+    .order('kod_sekolah');
+  if (error) return [];
+  return (data ?? []) as SchoolLicense[];
 }
 
 async function getClassesUncached(): Promise<ClassRecord[]> {

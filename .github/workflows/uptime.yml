@@ -1,0 +1,17 @@
+name: Production health
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check application and database
+        run: curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/api/health

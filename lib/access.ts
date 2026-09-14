@@ -142,6 +142,7 @@ export const navItems: NavItem[] = [
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'securityAudit', label: 'Audit Keselamatan', href: '/audit-keselamatan', roles: ['OWNER'] },
   { key: 'schoolModules', label: 'Akses Modul Sekolah', href: '/modul-sekolah', roles: ['OWNER'] },
+  { key: 'licenses', label: 'Lesen Sekolah', href: '/lesen', roles: ['OWNER'] },
   { key: 'profile', label: 'Kemaskini Profil', href: '/profil', roles: allRoles, hidden: true },
   { key: 'changePassword', label: 'Tukar Password', href: '/tukar-password', roles: allRoles, hidden: true },
   { key: 'analysis', label: 'Analisis', href: '/analisis', roles: allRoles },

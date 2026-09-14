@@ -58,7 +58,7 @@ const groupedMenu = [
     key: 'settings',
     label: 'Tetapan',
     href: '/setup',
-    items: ['setup', 'componentMarks', 'khalifahMudaComponents', 'users', 'securityAudit', 'schoolModules', 'changePassword'],
+    items: ['setup', 'componentMarks', 'khalifahMudaComponents', 'users', 'securityAudit', 'schoolModules', 'licenses', 'changePassword'],
   },
 ];
 
@@ -97,6 +97,7 @@ const childLabels: Record<string, string> = {
   users: 'Admin',
   securityAudit: 'Log Aktiviti & Audit Edit',
   schoolModules: 'Akses Modul Sekolah',
+  licenses: 'Lesen Sekolah',
   changePassword: 'Tukar Password',
 };
 

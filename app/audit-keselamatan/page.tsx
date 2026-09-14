@@ -1,5 +1,6 @@
 import AppFrame from '../ui/AppFrame';
 import { getAuthActivityLogs, getSecurityAuditLogs, type SecurityAuditLog } from '@/lib/data';
+import { matchesAuditFilters, parseAuditFilters } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -82,8 +83,21 @@ function formatTimestamp(value: string) {
   }).format(new Date(value));
 }
 
-export default async function SecurityAuditPage() {
-  const [authLogs, editLogs] = await Promise.all([getAuthActivityLogs(), getSecurityAuditLogs()]);
+type AuditPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SecurityAuditPage({ searchParams }: AuditPageProps) {
+  const rawParams = await searchParams;
+  const filters = parseAuditFilters(rawParams);
+  const [allAuthLogs, allEditLogs] = await Promise.all([getAuthActivityLogs(500), getSecurityAuditLogs(500)]);
+  const authLogs = allAuthLogs.filter((row) => matchesAuditFilters(row as unknown as Record<string, unknown>, filters, 'AUTH'));
+  const editLogs = allEditLogs.filter((row) => matchesAuditFilters(row as unknown as Record<string, unknown>, filters, 'EDIT'));
+  const exportParams = new URLSearchParams();
+  Object.entries(rawParams).forEach(([key, value]) => {
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    if (firstValue) exportParams.set(key, firstValue);
+  });
 
   return (
     <AppFrame
@@ -91,11 +105,62 @@ export default async function SecurityAuditPage() {
       subtitle="Jejak log masuk, log keluar dan perubahan data. Akses Pemilik Sistem sahaja."
       active="securityAudit"
     >
+      <section className="panel audit-filter-panel">
+        <div className="panel-head">
+          <div>
+            <h2>Carian dan eksport</h2>
+            <p>Tapis sehingga 500 rekod terkini dan eksport hasil yang sama ke CSV.</p>
+          </div>
+          <a className="button secondary" href={`/api/audit/export?${exportParams.toString()}`}>Eksport CSV</a>
+        </div>
+        <form className="audit-filter-grid" method="get">
+          <label>
+            Carian
+            <input name="q" defaultValue={filters.query} placeholder="Email, rekod, jadual atau nilai" />
+          </label>
+          <label>
+            Jenis rekod
+            <select name="category" defaultValue={filters.category}>
+              <option value="ALL">Semua</option>
+              <option value="AUTH">Log masuk/keluar</option>
+              <option value="EDIT">Perubahan data</option>
+            </select>
+          </label>
+          <label>
+            Tindakan
+            <select name="action" defaultValue={filters.action}>
+              <option value="">Semua tindakan</option>
+              <option value="LOGIN">Log masuk</option>
+              <option value="LOGOUT">Log keluar</option>
+              <option value="INSERT">Cipta</option>
+              <option value="UPDATE">Kemas kini</option>
+              <option value="DELETE">Padam</option>
+            </select>
+          </label>
+          <label>
+            Kod sekolah
+            <input name="school" defaultValue={filters.school} placeholder="Contoh: BYP7001" />
+          </label>
+          <label>
+            Dari tarikh
+            <input type="date" name="from" defaultValue={filters.from} />
+          </label>
+          <label>
+            Hingga tarikh
+            <input type="date" name="to" defaultValue={filters.to} />
+          </label>
+          <div className="audit-filter-actions">
+            <button className="button" type="submit">Tapis rekod</button>
+            <a className="button secondary" href="/audit-keselamatan">Tetapkan semula</a>
+          </div>
+        </form>
+      </section>
+
       <section className="panel">
         <div className="panel-head">
           <div>
             <h2>Log masuk dan keluar</h2>
-            <p>{authLogs.length} aktiviti sesi terakhir, disusun daripada yang paling baharu.</p>
+            <p>{authLogs.length} aktiviti sesi sepadan, disusun daripada yang paling baharu.</p>
           </div>
         </div>
 
@@ -140,7 +205,7 @@ export default async function SecurityAuditPage() {
         <div className="panel-head">
           <div>
             <h2>Rekod perubahan data</h2>
-            <p>{editLogs.length} perubahan terakhir termasuk cipta, edit dan padam.</p>
+            <p>{editLogs.length} perubahan sepadan termasuk cipta, edit dan padam.</p>
           </div>
         </div>
 

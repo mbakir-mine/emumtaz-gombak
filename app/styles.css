@@ -9050,3 +9050,133 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.audit-filter-panel {
+  border-top: 4px solid #0b6b3a;
+}
+
+.audit-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.audit-filter-grid label {
+  display: grid;
+  gap: 6px;
+  color: #274f3d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.audit-filter-grid input,
+.audit-filter-grid select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #c9ddd0;
+  border-radius: 9px;
+  background: #fff;
+  color: #153c2c;
+  font: inherit;
+}
+
+.audit-filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 800px) {
+  .audit-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.offline-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(145deg, #edf9f1, #fffaf0);
+}
+
+.offline-card {
+  width: min(100%, 460px);
+  padding: 34px;
+  border: 1px solid #cfe3d6;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(8, 81, 48, 0.12);
+  text-align: center;
+}
+
+.offline-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background: #0b6b3a;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.offline-card h1 { margin: 20px 0 8px; color: #073f2b; }
+.offline-card p { margin: 0 0 20px; color: #587164; line-height: 1.6; }
+.offline-card a {
+  display: inline-block;
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  background: #0b6b3a;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.license-panel { border-top: 4px solid #8c6bd1; }
+.license-search {
+  width: min(100%, 420px);
+  min-height: 42px;
+  margin-bottom: 16px;
+  padding: 9px 11px;
+  border: 1px solid #c9ddd0;
+  border-radius: 9px;
+  font: inherit;
+}
+.license-row-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 7px;
+  min-width: 620px;
+}
+.license-row-form input,
+.license-row-form select {
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid #c9ddd0;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+.license-row-form .form-success,
+.license-row-form .form-message { grid-column: 1 / -1; }
+.license-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+.license-status-aktif { background: #d1fae5; color: #047857; }
+.license-status-percubaan { background: #dbeafe; color: #1d4ed8; }
+.license-status-digantung,
+.license-status-tamat { background: #fee2e2; color: #b91c1c; }
+.license-status-legasi { background: #fef3c7; color: #92400e; }

@@ -9,6 +9,39 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const hasSupabaseServerEnv = Boolean(supabaseUrl && supabaseAnonKey);
 
+export async function checkDatabaseHealth() {
+  if (!supabaseUrl || !supabaseServiceRoleKey) return { ok: false } as const;
+  const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error } = await client.from('schools').select('id').limit(1);
+  return { ok: !error } as const;
+}
+
+export async function isVerifiedOwner() {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) return false;
+  const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
+  if (!accessToken) return false;
+
+  const verifier = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: authData } = await verifier.auth.getUser(accessToken);
+  if (!authData.user?.email) return false;
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await adminClient
+    .from('app_users')
+    .select('id')
+    .eq('status', 'AKTIF')
+    .eq('role', 'OWNER')
+    .or(`auth_user_id.eq.${authData.user.id},email.ilike.${authData.user.email}`)
+    .limit(1);
+  return !error && Boolean(data?.length);
+}
+
 export async function getVerifiedStudentScope() {
   if (!hasSupabaseServerEnv || !supabaseServiceRoleKey) return null;
 
