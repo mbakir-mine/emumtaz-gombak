@@ -1,14 +1,14 @@
 param(
-  [string]$OutputDirectory = '.backups'
+  [string]$OutputDirectory = 'C:\backups\emumtaz-backups'
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$backupRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $OutputDirectory))
-$allowedRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot '.backups'))
+$backupRoot = [System.IO.Path]::GetFullPath($OutputDirectory)
+$allowedRoot = [System.IO.Path]::GetFullPath('C:\backups\emumtaz-backups')
 
-if (-not $backupRoot.StartsWith($allowedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-  throw 'Lokasi backup mesti berada di dalam folder .backups projek.'
+if ($backupRoot -ne $allowedRoot -and -not $backupRoot.StartsWith("$allowedRoot\", [System.StringComparison]::OrdinalIgnoreCase)) {
+  throw 'Lokasi backup mesti berada di dalam C:\backups\emumtaz-backups.'
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue) -and -not (Get-Command podman -ErrorAction SilentlyContinue)) {

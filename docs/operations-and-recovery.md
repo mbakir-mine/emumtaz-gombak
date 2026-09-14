@@ -9,7 +9,7 @@
 ## Lapisan backup
 
 1. Aktifkan backup harian terurus Supabase untuk pelan Pro, Team atau Enterprise. Untuk tempoh peperiksaan aktif, pertimbangkan Point-in-Time Recovery (PITR).
-2. Jalankan `tools/backup-supabase.ps1` untuk menghasilkan dump schema dan data setempat. Fail disimpan dalam `.backups` dan tidak dimasukkan ke Git.
+2. Jalankan `tools/backup-supabase.ps1` untuk menghasilkan dump schema dan data setempat. Fail disimpan dalam `C:\backups\emumtaz-backups`, di luar repositori Git.
 3. Salinan luar tapak hanya boleh dibuat ke storan organisasi yang diluluskan, dienkripsi dan mempunyai kawalan akses serta tempoh simpanan yang ditetapkan.
 
 Dokumentasi rasmi: https://supabase.com/docs/guides/platform/backups
