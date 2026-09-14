@@ -2314,6 +2314,19 @@ export type SecurityAuditLog = {
   record_id: string | null;
   kod_sekolah: string | null;
   changed_fields: string[];
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+};
+
+export type AuthActivityLog = {
+  id: number;
+  created_at: string;
+  actor_email: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  kod_sekolah: string | null;
+  event_type: 'LOGIN' | 'LOGOUT';
+  session_id: string;
 };
 
 export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLog[]> {
@@ -2323,10 +2336,25 @@ export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLo
   const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 500));
   const { data, error } = await supabase
     .from('security_audit_logs')
-    .select('id,created_at,actor_email,action,table_name,record_id,kod_sekolah,changed_fields')
+    .select('id,created_at,actor_email,action,table_name,record_id,kod_sekolah,changed_fields,old_values,new_values')
     .order('created_at', { ascending: false })
     .limit(safeLimit);
 
   if (error) return [];
   return (data ?? []) as SecurityAuditLog[];
+}
+
+export async function getAuthActivityLogs(limit = 200): Promise<AuthActivityLog[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 500));
+  const { data, error } = await supabase
+    .from('auth_activity_logs')
+    .select('id,created_at,actor_email,actor_name,actor_role,kod_sekolah,event_type,session_id')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) return [];
+  return (data ?? []) as AuthActivityLog[];
 }

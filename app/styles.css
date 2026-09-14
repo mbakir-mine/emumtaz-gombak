@@ -8979,3 +8979,74 @@ tbody tr:hover {
   height: 1px !important;
   overflow: hidden !important;
 }
+
+.audit-event {
+  display: inline-flex;
+  min-width: 76px;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.audit-event-login,
+.audit-event-insert {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.audit-event-logout {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.audit-event-update {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.audit-event-delete {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.audit-change-details {
+  min-width: 280px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.audit-change-details summary {
+  color: var(--green);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.audit-change-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.audit-change-list > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.7fr) minmax(90px, 1fr) auto minmax(90px, 1fr);
+  gap: 7px;
+  align-items: start;
+  padding: 7px;
+  border-radius: 7px;
+  background: #f7faf8;
+}
+
+.audit-change-list span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .audit-change-list > div {
+    grid-template-columns: 1fr;
+  }
+}

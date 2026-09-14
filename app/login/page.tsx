@@ -69,7 +69,7 @@ export default function LoginPage() {
     }
 
     try {
-      await syncServerSession(data.session?.access_token ?? null);
+      await syncServerSession(data.session?.access_token ?? null, 'LOGIN');
     } catch {
       await supabase.auth.signOut();
       setLoading(false);
