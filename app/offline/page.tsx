@@ -5,9 +5,9 @@ export default function OfflinePage() {
     <main className="offline-page">
       <section className="offline-card">
         <span className="offline-mark">eM</span>
-        <h1>Anda sedang luar talian</h1>
-        <p>e-Mumtaz memerlukan sambungan internet untuk melindungi dan mendapatkan data murid yang terkini.</p>
-        <Link href="/">Sambung semula dan muat semula halaman</Link>
+        <h1>Sambungan terganggu</h1>
+        <p>e-Mumtaz tidak dapat memuatkan halaman ini buat masa ini. Sila cuba muat semula sebentar lagi.</p>
+        <Link href="/">Cuba muat semula halaman</Link>
       </section>
     </main>
   );
