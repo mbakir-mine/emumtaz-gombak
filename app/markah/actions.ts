@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { examAccessStatus } from '@/lib/examAccess';
 import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { defaultComponentsForSubject } from '@/lib/subjectComponents';
+import { UPKK_WRITTEN_PAPER_MAX } from '@/lib/upkkTrial';
 
 export type MarkActionState = {
   ok: boolean;
@@ -57,6 +58,8 @@ export async function saveMarks(
   }
 
   const access = examAccessStatus(exam);
+  const isUpkkTrial = isUpkkTrialExamCode(exam?.kod_peperiksaan);
+  const effectiveSubjectMax = isUpkkTrial ? UPKK_WRITTEN_PAPER_MAX : subjectMax;
 
   if (!access.open) {
     return { ok: false, message: access.label };
@@ -80,7 +83,7 @@ export async function saveMarks(
     }
   }
 
-  if (isUpkkTrialExamCode(exam?.kod_peperiksaan)) {
+  if (isUpkkTrial) {
     const { data: moduleAccess, error: moduleAccessError } = await supabase
       .from('school_module_access')
       .select('id')
@@ -96,6 +99,10 @@ export async function saveMarks(
     if (!moduleAccess) {
       return { ok: false, message: 'Sekolah ini belum dibenarkan akses Percubaan UPKK.' };
     }
+  }
+
+  if (isUpkkTrial && componentCodes.length > 0) {
+    return { ok: false, message: 'Percubaan UPKK hanya menerima markah diperoleh daripada 70 tanpa komponen.' };
   }
 
   if (componentCodes.length > 0) {
@@ -232,10 +239,10 @@ export async function saveMarks(
   });
 
   const invalid = rows.find(
-    (row) => row.markah !== null && (!Number.isInteger(row.markah) || row.markah < 0 || row.markah > subjectMax),
+    (row) => row.markah !== null && (!Number.isInteger(row.markah) || row.markah < 0 || row.markah > effectiveSubjectMax),
   );
   if (invalid) {
-    return { ok: false, message: `Markah mesti nombor bulat antara 0 hingga ${subjectMax}.` };
+    return { ok: false, message: `Markah mesti nombor bulat antara 0 hingga ${effectiveSubjectMax}.` };
   }
 
   const { error } = await supabase.from('marks').upsert(rows, {

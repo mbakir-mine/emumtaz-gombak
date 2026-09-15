@@ -42,6 +42,12 @@ export default function MarkEntryForm({
 }) {
   const [state, action, pending] = useActionState(saveMarks, initialState);
   const marksByStudent = useMemo(() => new Map(marks.map((mark) => [mark.student_id, mark.markah])), [marks]);
+  const [rawValues, setRawValues] = useState<Record<string, string>>(() => Object.fromEntries(
+    students.map((student) => {
+      const markah = marksByStudent.get(student.id);
+      return [student.id, markah === null || markah === undefined ? '' : String(markah)];
+    }),
+  ));
   const activeComponents = useMemo(
     () => subjectComponents.filter((component) => component.status === 'AKTIF').sort((left, right) => left.susunan - right.susunan),
     [subjectComponents],
@@ -92,9 +98,16 @@ export default function MarkEntryForm({
   const displayGrade = (markah: number | null | undefined) => {
     if (markah === null || markah === undefined || Number.isNaN(markah)) return '';
     return isUpkkTrial
-      ? upkkGrade(Number(markah), upkkGrades)
+      ? upkkGrade(normalizeMark(markah, subjectFullMark) ?? 0, upkkGrades)
       : gradeForMark(normalizeMark(markah, subjectFullMark));
   };
+
+  useEffect(() => {
+    setRawValues(Object.fromEntries(students.map((student) => {
+      const markah = marksByStudent.get(student.id);
+      return [student.id, markah === null || markah === undefined ? '' : String(markah)];
+    })));
+  }, [marksByStudent, students]);
 
   useEffect(() => {
     const next: Record<string, string> = {};
@@ -201,15 +214,19 @@ export default function MarkEntryForm({
                 </th>
               ))
             ) : (
-              <th>Markah</th>
+              <th>Markah <small>/{subjectFullMark}</small></th>
             )}
             {hasComponents && <th>Jumlah /{subjectFullMark}</th>}
+            {isUpkkTrial && !hasComponents && <th>Peratus</th>}
             <th>Gred</th>
           </tr>
         </thead>
         <tbody>
           {displayedStudents.map((student, index) => {
-            const markah = marksByStudent.get(student.id) ?? null;
+            const rawValue = rawValues[student.id] ?? '';
+            const markah = hasComponents
+              ? marksByStudent.get(student.id) ?? null
+              : rawValue === '' ? null : Number(rawValue);
             const totalMark = totalForStudent(student.id);
             return (
               <tr key={student.id}>
@@ -272,14 +289,22 @@ export default function MarkEntryForm({
                         max={subjectFullMark}
                         step="1"
                         inputMode="numeric"
-                        defaultValue={markah ?? ''}
+                        value={rawValue}
                         onKeyDown={(event) => {
                           if (['.', ',', 'e', 'E', '+', '-'].includes(event.key)) event.preventDefault();
+                        }}
+                        onChange={(event) => {
+                          if (isWholeInput(event.target.value)) {
+                            setRawValues((current) => ({ ...current, [student.id]: event.target.value }));
+                          }
                         }}
                         placeholder="-"
                       />
                     </td>
-                      <td>{displayGrade(markah)}</td>
+                    {isUpkkTrial && (
+                      <td>{markah === null ? '' : `${normalizeMark(markah, subjectFullMark)?.toFixed(2)}%`}</td>
+                    )}
+                    <td>{displayGrade(markah)}</td>
                   </>
                 )}
               </tr>

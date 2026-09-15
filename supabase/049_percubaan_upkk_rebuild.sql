@@ -52,7 +52,7 @@ create table if not exists public.upkk_trial_paper_marks (
     paper_code in ('UPKK02', 'UPKK03', 'UPKK04', 'UPKK05', 'UPKK06', 'UPKK07')
   ),
   constraint upkk_trial_session_check check (sesi in (1, 2)),
-  constraint upkk_trial_mark_check check (markah between 0 and 100),
+  constraint upkk_trial_mark_check check (markah between 0 and 70),
   constraint upkk_trial_student_paper_unique
     unique (tahun_akademik, student_id, sesi, paper_code)
 );

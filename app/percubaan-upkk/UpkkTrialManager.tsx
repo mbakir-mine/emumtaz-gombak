@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ClassRecord, ExamRecord, MarkRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { DEFAULT_UPKK_GRADES, UPKK_WRITTEN_PAPERS, upkkGrade, type UpkkGradeSettings, type UpkkWrittenMark, type UpkkWrittenPaperKey } from '@/lib/upkkTrial';
+import { DEFAULT_UPKK_GRADES, UPKK_WRITTEN_PAPERS, UPKK_WRITTEN_PAPER_MAX, UPKK_WRITTEN_TOTAL_MAX, upkkGrade, upkkPercentage, type UpkkGradeSettings, type UpkkWrittenMark, type UpkkWrittenPaperKey } from '@/lib/upkkTrial';
 import { useAccessProfile } from '../ui/AuthGate';
 
 type Props = { schools: School[]; moduleAccesses: SchoolModuleAccess[]; classes: ClassRecord[]; students: StudentRecord[]; exams: ExamRecord[] };
@@ -11,7 +11,7 @@ type LoadedUpkkMark = UpkkWrittenMark & { source: 'upkk_trial_paper_marks' | 'ma
 type Draft = Record<UpkkWrittenPaperKey, string>;
 const blankDraft = () => Object.fromEntries(UPKK_WRITTEN_PAPERS.map((paper) => [paper.key, ''])) as Draft;
 const active = (status: string | null | undefined) => (status ?? '').toUpperCase() === 'AKTIF';
-const whole = (value: string) => /^\d+$/.test(value) && Number(value) >= 0 && Number(value) <= 100;
+const whole = (value: string) => /^\d+$/.test(value) && Number(value) >= 0 && Number(value) <= UPKK_WRITTEN_PAPER_MAX;
 
 export default function UpkkTrialManager({ schools, moduleAccesses, classes, students, exams }: Props) {
   const profile = useAccessProfile();
@@ -94,17 +94,19 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
   const summaries = candidates.map((student) => {
     const marks = UPKK_WRITTEN_PAPERS.map((paper) => recordMap.get(`${student.id}|${paper.paperCode}`)).filter(Boolean) as UpkkWrittenMark[];
     const total = marks.reduce((sum, item) => sum + Number(item.markah), 0);
-    return { student, count: marks.length, total, average: total / 6, complete: marks.length === 6 };
+    return { student, count: marks.length, total, average: upkkPercentage(total, UPKK_WRITTEN_TOTAL_MAX), complete: marks.length === 6 };
   });
   const completed = summaries.filter((item) => item.complete);
   const selectedTotal = UPKK_WRITTEN_PAPERS.reduce((sum, paper) => sum + (draft[paper.key] === '' ? 0 : Number(draft[paper.key])), 0);
+  const selectedComplete = UPKK_WRITTEN_PAPERS.every((paper) => draft[paper.key] !== '');
+  const selectedPercentage = upkkPercentage(selectedTotal, UPKK_WRITTEN_TOTAL_MAX);
 
   async function saveMarks() {
     if (!supabase || !schoolCode || !classId || !studentId) return;
     const client = supabase;
     const papers = UPKK_WRITTEN_PAPERS.filter((paper) => draft[paper.key] !== '');
     const invalid = papers.find((paper) => !whole(draft[paper.key]));
-    if (!papers.length || invalid) return setMessage(invalid ? `Markah ${invalid.label} mesti nombor bulat 0 hingga 100.` : 'Masukkan sekurang-kurangnya satu markah.');
+    if (!papers.length || invalid) return setMessage(invalid ? `Markah ${invalid.label} mesti nombor bulat 0 hingga ${UPKK_WRITTEN_PAPER_MAX}.` : 'Masukkan sekurang-kurangnya satu markah.');
     setPending(true); setMessage('');
     const results = await Promise.all(papers.map((paper) => {
       const existing = recordMap.get(`${studentId}|${paper.paperCode}`);
@@ -144,8 +146,8 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
     {!hasAccess ? <section className="panel psra-locked"><strong>Akses Percubaan UPKK belum diluluskan</strong><p>Aktifkan melalui Tetapan → Akses Modul Sekolah.</p></section> : !yearFiveClasses.length ? <section className="panel psra-locked"><strong>Tiada kelas Tahun 5 aktif</strong></section> : <>
       <section className="psra-summary-grid"><div><span>Calon Tahun 5</span><strong>{candidates.length}</strong><small>murid berdaftar</small></div><div><span>Markah Lengkap</span><strong>{completed.length}</strong><small>semua 6 subjek</small></div><div><span>Purata Kelas</span><strong>{completed.length ? `${(completed.reduce((s, i) => s + i.average, 0) / completed.length).toFixed(1)}%` : '—'}</strong></div><div><span>Pencapaian A</span><strong>{completed.filter((item) => item.average >= grades.grade_a_min).length}</strong><small>{grades.grade_a_min}% dan ke atas</small></div></section>
       {message && <p className={message.includes('berjaya') ? 'form-success psra-message' : 'form-message psra-message'}>{message}</p>}
-      <section className="psra-layout"><div className="panel psra-student-panel"><div className="panel-head"><h2>Calon Tahun 5</h2><span>{candidates.length} murid</span></div><div className="psra-student-list">{summaries.map(({ student, count, total, complete }, index) => <button type="button" key={student.id} className={studentId === student.id ? 'active' : ''} onClick={() => setStudentId(student.id)}><span className="psra-student-number">{index + 1}</span><span><strong>{student.nama_murid}</strong><small>{student.mykid}</small></span><span className="psra-student-score"><strong>{count ? `${total}/600` : 'Belum diisi'}</strong><small>{complete ? `Gred ${upkkGrade(total / 6, grades)}` : `${count}/6 subjek`}</small></span></button>)}</div></div>
-      <div className="panel psra-entry-panel"><div className="psra-entry-head"><div><span>Percubaan UPKK {session}</span><h3>{candidates.find((item) => item.id === studentId)?.nama_murid ?? 'Pilih murid'}</h3></div><div><strong>{selectedTotal} / 600</strong><span>{UPKK_WRITTEN_PAPERS.every((paper) => draft[paper.key] !== '') ? `${(selectedTotal / 6).toFixed(1)}% · Gred ${upkkGrade(selectedTotal / 6, grades)}` : 'Lengkapkan 6 subjek'}</span></div></div><div className="psra-paper-grid upkk-paper-grid">{UPKK_WRITTEN_PAPERS.map((paper) => <label key={paper.key}><span><b>{paper.code.replace('UPKK ', '')}</b>{paper.label}</span><div><input type="number" min="0" max="100" step="1" value={draft[paper.key]} onChange={(event) => { if (event.target.value === '' || /^\d+$/.test(event.target.value)) setDraft((current) => ({ ...current, [paper.key]: event.target.value })); }} /><span>/ 100</span></div></label>)}</div><div className="psra-entry-footer"><div><span>Jumlah Semasa</span><strong>{selectedTotal}<small>/600</small></strong></div><button className="button" type="button" disabled={pending || !studentId} onClick={() => void saveMarks()}>{pending ? 'Menyimpan…' : `Simpan Markah UPKK ${session}`}</button></div></div></section>
+      <section className="psra-layout"><div className="panel psra-student-panel"><div className="panel-head"><h2>Calon Tahun 5</h2><span>{candidates.length} murid</span></div><div className="psra-student-list">{summaries.map(({ student, count, total, average, complete }, index) => <button type="button" key={student.id} className={studentId === student.id ? 'active' : ''} onClick={() => setStudentId(student.id)}><span className="psra-student-number">{index + 1}</span><span><strong>{student.nama_murid}</strong><small>{student.mykid}</small></span><span className="psra-student-score"><strong>{count ? `${total}/${UPKK_WRITTEN_TOTAL_MAX}` : 'Belum diisi'}</strong><small>{complete ? `${average.toFixed(1)}% · Gred ${upkkGrade(average, grades)}` : `${count}/6 subjek`}</small></span></button>)}</div></div>
+      <div className="panel psra-entry-panel"><div className="psra-entry-head"><div><span>Percubaan UPKK {session}</span><h3>{candidates.find((item) => item.id === studentId)?.nama_murid ?? 'Pilih murid'}</h3></div><div><strong>{selectedTotal} / {UPKK_WRITTEN_TOTAL_MAX}</strong><span>{selectedComplete ? `${selectedPercentage.toFixed(1)}% · Gred ${upkkGrade(selectedPercentage, grades)}` : 'Lengkapkan 6 subjek'}</span></div></div><div className="psra-paper-grid upkk-paper-grid">{UPKK_WRITTEN_PAPERS.map((paper) => { const rawMark = draft[paper.key] === '' ? null : Number(draft[paper.key]); const percentage = rawMark === null ? null : upkkPercentage(rawMark); return <label key={paper.key}><span><b>{paper.code.replace('UPKK ', '')}</b>{paper.label}</span><div><input type="number" min="0" max={UPKK_WRITTEN_PAPER_MAX} step="1" value={draft[paper.key]} onChange={(event) => { if (event.target.value === '' || /^\d+$/.test(event.target.value)) setDraft((current) => ({ ...current, [paper.key]: event.target.value })); }} /><span>/ {UPKK_WRITTEN_PAPER_MAX}</span></div><small className="upkk-paper-result">{percentage === null ? 'Masukkan markah diperoleh' : `${percentage.toFixed(1)}% · Gred ${upkkGrade(percentage, grades)}`}</small></label>; })}</div><div className="psra-entry-footer"><div><span>Jumlah Semasa</span><strong>{selectedTotal}<small>/{UPKK_WRITTEN_TOTAL_MAX}</small></strong></div><button className="button" type="button" disabled={pending || !studentId} onClick={() => void saveMarks()}>{pending ? 'Menyimpan…' : `Simpan Markah UPKK ${session}`}</button></div></div></section>
       <section className="panel psra-grade-panel"><div className="panel-head"><h2>Tetapan Gred Sekolah</h2><span>Julat khusus {schoolCode}</span></div><div className="upkk-grade-settings">{(['a','b','c'] as const).map((key) => <label key={key}>Minimum Gred {key.toUpperCase()}<input type="number" min="1" max="100" value={grades[`grade_${key}_min`]} onChange={(event) => setGrades((current) => ({ ...current, [`grade_${key}_min`]: Number(event.target.value) }))} /></label>)}<label>Minimum Gred D<input value="0" disabled /></label><button className="button" type="button" disabled={pending} onClick={() => void saveGrades()}>Simpan Tetapan Gred</button></div><div className="psra-grade-grid">{[['A',`${grades.grade_a_min}–100`],['B',`${grades.grade_b_min}–${grades.grade_a_min-1}`],['C',`${grades.grade_c_min}–${grades.grade_b_min-1}`],['D',`0–${grades.grade_c_min-1}`]].map(([grade, range]) => <div key={grade}><span>{range}</span><strong>Gred {grade}</strong></div>)}</div></section>
     </>}
   </div>;

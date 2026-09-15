@@ -4,6 +4,8 @@ import type {
   SubjectComponentRecord,
   SubjectRecord,
 } from './data';
+import { isUpkkTrialExamCode } from './examOrdering';
+import { isUpkkWrittenSubjectCode, UPKK_WRITTEN_PAPER_MAX } from './upkkTrial';
 
 export type MarkSettingScope = {
   kodSekolah: string;
@@ -34,6 +36,13 @@ export function resolveSubjectFullMark(
   settings: SchoolSubjectMarkSetting[],
   subjects: SubjectRecord[],
 ) {
+  if (
+    Number(scope.tahun) === 5 &&
+    isUpkkTrialExamCode(scope.kodPeperiksaan) &&
+    isUpkkWrittenSubjectCode(scope.kodSubjek)
+  ) {
+    return UPKK_WRITTEN_PAPER_MAX;
+  }
   const override = settings.find((setting) => sameScope(setting, scope));
   if (override) return Number(override.markah_penuh);
   return Number(subjects.find((subject) => subject.kod_subjek === scope.kodSubjek)?.markah_penuh ?? 100);
