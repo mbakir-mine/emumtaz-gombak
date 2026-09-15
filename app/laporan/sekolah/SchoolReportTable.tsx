@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import PrintButton from '../../ui/PrintButton';
+import ReportExportToolbar from '../../ui/ReportExportToolbar';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeSchools } from '../../ui/scopedData';
@@ -29,7 +29,7 @@ export default function SchoolReportTable({
           <h2>Laporan Prestasi Sekolah</h2>
           <p className="table-note">Purata sekolah dikira berdasarkan purata murid yang mempunyai markah.</p>
         </div>
-        <PrintButton />
+        <ReportExportToolbar reportType="Laporan Prestasi Sekolah" scopeLabel="Skop sekolah yang dipaparkan" />
       </div>
       {scopedSummaries.length === 0 ? (
         <p className="empty">Belum ada markah untuk laporan sekolah.</p>

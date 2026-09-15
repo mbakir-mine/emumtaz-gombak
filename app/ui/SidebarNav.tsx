@@ -15,6 +15,12 @@ const groupedMenu = [
     items: ['dashboard'],
   },
   {
+    key: 'notifications',
+    label: 'Notifikasi',
+    href: '/notifikasi',
+    items: ['notifications'],
+  },
+  {
     key: 'schoolSetup',
     label: 'Tetapan Sekolah',
     href: '/sekolah',
@@ -30,7 +36,7 @@ const groupedMenu = [
     key: 'scoring',
     label: 'Pemarkahan',
     href: '/markah',
-    items: ['marks'],
+    items: ['marks', 'markApproval'],
   },
   {
     key: 'reports',
@@ -83,6 +89,8 @@ const childLabels: Record<string, string> = {
   componentMarks: 'Markah Penuh & Komponen',
   khalifahMudaComponents: 'Komponen Sahsiah IHAB',
   marks: 'Kelas',
+  markApproval: 'Pengesahan Markah',
+  notifications: 'Notifikasi',
   reports: 'Pusat Laporan',
   reportIndividual: 'Individu',
   reportClass: 'Kelas',

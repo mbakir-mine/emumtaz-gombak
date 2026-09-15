@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type {
   DashboardClassRank,
+  DashboardInterventionStudent,
   DashboardInsights,
   DashboardSchoolRank,
   MarkCompletionClass,
@@ -156,6 +158,47 @@ function scopedCountsForProfile(
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '-';
   return value.toFixed(2);
+}
+
+function InterventionPanel({ rows, examLabel }: { rows: DashboardInterventionStudent[]; examLabel: string }) {
+  return (
+    <section className="panel intervention-panel">
+      <div className="panel-head">
+        <div>
+          <h2>Intervensi Murid</h2>
+          <p className="table-note">Keutamaan berdasarkan purata dan perubahan ujian terdahulu bagi {examLabel}.</p>
+        </div>
+        <span>{rows.length} murid</span>
+      </div>
+      {rows.length === 0 ? <p className="empty">Tiada murid melepasi ambang intervensi untuk skop ini.</p> : (
+        <div className="table-scroll">
+          <table className="compact-table">
+            <thead><tr><th>Keutamaan</th><th>Murid</th><th>Sekolah / Kelas</th><th>Purata</th><th>Petunjuk</th><th>Tindakan dicadangkan</th><th /></tr></thead>
+            <tbody>{rows.slice(0, 50).map((row) => {
+              const params = new URLSearchParams({
+                student_id: row.student_id,
+                tahun_akademik: String(row.tahun_akademik),
+                kod_peperiksaan: row.kod_peperiksaan,
+                return_to: '/',
+              });
+              return (
+                <tr key={`${row.student_id}-${row.kod_peperiksaan}-${row.tahun_akademik}`}>
+                  <td><span className={`intervention-priority intervention-priority-${row.priority.toLowerCase()}`}>{row.priority}</span></td>
+                  <td><strong>{row.nama_murid}</strong></td>
+                  <td>{row.nama_sekolah}<small className="cell-detail">{row.nama_kelas}</small></td>
+                  <td><strong>{row.purata.toFixed(2)}%</strong>{row.perubahan !== null && <small className="cell-detail">{row.perubahan >= 0 ? '+' : ''}{row.perubahan.toFixed(2)} mata</small>}</td>
+                  <td>{row.reason}</td>
+                  <td>{row.recommended_action}</td>
+                  <td><Link className="button secondary compact-button" href={`/laporan/individu/cetak?${params.toString()}`}>Slip</Link></td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+          {rows.length > 50 && <p className="table-note">Memaparkan 50 keutamaan teratas daripada {rows.length} murid.</p>}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function groupedTopSchools(rows: DashboardSchoolRank[]) {
@@ -1106,6 +1149,7 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
   const metrics = metricsForRole(scopedCounts, profile?.role);
   const isSchoolAdmin = profile?.role === 'ADMIN_SEKOLAH';
   const isZoneAdmin = profile?.role === 'ADMIN_ZON';
+  const canViewInterventions = ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'].includes(profile?.role ?? '');
   const dashboardDistrict = profile?.role === 'ADMIN_DAERAH'
     ? profile.daerah?.toUpperCase() ?? 'GOMBAK'
     : selectedDistrict;
@@ -1130,6 +1174,12 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
   const scopedCompletionClasses = insights.completionClasses.filter((row) => {
     if (isSchoolAdmin) return row.kod_sekolah === profile?.kod_sekolah;
     if (dashboardDistrict || isZoneAdmin) return scopedCompletionSchoolCodes.has(row.kod_sekolah);
+    return true;
+  });
+  const scopedInterventions = insights.interventionStudents.filter((row) => {
+    if (dashboardDistrict && row.daerah.toUpperCase() !== dashboardDistrict) return false;
+    if (isZoneAdmin && row.zon !== profile?.zon) return false;
+    if (isSchoolAdmin && row.kod_sekolah !== profile?.kod_sekolah) return false;
     return true;
   });
   const bestSchool = categorySchoolRanks[0];
@@ -1333,6 +1383,7 @@ export default function DashboardContent({ counts, insights }: { counts: SetupCo
         </div>
       )}
       </>}
+      {canViewInterventions && <InterventionPanel rows={scopedInterventions} examLabel={insights.latestExamLabel} />}
         </>
       )}
 

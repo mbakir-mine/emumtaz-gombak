@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import AppFrame from '../../../ui/AppFrame';
-import PrintButton from '../../../ui/PrintButton';
+import ReportExportToolbar from '../../../ui/ReportExportToolbar';
 import ReportSignatureBlock from '../../../ui/ReportSignatureBlock';
 import { getClasses, getMarkDetails, getSchools, getStudentSummaries } from '@/lib/data';
 import { cleanMykid } from '@/lib/mykid';
@@ -78,8 +78,12 @@ export default async function CetakLaporanIndividuPage({
             <p className="table-note">Semak slip, kemudian cetak atau simpan sebagai PDF.</p>
           </div>
           <div className="row-actions">
-            <PrintButton label="CETAK" />
-            <PrintButton label="CETAK PDF" />
+            {summary && (
+              <ReportExportToolbar
+                reportType="Laporan Individu Murid"
+                scopeLabel={`${summary.kod_sekolah} / ${summary.kod_peperiksaan} ${summary.tahun_akademik}`}
+              />
+            )}
             <Link className="button secondary" href={returnTo}>
               Kembali
             </Link>

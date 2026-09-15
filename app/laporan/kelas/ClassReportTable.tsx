@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import PrintButton from '../../ui/PrintButton';
+import ReportExportToolbar from '../../ui/ReportExportToolbar';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
@@ -419,9 +419,10 @@ export default function ClassReportTable({
           <h2>Laporan Markah Kelas</h2>
           <p className="table-note">Pilih kelas dan peperiksaan untuk memaparkan markah murid mengikut subjek.</p>
         </div>
-        <div className="row-actions no-print">
-          <PrintButton />
-        </div>
+        <ReportExportToolbar
+          reportType="Laporan Markah Kelas"
+          scopeLabel={`${selectedExamRecord?.kod_peperiksaan ?? 'Peperiksaan'} ${selectedYear} / ${selectedClass || selectedSchool || 'Skop semasa'}`}
+        />
       </div>
 
       <div className="report-filter-grid class-report-filter no-print">

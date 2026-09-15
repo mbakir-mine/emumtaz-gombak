@@ -122,3 +122,22 @@ export async function getSupabaseServerClient() {
 
   return createClient(supabaseUrl as string, supabaseAnonKey as string, options);
 }
+
+export async function getAuthenticatedSupabaseServerClient() {
+  if (!hasSupabaseServerEnv) return null;
+  const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
+  if (!accessToken) return null;
+
+  return createClient(supabaseUrl as string, supabaseAnonKey as string, {
+    global: {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        headers.set('Authorization', `Bearer ${accessToken}`);
+        return fetch(input, { ...init, headers, cache: 'no-store' });
+      },
+    },
+    auth: { autoRefreshToken: false, persistSession: false },
+    accessToken: async () => accessToken,
+  });
+}

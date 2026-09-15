@@ -74,6 +74,32 @@ export type SchoolLicense = {
   updated_at: string;
 };
 
+export type MarkSubmissionWorkflow = {
+  id: string;
+  kod_sekolah: string;
+  exam_id: string;
+  class_id: string;
+  kod_subjek: string;
+  status: 'DRAF' | 'DIHANTAR' | 'DISAHKAN' | 'DIKUNCI' | 'PEMBETULAN';
+  notes: string | null;
+  submitted_at: string | null;
+  verified_at: string | null;
+  locked_at: string | null;
+  correction_requested_at: string | null;
+  updated_at: string;
+};
+
+export type UserNotification = {
+  id: string;
+  kod_sekolah: string | null;
+  type: 'MARK_SUBMITTED' | 'MARK_VERIFIED' | 'MARK_LOCKED' | 'CORRECTION_REQUESTED' | 'SYSTEM';
+  title: string;
+  message: string;
+  link: string | null;
+  created_at: string;
+  read: boolean;
+};
+
 export type ClassRecord = {
   id: string;
   kod_sekolah: string;
@@ -503,6 +529,7 @@ export type DashboardInsights = {
   completionClasses: MarkCompletionClass[];
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
+  interventionStudents: DashboardInterventionStudent[];
   scopeCounts: DashboardScopeCounts;
   psraSelection: { year: number; session: 1 | 2; examId: string | null } | null;
   psraAvailableDistricts: string[];
@@ -1042,6 +1069,40 @@ export async function getSchoolLicenses(): Promise<SchoolLicense[]> {
     .order('kod_sekolah');
   if (error) return [];
   return (data ?? []) as SchoolLicense[];
+}
+
+export async function getMarkSubmissionWorkflows(): Promise<MarkSubmissionWorkflow[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('mark_submission_workflows')
+    .select('id,kod_sekolah,exam_id,class_id,kod_subjek,status,notes,submitted_at,verified_at,locked_at,correction_requested_at,updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(1000);
+  if (error) return [];
+  return (data ?? []) as MarkSubmissionWorkflow[];
+}
+
+export async function getUserNotifications(limit = 100): Promise<UserNotification[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 200));
+  const { data, error } = await supabase
+    .from('user_notifications')
+    .select('id,kod_sekolah,type,title,message,link,created_at,user_notification_reads(read_at)')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+  if (error) return [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    kod_sekolah: row.kod_sekolah,
+    type: row.type,
+    title: row.title,
+    message: row.message,
+    link: row.link,
+    created_at: row.created_at,
+    read: Array.isArray(row.user_notification_reads) && row.user_notification_reads.length > 0,
+  })) as UserNotification[];
 }
 
 async function getClassesUncached(): Promise<ClassRecord[]> {
@@ -1917,6 +1978,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
       completionClasses: [],
       teacherClasses: teacherDashboard.teacherClasses,
       teacherSubjects: teacherDashboard.teacherSubjects,
+      interventionStudents: [],
       scopeCounts: baseScopeCounts,
       psraSelection,
       psraAvailableDistricts,
@@ -1935,6 +1997,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
       completionClasses: [],
       teacherClasses: teacherDashboard.teacherClasses,
       teacherSubjects: teacherDashboard.teacherSubjects,
+      interventionStudents: [],
       scopeCounts: baseScopeCounts,
       psraSelection: null,
       psraAvailableDistricts,
@@ -2084,6 +2147,59 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     });
   });
 
+  const interventionStudents = studentSummaries
+    .filter((summary) => matchesExamKey(summary, key) && summary.purata !== null)
+    .map((summary): DashboardInterventionStudent | null => {
+      const currentAverage = Number(summary.purata);
+      const previous = studentSummaries
+        .filter(
+          (item) =>
+            item.student_id === summary.student_id &&
+            examSortValue(item) < examSortValue(summary) &&
+            item.purata !== null,
+        )
+        .sort((a, b) => examSortValue(b) - examSortValue(a))[0];
+      const change = previous?.purata === null || previous?.purata === undefined
+        ? null
+        : Number((currentAverage - Number(previous.purata)).toFixed(2));
+      const drop = change === null ? 0 : Math.max(-change, 0);
+      if (currentAverage >= 60 && drop < 8) return null;
+
+      const highPriority = currentAverage < 40 || drop >= 15;
+      const reasons = [
+        currentAverage < 40
+          ? `Purata kritikal ${currentAverage.toFixed(2)}%`
+          : currentAverage < 60
+            ? `Purata di bawah sasaran (${currentAverage.toFixed(2)}%)`
+            : '',
+        drop >= 8 ? `Menurun ${drop.toFixed(2)} mata daripada ujian terdahulu` : '',
+      ].filter(Boolean);
+      const school = schoolMap.get(summary.kod_sekolah);
+      const classRecord = classMap.get(summary.class_id);
+
+      return {
+        student_id: summary.student_id,
+        nama_murid: summary.nama_murid,
+        kod_sekolah: summary.kod_sekolah,
+        nama_sekolah: school?.nama_sekolah ?? summary.kod_sekolah,
+        daerah: school?.daerah ?? '',
+        zon: school?.zon ?? null,
+        class_id: summary.class_id,
+        tahun_akademik: summary.tahun_akademik,
+        kod_peperiksaan: summary.kod_peperiksaan,
+        nama_kelas: classRecord ? `Tahun ${classRecord.tahun} - ${classRecord.nama_kelas}` : 'Kelas tidak ditemui',
+        purata: currentAverage,
+        perubahan: change,
+        priority: highPriority ? 'TINGGI' : 'SEDERHANA',
+        reason: reasons.join('; '),
+        recommended_action: highPriority
+          ? 'Hubungi penjaga dan sediakan pelan pemulihan individu dalam 7 hari.'
+          : 'Jadualkan bimbingan kumpulan kecil dan semak kemajuan dalam 2 minggu.',
+      };
+    })
+    .filter((item): item is DashboardInterventionStudent => item !== null)
+    .sort((a, b) => (a.priority === b.priority ? a.purata - b.purata : a.priority === 'TINGGI' ? -1 : 1));
+
   const [tahun, exam] = key.split('-');
   return {
     latestExamLabel: `${exam} ${tahun}`,
@@ -2097,6 +2213,7 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     ),
     teacherClasses: teacherDashboard.teacherClasses,
     teacherSubjects: teacherDashboard.teacherSubjects,
+    interventionStudents,
     scopeCounts,
     psraSelection: null,
     psraAvailableDistricts,
@@ -2352,6 +2469,24 @@ export type AuthActivityLog = {
   kod_sekolah: string | null;
   event_type: 'LOGIN' | 'LOGOUT';
   session_id: string;
+};
+
+export type DashboardInterventionStudent = {
+  student_id: string;
+  nama_murid: string;
+  kod_sekolah: string;
+  nama_sekolah: string;
+  daerah: string;
+  zon: string | null;
+  class_id: string;
+  nama_kelas: string;
+  tahun_akademik: number;
+  kod_peperiksaan: string;
+  purata: number;
+  perubahan: number | null;
+  priority: 'TINGGI' | 'SEDERHANA';
+  reason: string;
+  recommended_action: string;
 };
 
 export type AuthLoginFailureLog = {

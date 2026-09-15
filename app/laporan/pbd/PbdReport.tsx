@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import PrintButton from '../../ui/PrintButton';
+import ReportExportToolbar from '../../ui/ReportExportToolbar';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses, scopeSchools } from '../../ui/scopedData';
@@ -338,7 +338,10 @@ export default function PbdReport({
           </p>
         </div>
         <div className="row-actions no-print">
-          <PrintButton />
+          <ReportExportToolbar
+            reportType="Pelaporan PBD"
+            scopeLabel={`${selectedYear} / ${effectiveSchool || selectedZone || 'Skop semasa'}`}
+          />
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import PrintButton from '../../ui/PrintButton';
+import ReportExportToolbar from '../../ui/ReportExportToolbar';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
 import { useAccessProfile } from '../../ui/AuthGate';
 import { scopeClasses } from '../../ui/scopedData';
@@ -363,7 +363,10 @@ export default function SubjectReportTable({
           <h2>Laporan Analisis Subjek</h2>
           <p className="table-note">Analisis pencapaian subjek mengikut sekolah, kelas dan peperiksaan.</p>
         </div>
-        <PrintButton />
+        <ReportExportToolbar
+          reportType="Laporan Analisis Subjek"
+          scopeLabel={`${activeYear} / ${activeExamRecord?.kod_peperiksaan ?? 'Peperiksaan semasa'} / ${activeSchoolLabel} / ${activeClassLabel}`}
+        />
       </div>
 
       <div className="subject-report-controls no-print">
