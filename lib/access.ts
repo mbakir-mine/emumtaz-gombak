@@ -33,6 +33,7 @@ export const navItems: NavItem[] = [
   { key: 'teachers', label: 'Guru & Pengguna', href: '/guru', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'classes', label: 'Kelas', href: '/kelas', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'students', label: 'Murid', href: '/murid', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS'] },
+  { key: 'parentAccess', label: 'Akses Ibu Bapa', href: '/akses-ibu-bapa', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'], moduleKey: 'AKSES_IBU_BAPA' },
   { key: 'studentPromotion', label: 'Naik Tahun Murid', href: '/murid/naik-tahun', roles: ['OWNER', 'ADMIN_SEKOLAH'] },
   {
     key: 'calendar',

@@ -9,6 +9,13 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const hasSupabaseServerEnv = Boolean(supabaseUrl && supabaseAnonKey);
 
+export function getSupabaseServiceClient() {
+  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export async function checkDatabaseHealth() {
   if (!supabaseUrl || !supabaseServiceRoleKey) return { ok: false } as const;
   const client = createClient(supabaseUrl, supabaseServiceRoleKey, {

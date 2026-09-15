@@ -1,27 +1,18 @@
 import Link from 'next/link';
 import PrintButton from '../../ui/PrintButton';
 import ReportSignatureBlock from '../../ui/ReportSignatureBlock';
-import { getSchoolModuleAccesses, getStudentSummariesByMykid } from '@/lib/data';
+import { getParentReportSession } from '@/lib/parentAccess';
 import { cleanMykid } from '@/lib/mykid';
 import { gradeForMark } from '@/lib/subjects';
+import { logoutParent } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function IbuBapaLaporanPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const params = await searchParams;
-  const mykid = String(params.mykid ?? '').replace(/\D/g, '');
-  const kodSekolah = String(params.kod_sekolah ?? '').trim().toUpperCase();
-  const accesses = kodSekolah ? await getSchoolModuleAccesses() : [];
-  const parentAccessEnabled = accesses.some(
-    (access) => access.kod_sekolah === kodSekolah && access.module_key === 'AKSES_IBU_BAPA' && access.enabled,
-  );
-  const summaries = mykid && kodSekolah && parentAccessEnabled ? await getStudentSummariesByMykid(mykid, kodSekolah) : [];
-  const student = summaries[0];
+export default async function IbuBapaLaporanPage() {
+  const parentSession = await getParentReportSession();
+  const summaries = parentSession?.summaries ?? [];
+  const student = parentSession?.student;
 
   return (
     <main className="parent-page">
@@ -36,18 +27,15 @@ export default async function IbuBapaLaporanPage({
           </div>
           <div className="row-actions no-print">
             <PrintButton />
-            <Link className="button secondary" href="/ibu-bapa">
-              Semak Murid Lain
-            </Link>
+            <form action={logoutParent}><button className="button secondary" type="submit">Log Keluar</button></form>
           </div>
         </div>
 
-        {!mykid || !kodSekolah ? (
-          <p className="empty">Sila masukkan MyKid dan kod sekolah murid dahulu.</p>
-        ) : !parentAccessEnabled ? (
+        {!parentSession || !student ? (
           <div className="empty-state">
-            <strong>Akses Ibu Bapa belum dibuka.</strong>
-            <span>Sekolah ini belum diluluskan untuk menggunakan servis semakan ibu bapa.</span>
+            <strong>Sesi tidak sah atau telah tamat.</strong>
+            <span>Log masuk semula menggunakan MyKid, sekolah dan kod akses yang dibekalkan pihak sekolah.</span>
+            <Link className="button secondary" href="/ibu-bapa">Ke Halaman Akses</Link>
           </div>
         ) : summaries.length === 0 ? (
           <div className="empty-state">

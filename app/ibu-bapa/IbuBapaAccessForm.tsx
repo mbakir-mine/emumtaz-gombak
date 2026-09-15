@@ -1,43 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import type { School } from '@/lib/data';
+import { loginParent, type ParentLoginState } from './actions';
+
+const initialState: ParentLoginState = { ok: false, message: '' };
 
 export default function IbuBapaAccessForm({ schools }: { schools: School[] }) {
-  const router = useRouter();
   const [mykid, setMykid] = useState('');
   const [kodSekolah, setKodSekolah] = useState(schools[0]?.kod_sekolah ?? '');
-  const [message, setMessage] = useState('');
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleanMykid = mykid.replace(/\D/g, '');
-    const cleanKodSekolah = kodSekolah.trim().toUpperCase();
-
-    if (schools.length === 0) {
-      setMessage('Akses Ibu Bapa belum dibuka untuk mana-mana sekolah.');
-      return;
-    }
-
-    if (cleanMykid.length < 6) {
-      setMessage('Sila masukkan MyKid yang sah.');
-      return;
-    }
-
-    if (!cleanKodSekolah) {
-      setMessage('Sila pilih sekolah.');
-      return;
-    }
-
-    router.push(
-      `/ibu-bapa/laporan?mykid=${encodeURIComponent(cleanMykid)}&kod_sekolah=${encodeURIComponent(cleanKodSekolah)}`,
-    );
-  }
+  const [state, formAction, pending] = useActionState(loginParent, initialState);
 
   return (
-    <form onSubmit={handleSubmit} className="login-form">
+    <form action={formAction} className="login-form">
       <label>
         MyKid Murid
         <input
@@ -45,6 +21,7 @@ export default function IbuBapaAccessForm({ schools }: { schools: School[] }) {
           placeholder="Contoh: 150101100001"
           value={mykid}
           onChange={(event) => setMykid(event.target.value)}
+          name="mykid"
           required
           disabled={schools.length === 0}
         />
@@ -52,7 +29,7 @@ export default function IbuBapaAccessForm({ schools }: { schools: School[] }) {
 
       <label>
         Sekolah
-        <select value={kodSekolah} onChange={(event) => setKodSekolah(event.target.value)} required disabled={schools.length === 0}>
+        <select name="kod_sekolah" value={kodSekolah} onChange={(event) => setKodSekolah(event.target.value)} required disabled={schools.length === 0}>
           {schools.length === 0 ? (
             <option value="">Tiada sekolah aktif</option>
           ) : (
@@ -65,13 +42,18 @@ export default function IbuBapaAccessForm({ schools }: { schools: School[] }) {
         </select>
       </label>
 
+      <label>
+        Kod Akses 8 Aksara
+        <input name="access_code" inputMode="text" autoComplete="one-time-code" minLength={8} maxLength={8} placeholder="Contoh: 7M4K9P2R" required disabled={schools.length === 0 || pending} />
+      </label>
+
       {schools.length === 0 && (
         <p className="notice">Servis Akses Ibu Bapa hanya dibuka kepada sekolah yang telah diluluskan.</p>
       )}
-      {message && <p className="form-message">{message}</p>}
+      {state.message && <p className={state.ok ? 'form-success' : 'form-message'}>{state.message}</p>}
 
-      <button className="button" type="submit" disabled={schools.length === 0}>
-        Semak Laporan
+      <button className="button" type="submit" disabled={schools.length === 0 || pending}>
+        {pending ? 'Mengesahkan…' : 'Semak Laporan'}
       </button>
 
       <Link className="button secondary login-register-link" href="/login">

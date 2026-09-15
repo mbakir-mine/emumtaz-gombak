@@ -27,7 +27,7 @@ export default async function IbuBapaLoginPage() {
         </div>
 
         <h1>Semakan Anak</h1>
-        <p className="login-copy">Masukkan MyKid dan pilih sekolah murid.</p>
+        <p className="login-copy">Masukkan MyKid, pilih sekolah dan gunakan kod akses yang dibekalkan pihak sekolah.</p>
 
         <IbuBapaAccessForm schools={enabledSchools} />
       </section>
