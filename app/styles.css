@@ -9078,6 +9078,185 @@ tbody tr:hover {
   .report-verification-card { display: flex !important; border: 1px solid #555; background: #fff; }
 }
 
+/* e-RPH weekly submission and Guru Besar monitoring */
+.rph-monitor-panel,
+.rph-teacher-submit-panel {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.rph-monitor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 24px;
+  border-bottom: 1px solid #dfe9e2;
+  background: linear-gradient(120deg, #f8fcf9, #f2f9f5);
+}
+
+.rph-monitor-head h2 { margin: 5px 0; color: #0b3c2a; font-size: 25px; }
+.rph-monitor-head p { margin: 0; color: #718278; }
+.rph-eyebrow-dark { color: #08734d; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.rph-monitor-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.rph-monitor-controls > label { display: grid; gap: 5px; min-width: 230px; color: #5e7368; font-size: 11px; font-weight: 800; }
+
+.rph-week-picker {
+  display: grid;
+  grid-template-columns: 34px minmax(145px, 1fr) 34px;
+  align-items: end;
+  gap: 5px;
+  min-width: 280px;
+}
+.rph-week-picker label { display: grid; gap: 5px; color: #5e7368; font-size: 11px; font-weight: 800; }
+.rph-week-picker input, .rph-monitor-controls select { min-height: 40px; border: 1px solid #cadbd0; border-radius: 8px; background: #fff; }
+.rph-week-picker button { width: 34px; height: 40px; border: 1px solid #cadbd0; border-radius: 8px; background: #fff; color: #08734d; font-size: 24px; cursor: pointer; }
+.rph-week-picker > strong { grid-column: 1 / -1; color: #315243; font-size: 12px; text-align: center; }
+
+.rph-monitor-metrics {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
+  gap: 10px;
+  padding: 20px 24px;
+  background: #fff;
+}
+.rph-monitor-metrics > div { display: grid; gap: 3px; padding: 15px; border: 1px solid #dfe9e2; border-radius: 11px; background: #fbfdfb; }
+.rph-monitor-metrics > div.primary { border-color: #acd2bb; background: linear-gradient(130deg, #e9f7ed, #f4fbf6); }
+.rph-monitor-metrics span { color: #62766b; font-size: 11px; font-weight: 800; }
+.rph-monitor-metrics strong { color: #0b3c2a; font-size: 27px; font-variant-numeric: tabular-nums; }
+.rph-monitor-metrics small { color: #8a978f; font-size: 10px; }
+
+.rph-missing-teachers { margin: 0 24px 18px; border: 1px solid #efd7ae; border-radius: 10px; background: #fffaf1; }
+.rph-missing-teachers summary { display: flex; justify-content: space-between; padding: 12px 14px; color: #7b5513; cursor: pointer; }
+.rph-missing-teachers summary span { font-size: 11px; }
+.rph-missing-teachers > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 0 12px 12px; }
+.rph-missing-teachers > div > span { display: grid; padding: 9px 10px; border-radius: 7px; background: #fff; color: #493c25; font-size: 12px; font-weight: 700; }
+.rph-missing-teachers small { color: #947c55; font-size: 10px; font-weight: 500; }
+
+.rph-submission-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 12px; }
+.rph-submission-section-head h3 { margin: 0 0 3px; color: #173e2e; }
+.rph-submission-section-head p { margin: 0; color: #7a8a81; font-size: 12px; }
+.rph-submission-section-head > span { padding: 5px 9px; border-radius: 999px; background: #e9f4ec; color: #08734d; font-size: 11px; font-weight: 800; }
+.rph-submission-list { display: grid; gap: 12px; padding: 0 24px 24px; }
+.rph-submission-card { overflow: hidden; border: 1px solid #dbe7de; border-radius: 12px; background: #fff; box-shadow: 0 5px 16px rgba(14, 59, 39, .04); }
+.rph-submission-card > header { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; background: #fbfdfb; }
+.rph-submission-card > header h3 { margin: 3px 0 2px; color: #173e2e; font-size: 16px; }
+.rph-submission-card > header p { margin: 0; color: #7b8b82; font-size: 11px; }
+.rph-submission-card > header > button { padding: 8px 11px; border: 1px solid #bdd7c6; border-radius: 8px; background: #fff; color: #08734d; font-size: 11px; font-weight: 800; cursor: pointer; }
+.rph-teacher-avatar { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 12px; background: #0a754f; color: #fff; font-size: 13px; font-weight: 900; }
+.rph-workflow-status { display: inline-flex; width: fit-content; padding: 4px 8px; border-radius: 999px; background: #e7ece9; color: #5e6b64; font-size: 9px; font-weight: 900; letter-spacing: .03em; text-transform: uppercase; }
+.rph-workflow-status.status-dihantar { background: #dbeafe; color: #1d4ed8; }
+.rph-workflow-status.status-dalam_semakan { background: #e8e1ff; color: #6842b7; }
+.rph-workflow-status.status-pembetulan { background: #ffead5; color: #bd4b0d; }
+.rph-workflow-status.status-dihantar_semula { background: #e0f2fe; color: #0369a1; }
+.rph-workflow-status.status-disahkan { background: #d9f5e4; color: #047857; }
+.rph-review-note { margin: 0 16px 14px; padding: 10px 12px; border-left: 3px solid #e39337; border-radius: 0 7px 7px 0; background: #fff8eb; }
+.rph-review-note strong { color: #87510f; font-size: 11px; }
+.rph-review-note p { margin: 3px 0 0; color: #5d5140; font-size: 12px; }
+.rph-submission-detail { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 16px; padding: 16px; border-top: 1px solid #e3ece6; }
+.rph-snapshot-list { display: grid; align-content: start; gap: 8px; }
+.rph-snapshot-list details { border: 1px solid #dbe7de; border-radius: 9px; background: #fff; }
+.rph-snapshot-list summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; cursor: pointer; }
+.rph-snapshot-list summary > span { display: grid; gap: 2px; }
+.rph-snapshot-list summary strong { color: #173e2e; font-size: 13px; }
+.rph-snapshot-list summary small { color: #7a8a81; font-size: 10px; }
+.rph-snapshot-list summary b { color: #08734d; font-size: 10px; }
+.rph-snapshot-content { display: grid; gap: 8px; padding: 0 12px 12px; }
+.rph-snapshot-content section { padding: 9px; border-radius: 7px; background: #f7faf8; }
+.rph-snapshot-content strong { color: #315243; font-size: 11px; }
+.rph-snapshot-content p { margin: 4px 0 0; color: #405249; font-size: 11px; line-height: 1.55; white-space: pre-line; }
+.rph-review-workspace { align-self: start; padding: 14px; border: 1px solid #d8e6dc; border-radius: 10px; background: #f8fcf9; }
+.rph-review-workspace h4 { margin: 0 0 10px; color: #173e2e; font-size: 13px; }
+.rph-review-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
+.rph-review-action { display: grid; gap: 7px; }
+.rph-review-action.with-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid #dce7df; }
+.rph-review-action input, .rph-review-action textarea { width: 100%; border: 1px solid #cbdcd0; border-radius: 8px; background: #fff; font: inherit; }
+.rph-review-action input { min-height: 38px; }
+.rph-review-action textarea { padding: 9px; resize: vertical; }
+.rph-review-action small { font-size: 11px; }
+.rph-review-history { display: grid; gap: 8px; margin-top: 16px; padding-top: 13px; border-top: 1px solid #dce7df; }
+.rph-review-history > div { display: grid; grid-template-columns: 9px 1fr; gap: 8px; }
+.rph-review-history i { width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: #0a8b5c; }
+.rph-review-history span { display: grid; gap: 2px; }
+.rph-review-history strong { color: #345346; font-size: 11px; }
+.rph-review-history small { color: #84938b; font-size: 9px; }
+.rph-review-history p { margin: 2px 0 0; color: #635241; font-size: 10px; }
+
+.rph-teacher-workflow { display: grid; grid-template-columns: repeat(4, 1fr); padding: 22px 24px 16px; }
+.rph-teacher-workflow > div { position: relative; display: grid; justify-items: center; gap: 6px; color: #9aa59f; font-size: 11px; font-weight: 700; text-align: center; }
+.rph-teacher-workflow > div::before { position: absolute; top: 15px; right: 50%; width: 100%; height: 2px; background: #dde6e0; content: ''; }
+.rph-teacher-workflow > div:first-child::before { display: none; }
+.rph-teacher-workflow i { z-index: 1; display: grid; width: 31px; height: 31px; place-items: center; border: 2px solid #d8e3dc; border-radius: 50%; background: #fff; font-style: normal; }
+.rph-teacher-workflow > div.active { color: #08734d; }
+.rph-teacher-workflow > div.active::before { background: #69bd8c; }
+.rph-teacher-workflow > div.active i { border-color: #08734d; background: #e7f6ec; color: #08734d; }
+.rph-correction-banner, .rph-verified-banner { margin: 6px 24px 16px; padding: 14px; border-radius: 10px; }
+.rph-correction-banner { border: 1px solid #efc28f; background: #fff6e9; }
+.rph-correction-banner strong { color: #aa480d; }
+.rph-correction-banner p { margin: 5px 0; color: #67472e; }
+.rph-correction-banner span { color: #8b6a4d; font-size: 11px; }
+.rph-verified-banner { display: flex; gap: 12px; border: 1px solid #a9d8bd; background: #ecf9f0; }
+.rph-verified-banner > span { display: grid; flex: 0 0 38px; height: 38px; place-items: center; border-radius: 50%; background: #08734d; color: #fff; font-weight: 900; }
+.rph-verified-banner strong { color: #075f40; }
+.rph-verified-banner p { margin: 4px 0 0; color: #507363; font-size: 12px; }
+.rph-submit-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px 24px 12px; }
+.rph-submit-summary > div { display: grid; gap: 3px; padding: 13px; border: 1px solid #dfe9e2; border-radius: 9px; background: #fbfdfb; }
+.rph-submit-summary strong { color: #0b3c2a; font-size: 21px; }
+.rph-submit-summary span { color: #77877e; font-size: 10px; font-weight: 700; }
+.rph-week-records { padding-bottom: 10px; }
+.rph-week-records > .ready, .rph-week-records > .draft { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: center; gap: 10px; margin: 0 24px 7px; padding: 10px 12px; border: 1px solid #dfe8e2; border-radius: 8px; }
+.rph-week-records > div > i { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #ddf3e6; color: #08734d; font-size: 11px; font-style: normal; font-weight: 900; }
+.rph-week-records > .draft > i { background: #fff0d8; color: #b25b11; }
+.rph-week-records > div > span { display: grid; gap: 2px; }
+.rph-week-records > div strong { color: #294b3b; font-size: 12px; }
+.rph-week-records > div small { color: #85928b; font-size: 10px; }
+.rph-week-records > div b { color: #08734d; font-size: 10px; }
+.rph-week-records > .draft b { color: #b25b11; }
+.rph-empty.compact { padding: 32px 20px; }
+.rph-week-submit-form { margin: 10px 24px 22px; padding: 16px; border: 1px solid #b9d9c4; border-radius: 11px; background: #eff8f2; }
+.rph-week-submit-form label { display: grid; gap: 6px; color: #315243; font-size: 12px; font-weight: 800; }
+.rph-week-submit-form textarea { width: 100%; border: 1px solid #c8dacf; border-radius: 8px; background: #fff; resize: vertical; }
+.rph-week-submit-form > div { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 10px; }
+.rph-week-submit-form > div p { margin: 0; color: #668074; font-size: 11px; }
+.rph-submission-history { display: grid; gap: 7px; padding: 20px 24px 24px; border-top: 1px solid #e1eae4; }
+.rph-submission-history h3 { margin: 0 0 6px; color: #173e2e; }
+.rph-submission-history > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid #e0e9e3; border-radius: 8px; }
+.rph-submission-history > div > span { display: grid; gap: 2px; }
+.rph-submission-history strong { color: #345346; font-size: 12px; }
+.rph-submission-history small { color: #85928b; font-size: 10px; }
+
+@media (max-width: 1050px) {
+  .rph-monitor-head { flex-direction: column; }
+  .rph-monitor-controls { width: 100%; justify-content: flex-start; }
+  .rph-monitor-metrics { grid-template-columns: repeat(3, 1fr); }
+  .rph-submission-detail { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .rph-monitor-panel, .rph-teacher-submit-panel { border-right: 0; border-left: 0; border-radius: 0; }
+  .rph-monitor-head { padding: 18px 14px; }
+  .rph-monitor-controls, .rph-monitor-controls > label, .rph-week-picker { width: 100%; min-width: 0; }
+  .rph-monitor-metrics { grid-template-columns: 1fr 1fr; padding: 14px; }
+  .rph-monitor-metrics > div.primary { grid-column: 1 / -1; }
+  .rph-missing-teachers { margin: 0 14px 14px; }
+  .rph-missing-teachers > div { grid-template-columns: 1fr; }
+  .rph-submission-section-head { padding: 16px 14px 10px; }
+  .rph-submission-list { padding: 0 14px 18px; }
+  .rph-submission-card > header { grid-template-columns: 40px minmax(0, 1fr); }
+  .rph-submission-card > header > button { grid-column: 1 / -1; width: 100%; }
+  .rph-submission-detail { padding: 12px; }
+  .rph-teacher-workflow { padding: 18px 8px 14px; }
+  .rph-teacher-workflow span { font-size: 9px; }
+  .rph-correction-banner, .rph-verified-banner { margin: 4px 14px 14px; }
+  .rph-submit-summary { grid-template-columns: 1fr 1fr; padding: 4px 14px 10px; }
+  .rph-submit-summary > div:last-child { grid-column: 1 / -1; }
+  .rph-week-records > .ready, .rph-week-records > .draft { margin-right: 14px; margin-left: 14px; }
+  .rph-week-submit-form { margin: 10px 14px 18px; }
+  .rph-week-submit-form > div { align-items: stretch; flex-direction: column; }
+  .rph-submission-history { padding: 18px 14px; }
+}
+
 .mark-workflow-create > form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

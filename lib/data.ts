@@ -327,6 +327,64 @@ export type RphRecord = {
   status: string;
 };
 
+export type RphWeeklySubmissionStatus =
+  | 'DRAF'
+  | 'DIHANTAR'
+  | 'DALAM_SEMAKAN'
+  | 'PEMBETULAN'
+  | 'DIHANTAR_SEMULA'
+  | 'DISAHKAN';
+
+export type RphWeeklySubmission = {
+  id: string;
+  kod_sekolah: string;
+  teacher_id: string;
+  week_start: string;
+  status: RphWeeklySubmissionStatus;
+  teacher_note: string | null;
+  reviewer_note: string | null;
+  submitted_at: string | null;
+  review_started_at: string | null;
+  review_started_by: string | null;
+  correction_requested_at: string | null;
+  correction_requested_by: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RphWeeklySubmissionItem = {
+  id: string;
+  submission_id: string;
+  rph_record_id: string;
+  version_snapshot: {
+    id: string;
+    tarikh: string;
+    class_id: string | null;
+    kod_subjek: string | null;
+    tajuk: string;
+    standard_pembelajaran: string | null;
+    objektif: string | null;
+    aktiviti: string | null;
+    bbm: string | null;
+    pentaksiran: string | null;
+    refleksi: string | null;
+    status: string;
+    captured_at: string;
+  };
+  created_at: string;
+};
+
+export type RphWeeklyReview = {
+  id: string;
+  submission_id: string;
+  actor_profile_id: string;
+  action: 'DIHANTAR' | 'MULA_SEMAK' | 'PEMBETULAN' | 'DIHANTAR_SEMULA' | 'DISAHKAN';
+  comment: string | null;
+  created_at: string;
+};
+
 export type UserRecord = {
   id: string;
   auth_user_id?: string | null;
@@ -1813,6 +1871,43 @@ export async function getRphRecords(): Promise<RphRecord[]> {
 
   if (error) return [];
   return data ?? [];
+}
+
+export async function getRphWeeklySubmissions(): Promise<RphWeeklySubmission[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('rph_weekly_submissions')
+    .select('id,kod_sekolah,teacher_id,week_start,status,teacher_note,reviewer_note,submitted_at,review_started_at,review_started_by,correction_requested_at,correction_requested_by,verified_at,verified_by,created_at,updated_at')
+    .order('week_start', { ascending: false })
+    .order('updated_at', { ascending: false })
+    .limit(1000);
+  if (error) return [];
+  return (data ?? []) as RphWeeklySubmission[];
+}
+
+export async function getRphWeeklySubmissionItems(): Promise<RphWeeklySubmissionItem[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('rph_weekly_submission_items')
+    .select('id,submission_id,rph_record_id,version_snapshot,created_at')
+    .order('created_at', { ascending: false })
+    .limit(5000);
+  if (error) return [];
+  return (data ?? []) as RphWeeklySubmissionItem[];
+}
+
+export async function getRphWeeklyReviews(): Promise<RphWeeklyReview[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('rph_weekly_reviews')
+    .select('id,submission_id,actor_profile_id,action,comment,created_at')
+    .order('created_at', { ascending: false })
+    .limit(3000);
+  if (error) return [];
+  return (data ?? []) as RphWeeklyReview[];
 }
 
 export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {

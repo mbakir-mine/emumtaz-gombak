@@ -69,3 +69,20 @@ export function isRphStatus(value: string): value is 'DRAF' | 'SEDIA' | 'SELESAI
 export function isRphPedagogy(value: string): value is RphPedagogy {
   return ['KOLABORATIF', 'INKUIRI', 'MASTERI', 'PROJEK'].includes(value);
 }
+
+export function getRphWeekStart(value: string | Date = new Date()) {
+  const date = typeof value === 'string' ? new Date(`${value}T12:00:00`) : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+export function getRphWeekEnd(weekStart: string) {
+  const date = new Date(`${weekStart}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  date.setDate(date.getDate() + 6);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}

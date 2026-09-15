@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateRphContent, isRphPedagogy, isRphStatus } from '@/lib/rph';
+import { generateRphContent, getRphWeekEnd, getRphWeekStart, isRphPedagogy, isRphStatus } from '@/lib/rph';
 
 describe('RPH pintar', () => {
   it('menghasilkan pelan pengajaran lengkap dengan agihan masa', () => {
@@ -26,5 +26,11 @@ describe('RPH pintar', () => {
     expect(isRphStatus('DIPADAM')).toBe(false);
     expect(isRphPedagogy('INKUIRI')).toBe(true);
     expect(isRphPedagogy('RAW')).toBe(false);
+  });
+
+  it('menormalkan tarikh kepada minggu Isnin hingga Ahad', () => {
+    expect(getRphWeekStart('2026-09-17')).toBe('2026-09-14');
+    expect(getRphWeekEnd('2026-09-14')).toBe('2026-09-20');
+    expect(getRphWeekStart('tidak-sah')).toBe('');
   });
 });

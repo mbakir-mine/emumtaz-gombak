@@ -36,7 +36,7 @@ function validEmail(value: string) {
 }
 
 function strongPassword(value: string) {
-  return value.length >= 12 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+  return value.length >= 8 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 }
 
 function protectedHash(value: string) {
@@ -85,6 +85,18 @@ export async function registerPendingUser(
     return { ok: false, message: 'Role tidak sah.' };
   }
 
+  if (!strongPassword(password)) {
+    return { ok: false, message: 'Password mesti sekurang-kurangnya 8 aksara serta mengandungi huruf besar, huruf kecil, nombor dan simbol.' };
+  }
+  if (password !== confirmPassword) {
+    return { ok: false, message: 'Sahkan password tidak sama.' };
+  }
+
+  const needsSchool = !['ADMIN_DAERAH', 'ADMIN_ZON'].includes(role);
+  const needsZone = role === 'ADMIN_ZON';
+  if (needsSchool && !kodSekolah) return { ok: false, message: 'Sila pilih sekolah.' };
+  if (needsZone && !allowedZones.includes(zon)) return { ok: false, message: 'Sila pilih zon yang sah.' };
+
   const { data: attemptAllowed, error: rateLimitError } = await admin.rpc('consume_registration_attempt', {
     request_ip_hash: protectedHash(await registrationSource()),
     request_email_hash: protectedHash(email),
@@ -96,18 +108,6 @@ export async function registerPendingUser(
   if (!attemptAllowed) {
     return { ok: false, message: 'Terlalu banyak percubaan pendaftaran. Sila cuba semula selepas satu jam.' };
   }
-
-  if (!strongPassword(password)) {
-    return { ok: false, message: 'Password mesti sekurang-kurangnya 12 aksara serta mengandungi huruf besar, huruf kecil, nombor dan simbol.' };
-  }
-  if (password !== confirmPassword) {
-    return { ok: false, message: 'Sahkan password tidak sama.' };
-  }
-
-  const needsSchool = !['ADMIN_DAERAH', 'ADMIN_ZON'].includes(role);
-  const needsZone = role === 'ADMIN_ZON';
-  if (needsSchool && !kodSekolah) return { ok: false, message: 'Sila pilih sekolah.' };
-  if (needsZone && !allowedZones.includes(zon)) return { ok: false, message: 'Sila pilih zon yang sah.' };
 
   const { data: existingProfiles, error: existingError } = await admin
     .from('app_users')

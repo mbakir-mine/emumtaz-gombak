@@ -352,8 +352,8 @@ export async function createPendingSelfRegisteredAuthUser(
 ): Promise<AuthProvisionResult> {
   const email = profile.email.trim().toLowerCase();
   if (!email) return { ok: false, message: 'Email pengguna tidak lengkap.' };
-  if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
-    return { ok: false, message: 'Password mesti sekurang-kurangnya 12 aksara serta mengandungi huruf besar, huruf kecil, nombor dan simbol.' };
+  if (password.length < 8 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return { ok: false, message: 'Password mesti sekurang-kurangnya 8 aksara serta mengandungi huruf besar, huruf kecil, nombor dan simbol.' };
   }
 
   const admin = createSupabaseAdmin();

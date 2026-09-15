@@ -1,11 +1,12 @@
 'use client';
 
 import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
-import type { ClassRecord, RphRecord, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
+import type { ClassRecord, RphRecord, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
 import { generateRphContent, type RphPedagogy } from '@/lib/rph';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import { deleteRphDraft, saveRphDraft, updateRphStatus, type RphActionState } from './actions';
+import RphSubmissionManager from './RphSubmissionManager';
 
 const initialState: RphActionState = { ok: false, message: '' };
 const pedagogies: { value: RphPedagogy; label: string; description: string }[] = [
@@ -60,8 +61,9 @@ function statusLabel(status: string) {
   return status === 'SELESAI' ? 'Selesai' : status === 'SEDIA' ? 'Sedia mengajar' : 'Draf';
 }
 
-export default function RphManager({ schools, classes, subjects, users, records, takwimEvents }: {
+export default function RphManager({ schools, classes, subjects, users, records, takwimEvents, submissions, submissionItems, reviews }: {
   schools: School[]; classes: ClassRecord[]; subjects: SubjectRecord[]; users: UserRecord[]; records: RphRecord[]; takwimEvents: TakwimEvent[];
+  submissions: RphWeeklySubmission[]; submissionItems: RphWeeklySubmissionItem[]; reviews: RphWeeklyReview[];
 }) {
   const profile = useAccessProfile();
   const currentAcademicYear = new Date().getFullYear();
@@ -75,7 +77,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.kod_subjek ?? '');
   const [selectedTeacher, setSelectedTeacher] = useState(['GURU_KELAS', 'GURU_SUBJEK'].includes(profile?.role ?? '') ? profile?.id ?? '' : '');
   const [builder, setBuilder] = useState<BuilderState>(emptyBuilder);
-  const [view, setView] = useState<'BUILDER' | 'COLLECTION'>('BUILDER');
+  const [view, setView] = useState<'BUILDER' | 'COLLECTION' | 'SUBMISSIONS'>('BUILDER');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('SEMUA');
   const [feedback, setFeedback] = useState<RphActionState | null>(null);
@@ -107,6 +109,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
     return diff >= -6 * 86_400_000 && diff <= 6 * 86_400_000;
   }).length;
   const canDelete = ['OWNER', 'ADMIN_SEKOLAH', 'ADMIN_DAERAH', 'ADMIN_ZON'].includes(profile?.role ?? '');
+  const isTeacherProfile = ['GURU_KELAS', 'GURU_SUBJEK'].includes(profile?.role ?? '');
 
   function updateBuilder<K extends keyof BuilderState>(key: K, value: BuilderState[K]) {
     setBuilder((current) => ({ ...current, [key]: value }));
@@ -185,6 +188,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
       <nav className="rph-tabs" aria-label="Paparan RPH">
         <button className={view === 'BUILDER' ? 'active' : ''} type="button" onClick={() => setView('BUILDER')}>Pembina RPH</button>
         <button className={view === 'COLLECTION' ? 'active' : ''} type="button" onClick={() => setView('COLLECTION')}>Koleksi <span>{schoolRecords.length}</span></button>
+        <button className={view === 'SUBMISSIONS' ? 'active' : ''} type="button" onClick={() => setView('SUBMISSIONS')}>{['OWNER', 'ADMIN_SEKOLAH', 'ADMIN_DAERAH', 'ADMIN_ZON'].includes(profile?.role ?? '') ? 'Pemantauan Guru' : 'Hantar Mingguan'} <span>{submissions.length}</span></button>
       </nav>
 
       {view === 'BUILDER' ? (
@@ -209,7 +213,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
               }} disabled={profile?.role !== 'OWNER'}>{scopedSchools.map((school) => <option key={school.kod_sekolah} value={school.kod_sekolah}>{school.kod_sekolah} · {school.nama_sekolah}</option>)}</select></label>
               <label>Kelas<select name="class_id" value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} required><option value="">Pilih kelas</option>{schoolClasses.map((item) => <option key={item.id} value={item.id}>{classLabel(item)}</option>)}</select></label>
               <label>Mata pelajaran<select name="kod_subjek" value={selectedSubject} onChange={(event) => setSelectedSubject(event.target.value)} required><option value="">Pilih subjek</option>{subjects.filter((item) => item.status === 'AKTIF').map((subject) => <option key={subject.kod_subjek} value={subject.kod_subjek}>{subject.nama_subjek}</option>)}</select></label>
-              <label>Guru<select name="teacher_id" value={selectedTeacher} onChange={(event) => setSelectedTeacher(event.target.value)}><option value="">Pilih guru</option>{teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.nama}</option>)}</select></label>
+              <label>Guru<select name="teacher_id" value={selectedTeacher} onChange={(event) => setSelectedTeacher(event.target.value)} disabled={isTeacherProfile}><option value="">Pilih guru</option>{teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.nama}</option>)}</select>{isTeacherProfile && <input type="hidden" name="teacher_id" value={profile?.id ?? ''} />}</label>
               <label>Tarikh<input name="tarikh" type="date" value={builder.tarikh} onChange={(event) => updateBuilder('tarikh', event.target.value)} required /></label>
               <label>Tempoh<select name="tempoh" value={builder.tempoh} onChange={(event) => updateBuilder('tempoh', Number(event.target.value))}><option value={30}>30 minit</option><option value={40}>40 minit</option><option value={60}>60 minit</option><option value={90}>90 minit</option></select></label>
               <label className="rph-span-2">Tajuk / fokus<input name="tajuk" value={builder.tajuk} onChange={(event) => updateBuilder('tajuk', event.target.value)} placeholder="Contoh: Solat Berjemaah" required /></label>
@@ -236,7 +240,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
             <div className="rph-save-bar"><div><strong>{builder.recordId ? 'Simpan perubahan' : 'Sedia dimasukkan ke koleksi?'}</strong><span>RPH boleh dikemas kini semula pada bila-bila masa.</span></div><div><button className="button soft" name="status" value="DRAF" disabled={saving}>Simpan draf</button><button className="button" name="status" value="SEDIA" disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan & tandakan sedia'}</button></div></div>
           </form>
         </section>
-      ) : (
+      ) : view === 'COLLECTION' ? (
         <section className="panel rph-collection">
           <div className="rph-collection-head"><div><h2>Koleksi RPH sekolah</h2><p>Cari, guna semula dan jejak pelaksanaan pengajaran.</p></div><button className="button" type="button" onClick={() => { setBuilder(emptyBuilder()); setView('BUILDER'); }}>+ RPH baharu</button></div>
           <div className="rph-filter-bar"><label><span className="sr-only">Cari RPH</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari tajuk atau standard…" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Tapis status"><option value="SEMUA">Semua status</option><option value="DRAF">Draf</option><option value="SEDIA">Sedia mengajar</option><option value="SELESAI">Selesai</option></select><span>{visibleRecords.length} rekod</span></div>
@@ -251,6 +255,8 @@ export default function RphManager({ schools, classes, subjects, users, records,
             </article>;
           })}</div>}
         </section>
+      ) : (
+        <RphSubmissionManager schools={schools} users={users} classes={classes} subjects={subjects} records={records} submissions={submissions} submissionItems={submissionItems} reviews={reviews} />
       )}
     </div>
   );
