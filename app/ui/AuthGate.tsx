@@ -11,7 +11,38 @@ import { evaluateLicenseAccess, licenseAllowsAccess, modulesAllowedByLicense } f
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 const serverSessionReadyKey = 'emumtaz_server_session_ready';
 const publicPaths = ['/login', '/daftar', '/akses'];
+const accessCacheTtlMs = 5 * 60 * 1000;
 const AccessProfileContext = createContext<AccessProfile | null>(null);
+
+type AccessCache = {
+  profile: AccessProfile;
+  selectedProfileId: string | null;
+  cachedAt: number;
+};
+
+// AppFrame is recreated for each page, but this client module remains loaded during
+// Next.js navigation. Reuse the verified snapshot so menu clicks do not blank the
+// whole screen while repeating the same Supabase access and licence queries.
+let accessCache: AccessCache | null = null;
+
+function readAccessCache() {
+  if (typeof window === 'undefined' || !accessCache) return null;
+
+  try {
+    const selectedProfileId = window.localStorage.getItem(selectedProfileKey);
+    if (selectedProfileId === accessCache.selectedProfileId) return accessCache;
+  } catch {
+    // Discard the snapshot when browser storage is unavailable.
+  }
+
+  accessCache = null;
+  return null;
+}
+
+function profileCanAccessPath(profile: AccessProfile, pathname: string) {
+  if (profile.must_change_password && pathname !== '/tukar-password') return false;
+  return canAccessPath(profile.role, pathname, profile.allowed_nav, profile.enabled_modules);
+}
 
 function hasConfirmedServerSession() {
   try {
@@ -37,6 +68,10 @@ function clearConfirmedServerSession() {
   }
 }
 
+function clearAccessCache() {
+  accessCache = null;
+}
+
 async function withTimeout<T>(promise: Promise<T>, timeoutMs = 20000): Promise<T> {
   return await Promise.race([
     promise,
@@ -53,9 +88,13 @@ export function useAccessProfile() {
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const initialCachedProfile = readAccessCache()?.profile ?? null;
+  const canUseInitialProfile = initialCachedProfile
+    ? profileCanAccessPath(initialCachedProfile, pathname)
+    : false;
+  const [ready, setReady] = useState(publicPaths.includes(pathname) || canUseInitialProfile);
   const [message, setMessage] = useState('');
-  const [profile, setProfile] = useState<AccessProfile | null>(null);
+  const [profile, setProfile] = useState<AccessProfile | null>(canUseInitialProfile ? initialCachedProfile : null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -64,7 +103,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       // Supabase may briefly emit a null session while initializing or refreshing.
       // Never clear the server cookie unless the user explicitly signed out.
       if (!session && event !== 'SIGNED_OUT') return;
-      if (event === 'SIGNED_OUT') clearConfirmedServerSession();
+      if (event === 'SIGNED_OUT') {
+        clearConfirmedServerSession();
+        clearAccessCache();
+      }
       window.setTimeout(() => {
         void syncServerSession(session?.access_token ?? null)
           .then((changed) => {
@@ -84,14 +126,37 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     async function checkAccess() {
+      const cached = readAccessCache();
+      const cachedProfile = cached?.profile ?? null;
+      const canUseCachedProfile = cachedProfile ? profileCanAccessPath(cachedProfile, pathname) : false;
+
       try {
-        setReady(false);
         setMessage('');
-        setProfile(null);
 
         if (publicPaths.includes(pathname)) {
           if (!cancelled) setReady(true);
           return;
+        }
+
+        if (cachedProfile && !canUseCachedProfile) {
+          if (cachedProfile.must_change_password && pathname !== '/tukar-password') {
+            router.replace('/tukar-password');
+          } else {
+            router.replace('/');
+          }
+          return;
+        }
+
+        if (canUseCachedProfile) {
+          setProfile(cachedProfile);
+          setReady(true);
+
+          // Refresh older permissions in the background. Fresh snapshots make the
+          // normal menu path entirely local and immediately renderable.
+          if (cached && Date.now() - cached.cachedAt < accessCacheTtlMs) return;
+        } else {
+          setReady(false);
+          setProfile(null);
         }
 
         if (!hasSupabaseEnv || !supabase) {
@@ -104,6 +169,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         const email = user?.email;
 
         if (!email) {
+          clearAccessCache();
           router.replace('/login');
           return;
         }
@@ -156,6 +222,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         if (error) {
+          if (canUseCachedProfile) return;
           setMessage('Ralat menyemak akses pengguna. Sila log masuk semula.');
           setReady(true);
           return;
@@ -169,12 +236,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         const activeProfile = selectedProfile ?? (profiles.length === 1 ? profiles[0] : choosePrimaryProfile(profiles));
 
         if (!activeProfile) {
+          clearAccessCache();
           setMessage('Akaun anda belum diaktifkan oleh Admin.');
           setReady(true);
           return;
         }
 
         if (profiles.length > 1 && !selectedProfile) {
+          clearAccessCache();
           router.replace('/akses');
           return;
         }
@@ -196,6 +265,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           };
 
           if (license.error) {
+            if (canUseCachedProfile) return;
             setMessage('Status lesen sekolah tidak dapat disahkan. Sila hubungi Pemilik Sistem.');
             setReady(true);
             return;
@@ -206,6 +276,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             licensePlanCode = license.data.plan_code;
             const state = evaluateLicenseAccess(license.data, new Date().toISOString().slice(0, 10));
             if (!licenseAllowsAccess(state)) {
+              clearAccessCache();
               setMessage('Lesen sekolah telah tamat, belum bermula atau digantung. Sila hubungi Pemilik Sistem.');
               setReady(true);
               return;
@@ -242,6 +313,12 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           enabled_modules: enabledModules,
         };
 
+        accessCache = {
+          profile: enrichedProfile,
+          selectedProfileId,
+          cachedAt: Date.now(),
+        };
+
         if (activeProfile.must_change_password && pathname !== '/tukar-password') {
           router.replace('/tukar-password');
           return;
@@ -256,6 +333,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         setReady(true);
       } catch {
         if (cancelled) return;
+        if (canUseCachedProfile) return;
         setMessage('Semakan akses terganggu. Sila log masuk semula.');
         setReady(true);
       }
