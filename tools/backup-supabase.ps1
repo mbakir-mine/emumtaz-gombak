@@ -11,8 +11,32 @@ if ($backupRoot -ne $allowedRoot -and -not $backupRoot.StartsWith("$allowedRoot\
   throw 'Lokasi backup mesti berada di dalam C:\backups\emumtaz-backups.'
 }
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue) -and -not (Get-Command podman -ErrorAction SilentlyContinue)) {
+$dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerCommand) {
+  $localAppData = [Environment]::GetFolderPath('LocalApplicationData')
+  $dockerCandidates = @(
+    'C:\Program Files\Docker\Docker\resources\bin\docker.exe',
+    (Join-Path $localAppData 'Programs\DockerDesktop\resources\bin\docker.exe')
+  )
+  $dockerExecutable = $dockerCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+
+  if ($dockerExecutable) {
+    $dockerDirectory = Split-Path -Parent $dockerExecutable
+    $env:Path = "$dockerDirectory;$env:Path"
+    $dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+  }
+}
+
+$podmanCommand = Get-Command podman -ErrorAction SilentlyContinue
+if (-not $dockerCommand -and -not $podmanCommand) {
   throw 'Supabase CLI memerlukan Docker Desktop atau Podman untuk db dump. Pasang salah satu dahulu.'
+}
+
+if ($dockerCommand) {
+  & $dockerCommand.Source info --format '{{.ServerVersion}}' 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0 -and -not $podmanCommand) {
+    throw 'Docker Desktop telah dipasang tetapi enjin Docker belum sedia. Buka Docker Desktop dan tunggu sehingga ia selesai bermula.'
+  }
 }
 
 New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
