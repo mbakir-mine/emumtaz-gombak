@@ -28,6 +28,13 @@ export default function LoginPage() {
     });
 
     if (error) {
+      void fetch('/api/auth/login-attempt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+        credentials: 'same-origin',
+        cache: 'no-store',
+      }).catch(() => undefined);
       setLoading(false);
       setMessage('Login gagal. Semak email dan password.');
       return;

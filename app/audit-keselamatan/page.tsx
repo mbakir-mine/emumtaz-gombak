@@ -1,6 +1,6 @@
 import AppFrame from '../ui/AppFrame';
-import { getAuthActivityLogs, getSecurityAuditLogs, type SecurityAuditLog } from '@/lib/data';
-import { matchesAuditFilters, parseAuditFilters } from '@/lib/audit';
+import { getAuthActivityLogs, getAuthLoginFailureLogs, getSecurityAuditLogs, type SecurityAuditLog } from '@/lib/data';
+import { matchesAuditFilters, parseAuditFilters, repeatedLoginFailureCount } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -90,9 +90,13 @@ type AuditPageProps = {
 export default async function SecurityAuditPage({ searchParams }: AuditPageProps) {
   const rawParams = await searchParams;
   const filters = parseAuditFilters(rawParams);
-  const [allAuthLogs, allEditLogs] = await Promise.all([getAuthActivityLogs(500), getSecurityAuditLogs(500)]);
+  const [allAuthLogs, allFailureLogs, allEditLogs] = await Promise.all([
+    getAuthActivityLogs(500), getAuthLoginFailureLogs(500), getSecurityAuditLogs(500),
+  ]);
   const authLogs = allAuthLogs.filter((row) => matchesAuditFilters(row as unknown as Record<string, unknown>, filters, 'AUTH'));
+  const failureLogs = allFailureLogs.filter((row) => matchesAuditFilters({ ...row, event_type: 'LOGIN_FAILED' }, filters, 'AUTH'));
   const editLogs = allEditLogs.filter((row) => matchesAuditFilters(row as unknown as Record<string, unknown>, filters, 'EDIT'));
+  const repeatedFailures = repeatedLoginFailureCount(allFailureLogs, new Date());
   const exportParams = new URLSearchParams();
   Object.entries(rawParams).forEach(([key, value]) => {
     const firstValue = Array.isArray(value) ? value[0] : value;
@@ -131,6 +135,7 @@ export default async function SecurityAuditPage({ searchParams }: AuditPageProps
             <select name="action" defaultValue={filters.action}>
               <option value="">Semua tindakan</option>
               <option value="LOGIN">Log masuk</option>
+              <option value="LOGIN_FAILED">Login gagal</option>
               <option value="LOGOUT">Log keluar</option>
               <option value="INSERT">Cipta</option>
               <option value="UPDATE">Kemas kini</option>
@@ -154,6 +159,35 @@ export default async function SecurityAuditPage({ searchParams }: AuditPageProps
             <a className="button secondary" href="/audit-keselamatan">Tetapkan semula</a>
           </div>
         </form>
+      </section>
+
+      <section className={`panel audit-risk-panel${repeatedFailures > 0 ? ' audit-risk-active' : ''}`}>
+        <div>
+          <span>Isyarat keselamatan 15 minit</span>
+          <strong>{repeatedFailures}</strong>
+        </div>
+        <p>{repeatedFailures > 0
+          ? 'Terdapat pengecam akaun dengan sekurang-kurangnya lima percubaan login gagal. Semak rekod di bawah.'
+          : 'Tiada corak login gagal berulang dikesan dalam 15 minit terakhir.'}</p>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <div>
+            <h2>Percubaan login gagal</h2>
+            <p>{failureLogs.length} percubaan sepadan. Email dan alamat rangkaian disimpan sebagai cap jari sehala sahaja.</p>
+          </div>
+        </div>
+        {failureLogs.length === 0 ? <p className="empty">Tiada percubaan login gagal sepadan.</p> : (
+          <div className="table-scroll"><table><thead><tr><th>Masa</th><th>Aktiviti</th><th>Cap jari akaun</th><th>Peranti</th></tr></thead>
+            <tbody>{failureLogs.map((log) => <tr key={log.id}>
+              <td>{formatTimestamp(log.created_at)}</td>
+              <td><span className="audit-event audit-event-login-failed">Login gagal</span></td>
+              <td><code>{log.identifier_hash.slice(0, 12)}…</code></td>
+              <td>{log.device_family}</td>
+            </tr>)}</tbody>
+          </table></div>
+        )}
       </section>
 
       <section className="panel">

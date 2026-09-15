@@ -1,5 +1,5 @@
 import { auditRowsToCsv, matchesAuditFilters, parseAuditFilters } from '@/lib/audit';
-import { getAuthActivityLogs, getSecurityAuditLogs } from '@/lib/data';
+import { getAuthActivityLogs, getAuthLoginFailureLogs, getSecurityAuditLogs } from '@/lib/data';
 import { isVerifiedOwner } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,9 @@ export async function GET(request: Request) {
 
   const params = Object.fromEntries(new URL(request.url).searchParams.entries());
   const filters = parseAuditFilters(params);
-  const [authLogs, editLogs] = await Promise.all([getAuthActivityLogs(500), getSecurityAuditLogs(500)]);
+  const [authLogs, failureLogs, editLogs] = await Promise.all([
+    getAuthActivityLogs(500), getAuthLoginFailureLogs(500), getSecurityAuditLogs(500),
+  ]);
 
   const rows: Record<string, unknown>[] = [
     ...authLogs
@@ -19,6 +21,12 @@ export async function GET(request: Request) {
       .map((row) => ({
         jenis: 'SESI', masa: row.created_at, tindakan: row.event_type, email_pelaku: row.actor_email,
         nama_pelaku: row.actor_name, peranan: row.actor_role, kod_sekolah: row.kod_sekolah, id_sesi: row.session_id,
+      })),
+    ...failureLogs
+      .filter((row) => matchesAuditFilters({ ...row, event_type: 'LOGIN_FAILED' }, filters, 'AUTH'))
+      .map((row) => ({
+        jenis: 'SESI', masa: row.created_at, tindakan: 'LOGIN_FAILED',
+        email_pelaku: `HASH:${row.identifier_hash.slice(0, 12)}`, peranan: row.device_family,
       })),
     ...editLogs
       .filter((row) => matchesAuditFilters(row as unknown as Record<string, unknown>, filters, 'EDIT'))

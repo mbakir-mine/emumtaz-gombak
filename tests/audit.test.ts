@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auditRowsToCsv, matchesAuditFilters, parseAuditFilters } from '@/lib/audit';
+import { auditRowsToCsv, matchesAuditFilters, parseAuditFilters, repeatedLoginFailureCount } from '@/lib/audit';
 
 describe('parseAuditFilters', () => {
   it('normalizes supported filters and rejects invalid dates', () => {
@@ -40,5 +40,23 @@ describe('auditRowsToCsv', () => {
     const csv = auditRowsToCsv([{ jenis: 'EDIT', email_pelaku: '=HYPERLINK("x")' }]);
     expect(csv).toContain('"\'=HYPERLINK(""x"")"');
     expect(csv.startsWith('\uFEFF')).toBe(true);
+  });
+});
+
+describe('repeatedLoginFailureCount', () => {
+  it('flags identifiers with at least five failures in fifteen minutes', () => {
+    const now = new Date('2026-09-15T03:00:00.000Z');
+    const rows = Array.from({ length: 5 }, (_, index) => ({
+      identifier_hash: 'same-account',
+      created_at: new Date(now.getTime() - index * 60_000).toISOString(),
+    }));
+    rows.push({ identifier_hash: 'old-attempt', created_at: '2026-09-15T02:00:00.000Z' });
+    expect(repeatedLoginFailureCount(rows, now)).toBe(1);
+  });
+
+  it('does not alert on isolated failures', () => {
+    expect(repeatedLoginFailureCount([
+      { identifier_hash: 'one', created_at: '2026-09-15T02:59:00.000Z' },
+    ], new Date('2026-09-15T03:00:00.000Z'))).toBe(0);
   });
 });

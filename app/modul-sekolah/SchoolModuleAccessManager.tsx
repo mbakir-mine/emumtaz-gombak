@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState, useMemo, useState } from 'react';
-import type { School, SchoolModuleAccess } from '@/lib/data';
+import type { School, SchoolLicense, SchoolModuleAccess } from '@/lib/data';
+import { isLicensePlanCode, licensePlanModules } from '@/lib/licensing';
 import { optionalSchoolModules } from '@/lib/schoolModules';
 import { updateSchoolModuleAccess, type SchoolModuleActionState } from './actions';
 
@@ -29,12 +30,17 @@ function SchoolModuleRow({
   school,
   accessMap,
   index,
+  license,
 }: {
   school: School;
   accessMap: Map<string, boolean>;
   index: number;
+  license?: SchoolLicense;
 }) {
   const [state, action] = useActionState(updateSchoolModuleAccess, initialState);
+  const licensedModules = license && isLicensePlanCode(license.plan_code)
+    ? new Set(licensePlanModules[license.plan_code])
+    : null;
 
   return (
     <tr>
@@ -50,12 +56,13 @@ function SchoolModuleRow({
           <input type="hidden" name="kod_sekolah" value={school.kod_sekolah} />
           <div className="module-checkbox-grid">
             {optionalSchoolModules.map((module) => (
-              <label className="module-checkbox" key={module.key}>
+              <label className={`module-checkbox${licensedModules && !licensedModules.has(module.key) ? ' module-checkbox-disabled' : ''}`} key={module.key}>
                 <input
                   type="checkbox"
                   name="module_keys"
                   value={module.key}
                   defaultChecked={accessMap.get(`${school.kod_sekolah}|${module.key}`) ?? false}
+                  disabled={Boolean(licensedModules && !licensedModules.has(module.key))}
                 />
                 <span>{module.shortLabel}</span>
               </label>
@@ -76,13 +83,16 @@ function SchoolModuleRow({
 export default function SchoolModuleAccessManager({
   schools,
   accesses,
+  licenses,
 }: {
   schools: School[];
   accesses: SchoolModuleAccess[];
+  licenses: SchoolLicense[];
 }) {
   const [searchDraft, setSearchDraft] = useState('');
   const [query, setQuery] = useState('');
   const accessMap = useMemo(() => moduleMap(accesses), [accesses]);
+  const licenseMap = useMemo(() => new Map(licenses.map((license) => [license.kod_sekolah, license])), [licenses]);
   const filteredSchools = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return schools;
@@ -142,7 +152,7 @@ export default function SchoolModuleAccessManager({
             </thead>
             <tbody>
               {filteredSchools.map((school, index) => (
-                <SchoolModuleRow school={school} accessMap={accessMap} index={index} key={school.kod_sekolah} />
+                <SchoolModuleRow school={school} accessMap={accessMap} index={index} license={licenseMap.get(school.kod_sekolah)} key={school.kod_sekolah} />
               ))}
             </tbody>
           </table>

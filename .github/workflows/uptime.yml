@@ -8,10 +8,20 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: production-health
+  cancel-in-progress: true
+
 jobs:
   health-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Check application and database
-        run: curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/api/health
+        shell: bash
+        run: |
+          health="$(curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/api/health)"
+          jq -e '.status == "ok" and .database == "connected" and (.responseTimeMs | type == "number")' <<< "$health"
+          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/manifest.webmanifest >/dev/null
+          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/sw.js >/dev/null
+          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/offline >/dev/null

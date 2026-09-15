@@ -2354,6 +2354,14 @@ export type AuthActivityLog = {
   session_id: string;
 };
 
+export type AuthLoginFailureLog = {
+  id: number;
+  created_at: string;
+  identifier_hash: string;
+  network_hash: string | null;
+  device_family: 'MOBILE' | 'TABLET' | 'DESKTOP' | 'UNKNOWN';
+};
+
 export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLog[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
@@ -2382,4 +2390,19 @@ export async function getAuthActivityLogs(limit = 200): Promise<AuthActivityLog[
 
   if (error) return [];
   return (data ?? []) as AuthActivityLog[];
+}
+
+export async function getAuthLoginFailureLogs(limit = 200): Promise<AuthLoginFailureLog[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 500));
+  const { data, error } = await supabase
+    .from('auth_login_failure_logs')
+    .select('id,created_at,identifier_hash,network_hash,device_family')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) return [];
+  return (data ?? []) as AuthLoginFailureLog[];
 }

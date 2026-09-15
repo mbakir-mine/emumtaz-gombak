@@ -79,3 +79,18 @@ export function auditRowsToCsv(rows: Record<string, unknown>[]) {
   const body = rows.map((row) => columns.map((column) => csvCell(row[column])).join(','));
   return `\uFEFF${[header, ...body].join('\r\n')}\r\n`;
 }
+
+export function repeatedLoginFailureCount(
+  rows: Array<{ created_at: string; identifier_hash: string }>,
+  now: Date,
+  threshold = 5,
+) {
+  const cutoff = now.getTime() - 15 * 60_000;
+  const counts = new Map<string, number>();
+  rows.forEach((row) => {
+    if (Date.parse(row.created_at) >= cutoff) {
+      counts.set(row.identifier_hash, (counts.get(row.identifier_hash) ?? 0) + 1);
+    }
+  });
+  return [...counts.values()].filter((count) => count >= threshold).length;
+}

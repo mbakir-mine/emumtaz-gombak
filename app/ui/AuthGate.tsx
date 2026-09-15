@@ -6,7 +6,7 @@ import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import { canAccessPath, choosePrimaryProfile, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
 import { optionalSchoolModules } from '@/lib/schoolModules';
 import type { OptionalSchoolModuleKey } from '@/lib/schoolModules';
-import { evaluateLicenseAccess, licenseAllowsAccess } from '@/lib/licensing';
+import { evaluateLicenseAccess, licenseAllowsAccess, modulesAllowedByLicense } from '@/lib/licensing';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 const serverSessionReadyKey = 'emumtaz_server_session_ready';
@@ -179,18 +179,19 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        let licensePlanCode: string | null = null;
         if (!['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON'].includes(activeProfile.role) && activeProfile.kod_sekolah) {
           const licenseResult = await withTimeout(
             Promise.resolve(
               supabase
                 .from('school_licenses')
-                .select('status,starts_on,ends_on')
+                .select('plan_code,status,starts_on,ends_on')
                 .eq('kod_sekolah', activeProfile.kod_sekolah)
                 .maybeSingle(),
             ),
           );
           const license = licenseResult as {
-            data: { status: string; starts_on: string; ends_on: string | null } | null;
+            data: { plan_code: string; status: string; starts_on: string; ends_on: string | null } | null;
             error: { message: string } | null;
           };
 
@@ -202,6 +203,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
           // No row means legacy access. Once a licence is assigned it is enforced fail-closed.
           if (license.data) {
+            licensePlanCode = license.data.plan_code;
             const state = evaluateLicenseAccess(license.data, new Date().toISOString().slice(0, 10));
             if (!licenseAllowsAccess(state)) {
               setMessage('Lesen sekolah telah tamat, belum bermula atau digantung. Sila hubungi Pemilik Sistem.');
@@ -231,7 +233,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             error: { message: string } | null;
           };
 
-          enabledModules = modules.error ? [] : (modules.data ?? []).map((item) => item.module_key);
+          const configuredModules = modules.error ? [] : (modules.data ?? []).map((item) => item.module_key);
+          enabledModules = modulesAllowedByLicense(licensePlanCode, configuredModules);
         }
 
         const enrichedProfile: AccessProfile = {
