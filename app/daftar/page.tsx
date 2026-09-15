@@ -155,6 +155,9 @@ export default function DaftarPage() {
             required
             autoComplete="new-password"
           />
+          <p className="password-requirements">
+            Minimum 8 aksara, mesti ada huruf besar, huruf kecil, nombor dan simbol.
+          </p>
 
           <PasswordField
             label="Sahkan Password"

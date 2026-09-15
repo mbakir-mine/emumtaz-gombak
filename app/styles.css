@@ -4745,6 +4745,13 @@ textarea {
   width: 100%;
 }
 
+.password-requirements {
+  margin: -8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .forgot-link {
   justify-self: end;
   color: var(--green);
