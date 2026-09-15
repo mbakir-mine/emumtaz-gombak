@@ -100,7 +100,7 @@ export const navItems: NavItem[] = [
   },
   {
     key: 'rph',
-    label: 'RPH AI',
+    label: 'e-RPH Pintar',
     href: '/rph',
     roles: ['OWNER', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
     moduleKey: 'RPH_AI',

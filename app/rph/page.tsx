@@ -16,7 +16,7 @@ export default async function RphPage() {
   ]);
 
   return (
-    <AppFrame title="RPH AI" subtitle="Bantuan draf Rancangan Pengajaran Harian guru." active="rph">
+    <AppFrame title="e-RPH Pintar" subtitle="Rancang, urus dan guna semula Rancangan Pengajaran Harian." active="rph">
       <RphManager schools={schools} classes={classes} subjects={subjects} users={users} records={records} takwimEvents={takwimEvents} />
     </AppFrame>
   );

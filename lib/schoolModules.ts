@@ -30,9 +30,9 @@ export const optionalSchoolModules = [
   {
     key: 'RPH_AI',
     navKey: 'rph',
-    label: 'RPH AI',
-    shortLabel: 'RPH AI',
-    description: 'Bantuan AI untuk draf Rancangan Pengajaran Harian.',
+    label: 'e-RPH Pintar',
+    shortLabel: 'e-RPH',
+    description: 'Pembina dan koleksi Rancangan Pengajaran Harian guru.',
   },
   {
     key: 'AKSES_IBU_BAPA',

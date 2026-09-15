@@ -85,7 +85,7 @@ const childLabels: Record<string, string> = {
   psraTrial: 'Percubaan PSRA',
   khalifahMuda: 'Sahsiah IHAB',
   timetable: 'Jadual Waktu',
-  rph: 'RPH AI',
+  rph: 'e-RPH Pintar',
   setup: 'Akses Markah',
   componentMarks: 'Markah Penuh & Komponen',
   khalifahMudaComponents: 'Komponen Sahsiah IHAB',
