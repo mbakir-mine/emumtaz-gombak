@@ -333,6 +333,8 @@ export type RphTopic = {
   kod_subjek: string;
   nama_subjek: string;
   tajuk: string;
+  standard_kandungan: string | null;
+  standard_pembelajaran: string | null;
   susunan: number;
   status: string;
 };
@@ -1888,7 +1890,7 @@ export async function getRphTopics(): Promise<RphTopic[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('rph_topic_bank')
-    .select('id,tahun,kod_subjek,nama_subjek,tajuk,susunan,status')
+    .select('id,tahun,kod_subjek,nama_subjek,tajuk,standard_kandungan,standard_pembelajaran,susunan,status')
     .eq('status', 'AKTIF')
     .order('tahun')
     .order('kod_subjek')

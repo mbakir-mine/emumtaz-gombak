@@ -119,6 +119,16 @@ export default function RphManager({ schools, classes, subjects, users, records,
     setBuilder((current) => ({ ...current, [key]: value }));
   }
 
+  function selectTopic(tajuk: string) {
+    const topic = filteredTopics.find((item) => item.tajuk === tajuk);
+    const standard = [topic?.standard_kandungan, topic?.standard_pembelajaran].filter(Boolean).join('\n\n');
+    setBuilder((current) => ({
+      ...current,
+      tajuk,
+      standard: standard || current.standard,
+    }));
+  }
+
   function generateDraft() {
     const classRecord = classMap.get(selectedClass);
     const content = generateRphContent({
@@ -220,7 +230,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
               <label>Guru<select name="teacher_id" value={selectedTeacher} onChange={(event) => setSelectedTeacher(event.target.value)} disabled={isTeacherProfile}><option value="">Pilih guru</option>{teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.nama}</option>)}</select>{isTeacherProfile && <input type="hidden" name="teacher_id" value={profile?.id ?? ''} />}</label>
               <label>Tarikh<input name="tarikh" type="date" value={builder.tarikh} onChange={(event) => updateBuilder('tarikh', event.target.value)} required /></label>
               <label>Tempoh<select name="tempoh" value={builder.tempoh} onChange={(event) => updateBuilder('tempoh', Number(event.target.value))}><option value={30}>30 minit</option><option value={40}>40 minit</option><option value={60}>60 minit</option><option value={90}>90 minit</option></select></label>
-              <label className="rph-span-2">Tajuk / fokus<select name="tajuk" value={builder.tajuk} onChange={(event) => updateBuilder('tajuk', event.target.value)} required><option value="">{selectedClass && selectedSubject ? 'Pilih tajuk' : 'Pilih kelas dan subjek dahulu'}</option>{filteredTopics.map((topic) => <option key={topic.id} value={topic.tajuk}>{topic.tajuk}</option>)}{builder.tajuk && !filteredTopics.some((topic) => topic.tajuk === builder.tajuk) && <option value={builder.tajuk}>{builder.tajuk}</option>}</select><span className="field-hint">{filteredTopics.length ? `${filteredTopics.length} tajuk tersedia untuk Tahun ${selectedClassRecord?.tahun}.` : 'Tajuk akan dipaparkan mengikut tahun kelas dan subjek.'}</span></label>
+              <label className="rph-span-2">Tajuk / fokus<select name="tajuk" value={builder.tajuk} onChange={(event) => selectTopic(event.target.value)} required><option value="">{selectedClass && selectedSubject ? 'Pilih tajuk' : 'Pilih kelas dan subjek dahulu'}</option>{filteredTopics.map((topic) => <option key={topic.id} value={topic.tajuk}>{topic.tajuk}</option>)}{builder.tajuk && !filteredTopics.some((topic) => topic.tajuk === builder.tajuk) && <option value={builder.tajuk}>{builder.tajuk}</option>}</select><span className="field-hint">{filteredTopics.length ? `${filteredTopics.length} tajuk tersedia untuk Tahun ${selectedClassRecord?.tahun}. Standard akan diisi automatik jika tersedia.` : 'Tajuk akan dipaparkan mengikut tahun kelas dan subjek.'}</span></label>
               <label className="rph-span-2">Standard kandungan & pembelajaran<textarea name="standard_pembelajaran" rows={3} value={builder.standard} onChange={(event) => updateBuilder('standard', event.target.value)} placeholder="Tampal standard atau nyatakan kemahiran yang ingin dicapai." /></label>
             </div>
 
