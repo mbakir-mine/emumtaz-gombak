@@ -327,6 +327,16 @@ export type RphRecord = {
   status: string;
 };
 
+export type RphTopic = {
+  id: string;
+  tahun: number;
+  kod_subjek: string;
+  nama_subjek: string;
+  tajuk: string;
+  susunan: number;
+  status: string;
+};
+
 export type RphWeeklySubmissionStatus =
   | 'DRAF'
   | 'DIHANTAR'
@@ -1868,6 +1878,21 @@ export async function getRphRecords(): Promise<RphRecord[]> {
     )
     .order('tarikh', { ascending: false })
     .limit(500);
+
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getRphTopics(): Promise<RphTopic[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('rph_topic_bank')
+    .select('id,tahun,kod_subjek,nama_subjek,tajuk,susunan,status')
+    .eq('status', 'AKTIF')
+    .order('tahun')
+    .order('kod_subjek')
+    .order('susunan');
 
   if (error) return [];
   return data ?? [];

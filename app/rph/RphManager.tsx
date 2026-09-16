@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
-import type { ClassRecord, RphRecord, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
+import type { ClassRecord, RphRecord, RphTopic, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
 import { generateRphContent, type RphPedagogy } from '@/lib/rph';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
@@ -61,8 +61,8 @@ function statusLabel(status: string) {
   return status === 'SELESAI' ? 'Selesai' : status === 'SEDIA' ? 'Sedia mengajar' : 'Draf';
 }
 
-export default function RphManager({ schools, classes, subjects, users, records, takwimEvents, submissions, submissionItems, reviews }: {
-  schools: School[]; classes: ClassRecord[]; subjects: SubjectRecord[]; users: UserRecord[]; records: RphRecord[]; takwimEvents: TakwimEvent[];
+export default function RphManager({ schools, classes, subjects, users, records, rphTopics, takwimEvents, submissions, submissionItems, reviews }: {
+  schools: School[]; classes: ClassRecord[]; subjects: SubjectRecord[]; users: UserRecord[]; records: RphRecord[]; rphTopics: RphTopic[]; takwimEvents: TakwimEvent[];
   submissions: RphWeeklySubmission[]; submissionItems: RphWeeklySubmissionItem[]; reviews: RphWeeklyReview[];
 }) {
   const profile = useAccessProfile();
@@ -94,6 +94,10 @@ export default function RphManager({ schools, classes, subjects, users, records,
   const classMap = useMemo(() => new Map(classes.map((item) => [item.id, item])), [classes]);
   const subjectMap = useMemo(() => new Map(subjects.map((item) => [item.kod_subjek, item.nama_subjek])), [subjects]);
   const userMap = useMemo(() => new Map(users.map((user) => [user.id, user.nama])), [users]);
+  const selectedClassRecord = classMap.get(selectedClass);
+  const filteredTopics = rphTopics.filter(
+    (topic) => topic.tahun === selectedClassRecord?.tahun && topic.kod_subjek === selectedSubject,
+  );
   const schoolRecords = records.filter((record) => record.kod_sekolah === selectedSchool);
   const visibleRecords = schoolRecords.filter((record) => {
     const haystack = `${record.tajuk} ${record.standard_pembelajaran ?? ''} ${record.kod_subjek ?? ''}`.toLowerCase();
@@ -216,7 +220,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
               <label>Guru<select name="teacher_id" value={selectedTeacher} onChange={(event) => setSelectedTeacher(event.target.value)} disabled={isTeacherProfile}><option value="">Pilih guru</option>{teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.nama}</option>)}</select>{isTeacherProfile && <input type="hidden" name="teacher_id" value={profile?.id ?? ''} />}</label>
               <label>Tarikh<input name="tarikh" type="date" value={builder.tarikh} onChange={(event) => updateBuilder('tarikh', event.target.value)} required /></label>
               <label>Tempoh<select name="tempoh" value={builder.tempoh} onChange={(event) => updateBuilder('tempoh', Number(event.target.value))}><option value={30}>30 minit</option><option value={40}>40 minit</option><option value={60}>60 minit</option><option value={90}>90 minit</option></select></label>
-              <label className="rph-span-2">Tajuk / fokus<input name="tajuk" value={builder.tajuk} onChange={(event) => updateBuilder('tajuk', event.target.value)} placeholder="Contoh: Solat Berjemaah" required /></label>
+              <label className="rph-span-2">Tajuk / fokus<select name="tajuk" value={builder.tajuk} onChange={(event) => updateBuilder('tajuk', event.target.value)} required><option value="">{selectedClass && selectedSubject ? 'Pilih tajuk' : 'Pilih kelas dan subjek dahulu'}</option>{filteredTopics.map((topic) => <option key={topic.id} value={topic.tajuk}>{topic.tajuk}</option>)}{builder.tajuk && !filteredTopics.some((topic) => topic.tajuk === builder.tajuk) && <option value={builder.tajuk}>{builder.tajuk}</option>}</select><span className="field-hint">{filteredTopics.length ? `${filteredTopics.length} tajuk tersedia untuk Tahun ${selectedClassRecord?.tahun}.` : 'Tajuk akan dipaparkan mengikut tahun kelas dan subjek.'}</span></label>
               <label className="rph-span-2">Standard kandungan & pembelajaran<textarea name="standard_pembelajaran" rows={3} value={builder.standard} onChange={(event) => updateBuilder('standard', event.target.value)} placeholder="Tampal standard atau nyatakan kemahiran yang ingin dicapai." /></label>
             </div>
 

@@ -1,17 +1,18 @@
 import AppFrame from '../ui/AppFrame';
-import { getClasses, getRphRecords, getRphWeeklyReviews, getRphWeeklySubmissionItems, getRphWeeklySubmissions, getSchools, getSchoolUsers, getSubjects, getTakwimEvents } from '@/lib/data';
+import { getClasses, getRphRecords, getRphTopics, getRphWeeklyReviews, getRphWeeklySubmissionItems, getRphWeeklySubmissions, getSchools, getSchoolUsers, getSubjects, getTakwimEvents } from '@/lib/data';
 import RphManager from './RphManager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function RphPage() {
-  const [schools, classes, subjects, users, records, takwimEvents, submissions, submissionItems, reviews] = await Promise.all([
+  const [schools, classes, subjects, users, records, rphTopics, takwimEvents, submissions, submissionItems, reviews] = await Promise.all([
     getSchools(),
     getClasses(),
     getSubjects(),
     getSchoolUsers(),
     getRphRecords(),
+    getRphTopics(),
     getTakwimEvents(),
     getRphWeeklySubmissions(),
     getRphWeeklySubmissionItems(),
@@ -20,7 +21,7 @@ export default async function RphPage() {
 
   return (
     <AppFrame title="e-RPH Pintar" subtitle="Rancang, urus dan guna semula Rancangan Pengajaran Harian." active="rph">
-      <RphManager schools={schools} classes={classes} subjects={subjects} users={users} records={records} takwimEvents={takwimEvents} submissions={submissions} submissionItems={submissionItems} reviews={reviews} />
+      <RphManager schools={schools} classes={classes} subjects={subjects} users={users} records={records} rphTopics={rphTopics} takwimEvents={takwimEvents} submissions={submissions} submissionItems={submissionItems} reviews={reviews} />
     </AppFrame>
   );
 }
