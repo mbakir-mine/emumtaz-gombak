@@ -6979,6 +6979,48 @@ textarea {
   overflow: visible;
 }
 
+.attendance-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.attendance-alert-card,
+.attendance-school-summary {
+  border: 1px solid #dce8e3;
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: #fff;
+}
+
+.attendance-alert-card.has-pending { border-color: #f0c36b; background: #fffaf0; }
+.attendance-alert-card.is-complete { border-color: #9ed6bc; background: #f4fcf7; }
+.attendance-alert-card strong { display: block; margin: 4px 0; color: #153d32; }
+.attendance-card-label { color: #63756f; font-size: .78rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.attendance-alert-card small, .attendance-school-summary > small { color: #74827e; }
+.attendance-pending-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.attendance-pending-list button { border: 1px solid #e8c879; border-radius: 8px; padding: 7px 9px; color: #684b09; background: #fff; cursor: pointer; text-align: left; }
+.attendance-pending-list button span { display: block; color: #927536; font-size: .72rem; margin-top: 2px; }
+.attendance-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 10px; }
+.attendance-kpi-row span { border-left: 3px solid #d7e9e1; padding-left: 9px; }
+.attendance-kpi-row strong, .attendance-kpi-row small { display: block; }
+.attendance-kpi-row strong { color: #12614d; font-size: 1.25rem; }
+.attendance-kpi-row small { color: #74827e; font-size: .72rem; }
+.attendance-workflow-note { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; color: #557068; font-size: .8rem; }
+.workflow-step { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.workflow-step b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #557068; background: #e5eee9; }
+.workflow-step.active { color: #076c56; font-weight: 700; }
+.workflow-step.active b { color: #fff; background: #087b61; }
+.workflow-line { width: 28px; height: 1px; background: #cbdcd5; }
+.workflow-hint { margin-left: auto; color: #82908b; }
+
+@media (max-width: 850px) {
+  .attendance-overview-grid { grid-template-columns: 1fr; }
+  .attendance-workflow-note { align-items: flex-start; flex-wrap: wrap; }
+  .workflow-hint { flex-basis: 100%; margin-left: 0; }
+}
+
 .attendance-toolbar {
   grid-template-columns: minmax(180px, 0.45fr) minmax(260px, 1fr) minmax(220px, 0.7fr);
 }

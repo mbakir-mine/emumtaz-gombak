@@ -173,12 +173,13 @@ export default function AttendanceManager({
   );
   const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [detailMode, setDetailMode] = useState<AttendanceDetailMode>(null);
+  // Terus buka rekod harian supaya semua tindakan utama berada dalam satu paparan.
+  const [detailMode, setDetailMode] = useState<AttendanceDetailMode>('daily');
   useEffect(() => {
     if (!selectedClass || !schoolClasses.some((item) => item.id === selectedClass)) {
       setSelectedClass(schoolClasses[0]?.id ?? '');
       setSelectedStudentId('');
-      setDetailMode(null);
+      setDetailMode('daily');
     }
   }, [schoolClasses, selectedClass]);
   const activeClass = schoolClasses.find((item) => item.id === selectedClass) ?? null;
@@ -225,12 +226,29 @@ export default function AttendanceManager({
     [selectedSchool, takwimEvents, year],
   );
   const selectedDateTakwimEvents = activeTakwimEvents.filter((event) => takwimEventInDay(event, selectedDate));
+  const todayClassStatus = useMemo(() => {
+    const dateRecords = records.filter((record) => record.attendance_date === selectedDate);
+    return schoolClasses.map((item) => {
+      const classStudentIds = scopedStudents.filter((student) => student.class_id === item.id && student.status === 'AKTIF').map((student) => student.id);
+      const marked = dateRecords.filter((record) => record.class_id === item.id && classStudentIds.includes(record.student_id)).length;
+      return { item, total: classStudentIds.length, marked, complete: classStudentIds.length > 0 && marked >= classStudentIds.length };
+    }).filter((entry) => entry.total > 0);
+  }, [records, schoolClasses, scopedStudents, selectedDate]);
+  const pendingClasses = todayClassStatus.filter((entry) => !entry.complete);
+  const schoolMonthSummary = useMemo(() => {
+    const schoolClassIds = new Set(schoolClasses.map((item) => item.id));
+    const monthRecords = records.filter((record) => record.kod_sekolah === selectedSchool && record.class_id && schoolClassIds.has(record.class_id) && dateParts(record.attendance_date).year === year && dateParts(record.attendance_date).monthIndex === monthIndex);
+    const summary = recordSummary(monthRecords);
+    const markedDays = new Set(monthRecords.map((record) => record.attendance_date)).size;
+    const attendanceRate = monthRecords.length > 0 ? Math.round(((summary.hadir + summary.lewat + summary.aktiviti) / monthRecords.length) * 100) : 0;
+    return { ...summary, markedDays, attendanceRate, classes: schoolClasses.length };
+  }, [monthIndex, records, schoolClasses, selectedSchool, year]);
   const [state, action] = useActionState(saveDailyAttendance, initialState);
 
   function changeMonth(offset: number) {
     const next = new Date(year, monthIndex + offset, 1);
     setSelectedDate(isoDate(next.getFullYear(), next.getMonth(), 1));
-    setDetailMode(null);
+    setDetailMode('daily');
   }
 
   return (
@@ -264,7 +282,7 @@ export default function AttendanceManager({
               setSelectedSchool(kodSekolah);
               setSelectedClass(nextClass);
               setSelectedStudentId('');
-              setDetailMode(null);
+              setDetailMode('daily');
             }}
             disabled={profile?.role === 'ADMIN_SEKOLAH' || profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK'}
           >
@@ -282,7 +300,7 @@ export default function AttendanceManager({
             onChange={(event) => {
               setSelectedClass(event.target.value);
               setSelectedStudentId('');
-              setDetailMode(null);
+              setDetailMode('daily');
             }}
           >
             <option value="">Pilih kelas</option>
@@ -293,6 +311,42 @@ export default function AttendanceManager({
             ))}
           </select>
         </label>
+      </div>
+
+      <div className="attendance-overview-grid">
+        <div className={`attendance-alert-card ${pendingClasses.length ? 'has-pending' : 'is-complete'}`}>
+          <div>
+            <span className="attendance-card-label">Peringatan hari ini</span>
+            <strong>{pendingClasses.length ? `${pendingClasses.length} kelas belum lengkap` : 'Semua kelas telah dikemaskini'}</strong>
+            <small>{selectedDate} · {todayClassStatus.length} kelas aktif</small>
+          </div>
+          {pendingClasses.length > 0 && (
+            <div className="attendance-pending-list">
+              {pendingClasses.map(({ item, marked, total }) => (
+                <button key={item.id} type="button" onClick={() => { setSelectedClass(item.id); setDetailMode('daily'); }}>
+                  {classLabel(item)} <span>{marked}/{total} murid</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="attendance-school-summary">
+          <span className="attendance-card-label">Rumusan sekolah · {monthNames[monthIndex]} {year}</span>
+          <div className="attendance-kpi-row">
+            <span><strong>{schoolMonthSummary.attendanceRate}%</strong><small>Kehadiran</small></span>
+            <span><strong>{schoolMonthSummary.hadir}</strong><small>Hadir</small></span>
+            <span><strong>{schoolMonthSummary.tidakHadir}</strong><small>Tidak hadir</small></span>
+            <span><strong>{schoolMonthSummary.markedDays}</strong><small>Hari direkod</small></span>
+          </div>
+          <small>{schoolMonthSummary.classes} kelas aktif · laporan dikemas kini automatik</small>
+        </div>
+      </div>
+
+      <div className="attendance-workflow-note">
+        <span className="workflow-step active"><b>1</b> Rekod harian</span>
+        <span className="workflow-line" />
+        <span className="workflow-step"><b>2</b> Semak laporan bulanan</span>
+        <span className="workflow-hint">Simpan kehadiran di bawah. Jadual bulanan akan dikemas kini secara automatik.</span>
       </div>
 
       {!activeClass ? (
