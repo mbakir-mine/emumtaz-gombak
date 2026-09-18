@@ -153,6 +153,24 @@ export default function SidebarNav({ active }: { active: string }) {
   const activeGroupKey = groups.find((group) => group.isActive)?.key ?? null;
   const [openGroupKey, setOpenGroupKey] = useState<string | null>(activeGroupKey);
 
+  // Sidebar links are often hidden inside collapsed groups, so Next.js cannot
+  // discover them for automatic viewport prefetching. Warm the route cache in
+  // idle time to make menu clicks feel immediate without delaying first paint.
+  useEffect(() => {
+    const hrefs = [...new Set(
+      groups.flatMap((group) => group.children.map((item) => item?.href).filter((href): href is string => Boolean(href))),
+    )];
+    const prefetch = () => hrefs.forEach((href) => router.prefetch(href));
+    const hasIdleCallback = typeof window.requestIdleCallback === 'function';
+    const idle = hasIdleCallback
+      ? window.requestIdleCallback(prefetch, { timeout: 1500 })
+      : window.setTimeout(prefetch, 500);
+    return () => {
+      if (hasIdleCallback) window.cancelIdleCallback(idle as number);
+      else window.clearTimeout(idle as number);
+    };
+  }, [groups, router]);
+
   useEffect(() => {
     setOpenGroupKey(activeGroupKey);
   }, [activeGroupKey]);
