@@ -7118,8 +7118,8 @@ textarea {
   color: #123c2a;
 }
 
-.attendance-matrix th:nth-child(3),
-.attendance-matrix td:nth-child(3) {
+.attendance-matrix thead tr:first-child th:nth-child(3),
+.attendance-matrix tbody td:nth-child(3) {
   min-width: 260px;
   text-align: left;
 }
