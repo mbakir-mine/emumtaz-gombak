@@ -31,6 +31,37 @@ export type RphQualityReview = {
   notes: string[];
 };
 
+export type RphAnnualPlanTopic = {
+  id: string;
+  tajuk: string;
+  standard_kandungan: string | null;
+  standard_pembelajaran: string | null;
+  susunan: number;
+};
+
+export type RphAnnualPlanEvent = {
+  tajuk: string;
+  kategori: string;
+  tarikh_mula: string;
+  tarikh_tamat: string;
+};
+
+export type RphAnnualPlanSession = {
+  slot: number;
+  tajuk: string;
+  standard: string;
+  kind: 'TOPIK' | 'PENGUKUHAN';
+};
+
+export type RphAnnualPlanWeek = {
+  weekNumber: number;
+  weekStart: string;
+  weekEnd: string;
+  isTeachingWeek: boolean;
+  takwimNotes: string[];
+  sessions: RphAnnualPlanSession[];
+};
+
 const pedagogyActivities: Record<RphPedagogy, string> = {
   KOLABORATIF: 'Murid bekerja dalam kumpulan kecil, membahagi peranan dan membentangkan hasil perbincangan.',
   INKUIRI: 'Murid meneliti rangsangan, membina soalan dan mendapatkan jawapan melalui bimbingan serta penerokaan.',
@@ -96,6 +127,91 @@ export function reviewRphQuality(input: RphDraftInput, content: RphDraftContent)
     checks,
     notes,
   };
+}
+
+function toIsoDate(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function addDays(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return toIsoDate(date);
+}
+
+function overlaps(startA: string, endA: string, startB: string, endB: string) {
+  return startA <= endB && startB <= endA;
+}
+
+function isBlockingTakwimEvent(event: RphAnnualPlanEvent) {
+  const haystack = `${event.kategori} ${event.tajuk}`.toLowerCase();
+  return /\b(cuti|peperiksaan|ujian|pentaksiran|psra|upkk|ramadan|ramadhan|raya|libur)\b/i.test(haystack);
+}
+
+export function buildAnnualRphPlan({
+  year,
+  topics,
+  weeklySlots,
+  events,
+}: {
+  year: number;
+  topics: RphAnnualPlanTopic[];
+  weeklySlots: number;
+  events: RphAnnualPlanEvent[];
+}): RphAnnualPlanWeek[] {
+  const slots = Math.max(1, Math.min(12, Math.round(Number(weeklySlots) || 1)));
+  const sortedTopics = [...topics].sort((a, b) => a.susunan - b.susunan || a.tajuk.localeCompare(b.tajuk, 'ms'));
+  const firstMonday = getRphWeekStart(`${year}-01-04`);
+  const plan: RphAnnualPlanWeek[] = [];
+  let topicIndex = 0;
+  let cursor = firstMonday;
+  let weekNumber = 1;
+
+  while (cursor.slice(0, 4) <= String(year)) {
+    const weekStart = cursor;
+    const weekEnd = addDays(weekStart, 6);
+    if (weekStart.slice(0, 4) > String(year)) break;
+
+    const weekEvents = events.filter((event) => overlaps(weekStart, weekEnd, event.tarikh_mula, event.tarikh_tamat));
+    const isTeachingWeek = !weekEvents.some(isBlockingTakwimEvent);
+    const sessions: RphAnnualPlanSession[] = [];
+
+    if (isTeachingWeek) {
+      for (let slot = 1; slot <= slots; slot += 1) {
+        const topic = sortedTopics[topicIndex];
+        if (topic) {
+          sessions.push({
+            slot,
+            tajuk: topic.tajuk,
+            standard: [topic.standard_kandungan, topic.standard_pembelajaran].filter(Boolean).join('\n\n'),
+            kind: 'TOPIK',
+          });
+          topicIndex += 1;
+        } else {
+          sessions.push({
+            slot,
+            tajuk: 'Pengukuhan, pentaksiran formatif dan pemulihan/pengayaan',
+            standard: 'Mengukuhkan standard pembelajaran terdahulu berdasarkan tahap penguasaan murid.',
+            kind: 'PENGUKUHAN',
+          });
+        }
+      }
+    }
+
+    plan.push({
+      weekNumber,
+      weekStart,
+      weekEnd,
+      isTeachingWeek,
+      takwimNotes: weekEvents.map((event) => `${event.tajuk} (${event.kategori})`),
+      sessions,
+    });
+    cursor = addDays(cursor, 7);
+    weekNumber += 1;
+  }
+
+  return plan;
 }
 
 export function isRphStatus(value: string): value is 'DRAF' | 'SEDIA' | 'SELESAI' {

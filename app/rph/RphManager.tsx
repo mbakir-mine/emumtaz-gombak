@@ -1,8 +1,8 @@
 'use client';
 
 import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
-import type { ClassRecord, RphRecord, RphTopic, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
-import type { RphPedagogy } from '@/lib/rph';
+import type { ClassRecord, RphRecord, RphTopic, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, TimetableRequirement, UserRecord } from '@/lib/data';
+import { buildAnnualRphPlan, type RphPedagogy } from '@/lib/rph';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
 import { deleteRphDraft, generateAiRphDraft, saveRphDraft, updateRphStatus, type RphActionState } from './actions';
@@ -61,8 +61,9 @@ function statusLabel(status: string) {
   return status === 'SELESAI' ? 'Selesai' : status === 'SEDIA' ? 'Sedia mengajar' : 'Draf';
 }
 
-export default function RphManager({ schools, classes, subjects, users, records, rphTopics, takwimEvents, submissions, submissionItems, reviews }: {
+export default function RphManager({ schools, classes, subjects, users, records, rphTopics, takwimEvents, timetableRequirements, submissions, submissionItems, reviews }: {
   schools: School[]; classes: ClassRecord[]; subjects: SubjectRecord[]; users: UserRecord[]; records: RphRecord[]; rphTopics: RphTopic[]; takwimEvents: TakwimEvent[];
+  timetableRequirements: TimetableRequirement[];
   submissions: RphWeeklySubmission[]; submissionItems: RphWeeklySubmissionItem[]; reviews: RphWeeklyReview[];
 }) {
   const profile = useAccessProfile();
@@ -77,7 +78,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
   const [selectedSubject, setSelectedSubject] = useState(subjects[0]?.kod_subjek ?? '');
   const [selectedTeacher, setSelectedTeacher] = useState(['GURU_KELAS', 'GURU_SUBJEK'].includes(profile?.role ?? '') ? profile?.id ?? '' : '');
   const [builder, setBuilder] = useState<BuilderState>(emptyBuilder);
-  const [view, setView] = useState<'BUILDER' | 'COLLECTION' | 'SUBMISSIONS'>('BUILDER');
+  const [view, setView] = useState<'BUILDER' | 'COLLECTION' | 'YEAR_PLAN' | 'SUBMISSIONS'>('BUILDER');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('SEMUA');
   const [feedback, setFeedback] = useState<RphActionState | null>(null);
@@ -98,6 +99,25 @@ export default function RphManager({ schools, classes, subjects, users, records,
   const filteredTopics = rphTopics.filter(
     (topic) => topic.tahun === selectedClassRecord?.tahun && topic.kod_subjek === selectedSubject,
   );
+  const activeRequirement = timetableRequirements.find(
+    (requirement) => requirement.kod_sekolah === selectedSchool && requirement.class_id === selectedClass && requirement.kod_subjek === selectedSubject,
+  );
+  const weeklySlots = activeRequirement?.bil_slot_seminggu ?? 1;
+  const annualPlan = useMemo(() => buildAnnualRphPlan({
+    year: currentAcademicYear,
+    weeklySlots,
+    topics: filteredTopics,
+    events: takwimEvents
+      .filter((event) => event.tahun_akademik === currentAcademicYear && event.status === 'AKTIF' && (event.scope === 'DAERAH' || event.kod_sekolah === selectedSchool))
+      .map((event) => ({
+        tajuk: event.tajuk,
+        kategori: event.kategori,
+        tarikh_mula: event.tarikh_mula,
+        tarikh_tamat: event.tarikh_tamat,
+      })),
+  }), [currentAcademicYear, filteredTopics, selectedSchool, takwimEvents, weeklySlots]);
+  const plannedTeachingWeeks = annualPlan.filter((week) => week.isTeachingWeek).length;
+  const plannedTopicSessions = annualPlan.flatMap((week) => week.sessions).filter((session) => session.kind === 'TOPIK').length;
   const schoolRecords = records.filter((record) => record.kod_sekolah === selectedSchool);
   const visibleRecords = schoolRecords.filter((record) => {
     const haystack = `${record.tajuk} ${record.standard_pembelajaran ?? ''} ${record.kod_subjek ?? ''}`.toLowerCase();
@@ -221,6 +241,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
       <nav className="rph-tabs" aria-label="Paparan RPH">
         <button className={view === 'BUILDER' ? 'active' : ''} type="button" onClick={() => setView('BUILDER')}>Pembina RPH</button>
         <button className={view === 'COLLECTION' ? 'active' : ''} type="button" onClick={() => setView('COLLECTION')}>Koleksi <span>{schoolRecords.length}</span></button>
+        <button className={view === 'YEAR_PLAN' ? 'active' : ''} type="button" onClick={() => setView('YEAR_PLAN')}>Cadangan Setahun</button>
         <button className={view === 'SUBMISSIONS' ? 'active' : ''} type="button" onClick={() => setView('SUBMISSIONS')}>{['OWNER', 'ADMIN_SEKOLAH', 'ADMIN_DAERAH', 'ADMIN_ZON'].includes(profile?.role ?? '') ? 'Pemantauan Guru' : 'Hantar Mingguan'} <span>{submissions.length}</span></button>
       </nav>
 
@@ -287,6 +308,39 @@ export default function RphManager({ schools, classes, subjects, users, records,
               <footer className="rph-card-footer"><span>Dikemas untuk {formatDate(record.tarikh)}</span><div>{record.status !== 'SEDIA' && <button type="button" disabled={pending} onClick={() => mutateRecord(() => updateRphStatus(record.id, 'SEDIA'))}>Tanda sedia</button>}{record.status !== 'SELESAI' && <button className="complete" type="button" disabled={pending} onClick={() => mutateRecord(() => updateRphStatus(record.id, 'SELESAI'))}>✓ Selesai PdP</button>}{canDelete && <button className="danger-link" type="button" disabled={pending} onClick={() => { if (window.confirm(`Padam RPH “${record.tajuk}”?`)) mutateRecord(() => deleteRphDraft(record.id)); }}>Padam</button>}</div></footer>
             </article>;
           })}</div>}
+        </section>
+      ) : view === 'YEAR_PLAN' ? (
+        <section className="panel rph-year-plan">
+          <div className="rph-collection-head"><div><h2>Cadangan eRPH setahun</h2><p>Susunan tajuk dijana mengikut tahun kelas, subjek, bilangan masa seminggu dan takwim sekolah.</p></div><button className="button" type="button" onClick={() => setView('BUILDER')}>+ Bina RPH daripada pelan</button></div>
+          <div className="rph-year-controls">
+            <label>Kelas<select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)}><option value="">Pilih kelas</option>{schoolClasses.map((item) => <option key={item.id} value={item.id}>{classLabel(item)}</option>)}</select></label>
+            <label>Mata pelajaran<select value={selectedSubject} onChange={(event) => setSelectedSubject(event.target.value)}><option value="">Pilih subjek</option>{subjects.filter((item) => item.status === 'AKTIF').map((subject) => <option key={subject.kod_subjek} value={subject.kod_subjek}>{subject.nama_subjek}</option>)}</select></label>
+          </div>
+          <div className="rph-year-summary">
+            <div><strong>{weeklySlots}</strong><span>Masa seminggu</span></div>
+            <div><strong>{filteredTopics.length}</strong><span>Tajuk DSKP tersedia</span></div>
+            <div><strong>{plannedTeachingWeeks}</strong><span>Minggu PdP dicadang</span></div>
+            <div><strong>{plannedTopicSessions}</strong><span>Sesi topik disusun</span></div>
+          </div>
+          {!selectedClass || !selectedSubject ? (
+            <div className="rph-empty"><span>🗓</span><h3>Pilih kelas dan subjek</h3><p>Sistem akan susun cadangan tahunan selepas kelas dan mata pelajaran dipilih.</p></div>
+          ) : filteredTopics.length === 0 ? (
+            <div className="rph-empty"><span>✎</span><h3>Tiada tajuk DSKP ditemui</h3><p>Masukkan tajuk dalam bank RPH dahulu untuk tahun dan subjek ini.</p></div>
+          ) : (
+            <div className="rph-year-list">{annualPlan.map((week) => (
+              <article className={week.isTeachingWeek ? 'rph-year-week' : 'rph-year-week muted'} key={week.weekStart}>
+                <header><span>Minggu {week.weekNumber}</span><strong>{formatDate(week.weekStart)} – {formatDate(week.weekEnd)}</strong></header>
+                {week.takwimNotes.length > 0 && <p className="rph-year-note">{week.takwimNotes.join(' · ')}</p>}
+                {week.isTeachingWeek ? <ol>{week.sessions.map((session) => (
+                  <li key={`${week.weekStart}-${session.slot}`}>
+                    <span>Masa {session.slot}</span>
+                    <button type="button" onClick={() => { selectTopic(session.tajuk); setView('BUILDER'); }}>{session.tajuk}</button>
+                    <small>{session.standard || 'Standard akan disesuaikan dalam pembina RPH.'}</small>
+                  </li>
+                ))}</ol> : <p className="rph-year-break">Minggu ini dikecualikan daripada cadangan PdP berdasarkan takwim.</p>}
+              </article>
+            ))}</div>
+          )}
         </section>
       ) : (
         <RphSubmissionManager schools={schools} users={users} classes={classes} subjects={subjects} records={records} submissions={submissions} submissionItems={submissionItems} reviews={reviews} />

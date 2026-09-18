@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateRphContent, getRphWeekEnd, getRphWeekStart, isRphPedagogy, isRphStatus, reviewRphQuality } from '@/lib/rph';
+import { buildAnnualRphPlan, generateRphContent, getRphWeekEnd, getRphWeekStart, isRphPedagogy, isRphStatus, reviewRphQuality } from '@/lib/rph';
 
 describe('RPH pintar', () => {
   it('menghasilkan pelan pengajaran lengkap dengan agihan masa', () => {
@@ -54,5 +54,26 @@ describe('RPH pintar', () => {
     expect(getRphWeekStart('2026-09-17')).toBe('2026-09-14');
     expect(getRphWeekEnd('2026-09-14')).toBe('2026-09-20');
     expect(getRphWeekStart('tidak-sah')).toBe('');
+  });
+
+  it('menjana cadangan tahunan mengikut bilangan masa dan takwim', () => {
+    const plan = buildAnnualRphPlan({
+      year: 2026,
+      weeklySlots: 2,
+      topics: [
+        { id: '1', tajuk: 'Ibadah', standard_kandungan: 'Standard 1', standard_pembelajaran: '1.1 Menyatakan pengertian ibadah.', susunan: 1 },
+        { id: '2', tajuk: 'Taharah', standard_kandungan: 'Standard 2', standard_pembelajaran: '2.1 Menyatakan pengertian taharah.', susunan: 2 },
+        { id: '3', tajuk: 'Wuduk', standard_kandungan: 'Standard 3', standard_pembelajaran: '3.1 Menyebut niat wuduk.', susunan: 3 },
+      ],
+      events: [{ tajuk: 'Cuti Pertengahan Tahun', kategori: 'CUTI', tarikh_mula: '2026-01-05', tarikh_tamat: '2026-01-11' }],
+    });
+
+    const cutiWeek = plan.find((week) => week.weekStart === '2026-01-05');
+    const firstTeachingWeek = plan.find((week) => week.isTeachingWeek);
+    const secondTeachingWeek = plan.filter((week) => week.isTeachingWeek)[1];
+
+    expect(cutiWeek?.isTeachingWeek).toBe(false);
+    expect(firstTeachingWeek?.sessions.map((session) => session.tajuk)).toEqual(['Ibadah', 'Taharah']);
+    expect(secondTeachingWeek?.sessions[0].tajuk).toBe('Wuduk');
   });
 });
