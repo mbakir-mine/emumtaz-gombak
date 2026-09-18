@@ -76,11 +76,17 @@ function clean(value: string, fallback: string) {
   return value.trim() || fallback;
 }
 
+function renumberDskpReferences(value: string) {
+  let next = 1;
+  return value.replace(/\b\d+(?:\.\d+)+(?=\s|[.)])/g, () => String(next++));
+}
+
 export function generateRphContent(input: RphDraftInput): RphDraftContent {
   const tajuk = clean(input.tajuk, 'topik pembelajaran');
   const subjek = clean(input.namaSubjek, 'mata pelajaran');
   const kelas = clean(input.namaKelas, 'kelas');
   const standard = clean(input.standard, `Pengetahuan dan kemahiran asas berkaitan ${tajuk}`);
+  const displayStandard = renumberDskpReferences(standard);
   const tahapMurid = clean(input.tahapMurid, 'pelbagai tahap penguasaan');
   const emk = clean(input.emk, 'Nilai murni, komunikasi dan pembelajaran abad ke-21');
   const tempoh = Math.min(120, Math.max(20, Number(input.tempoh) || 60));
@@ -92,12 +98,12 @@ export function generateRphContent(input: RphDraftInput): RphDraftContent {
   return {
     objektif: [
       `Pada akhir pembelajaran, murid dapat menyatakan sekurang-kurangnya dua idea utama tentang ${tajuk} dengan betul.`,
-      `Murid ${kelas} dapat melaksanakan satu tugasan ${subjek} berdasarkan ${standard} dengan bimbingan yang sesuai.`,
+      `Murid ${kelas} dapat melaksanakan satu tugasan ${subjek} berdasarkan ${displayStandard} dengan bimbingan yang sesuai.`,
       `Murid dapat menerangkan hasil tugasan secara lisan atau bertulis serta menunjukkan kerjasama dan adab yang baik.`,
     ].join('\n'),
     aktiviti: [
       `${setInduksi} minit | Set induksi — Guru memaparkan rangsangan kontekstual dan menghubungkannya dengan pengalaman murid tentang ${tajuk}.`,
-      `${penerokaan} minit | Penerokaan — Guru menerangkan dan memodelkan ${standard}. Murid memberi respons melalui soal jawab berfokus.`,
+      `${penerokaan} minit | Penerokaan — Guru menerangkan dan memodelkan ${displayStandard}. Murid memberi respons melalui soal jawab berfokus.`,
       `${aktiviti} minit | Aktiviti utama — ${pedagogyActivities[input.pedagogi]} Pembezaan: murid ${tahapMurid} menerima sokongan, bahan atau cabaran yang bersesuaian.`,
       `${penutup} minit | Penutup — Murid melengkapkan tiket keluar; guru merumus isi utama, menyemak objektif dan memberi tindakan susulan.`,
       `Elemen merentas kurikulum: ${emk}.`,

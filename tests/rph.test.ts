@@ -56,6 +56,24 @@ describe('RPH pintar', () => {
     expect(getRphWeekStart('tidak-sah')).toBe('');
   });
 
+  it('menomborkan semula rujukan DSKP dalam objektif dan aktiviti', () => {
+    const content = generateRphContent({
+      tajuk: 'Peristiwa kelahiran Nabi Muhammad',
+      standard: '2.2.1 Menyatakan tarikh kelahiran Nabi Muhammad SAW.\n2.2.2 Menyatakan tempat kelahiran Nabi Muhammad SAW.',
+      namaKelas: 'Tahun 3',
+      namaSubjek: 'Sirah',
+      tempoh: 60,
+      pedagogi: 'MASTERI',
+      tahapMurid: 'pelbagai tahap',
+      emk: 'tanggungjawab',
+    });
+    expect(content.objektif).toContain('1 Menyatakan tarikh');
+    expect(content.objektif).toContain('2 Menyatakan tempat');
+    expect(content.objektif).not.toContain('2.2.1');
+    expect(content.aktiviti).toContain('1 Menyatakan tarikh');
+    expect(content.aktiviti).toContain('2 Menyatakan tempat');
+  });
+
   it('menjana cadangan tahunan mengikut bilangan masa dan takwim', () => {
     const plan = buildAnnualRphPlan({
       year: 2026,
