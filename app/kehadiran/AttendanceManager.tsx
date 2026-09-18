@@ -38,6 +38,11 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function savedAttendanceValue(key: string) {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(`emumtaz-attendance-${key}`) ?? '';
+}
+
 function classLabel(item: ClassRecord) {
   return `Tahun ${item.tahun} - ${item.nama_kelas}`;
 }
@@ -158,9 +163,9 @@ export default function AttendanceManager({
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedStudents = useMemo(() => scopeStudents(profile, students, classes, schools), [classes, profile, schools, students]);
-  const [selectedDate, setSelectedDate] = useState(todayIso());
+  const [selectedDate, setSelectedDate] = useState(() => savedAttendanceValue('date') || todayIso());
   const { year, monthIndex } = dateParts(selectedDate);
-  const [selectedSchool, setSelectedSchool] = useState(profile?.kod_sekolah ?? scopedSchools[0]?.kod_sekolah ?? '');
+  const [selectedSchool, setSelectedSchool] = useState(() => savedAttendanceValue('school') || profile?.kod_sekolah || scopedSchools[0]?.kod_sekolah || '');
   const schoolClasses = useMemo(
     () =>
       scopedClasses.filter(
@@ -171,17 +176,24 @@ export default function AttendanceManager({
       ),
     [scopedClasses, selectedSchool, year],
   );
-  const [selectedClass, setSelectedClass] = useState(schoolClasses[0]?.id ?? '');
+  const [selectedClass, setSelectedClass] = useState(() => savedAttendanceValue('class') || schoolClasses[0]?.id || '');
   const [selectedStudentId, setSelectedStudentId] = useState('');
   // Terus buka rekod harian supaya semua tindakan utama berada dalam satu paparan.
   const [detailMode, setDetailMode] = useState<AttendanceDetailMode>('daily');
   useEffect(() => {
     if (!selectedClass || !schoolClasses.some((item) => item.id === selectedClass)) {
-      setSelectedClass(schoolClasses[0]?.id ?? '');
+      const savedClass = savedAttendanceValue('class');
+      setSelectedClass(savedClass && schoolClasses.some((item) => item.id === savedClass) ? savedClass : schoolClasses[0]?.id ?? '');
       setSelectedStudentId('');
       setDetailMode('daily');
     }
   }, [schoolClasses, selectedClass]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('emumtaz-attendance-date', selectedDate);
+    if (selectedSchool) window.localStorage.setItem('emumtaz-attendance-school', selectedSchool);
+    if (selectedClass) window.localStorage.setItem('emumtaz-attendance-class', selectedClass);
+  }, [selectedClass, selectedDate, selectedSchool]);
   const activeClass = schoolClasses.find((item) => item.id === selectedClass) ?? null;
   const activeSchool = scopedSchools.find((school) => school.kod_sekolah === selectedSchool) ?? null;
   const classStudents = useMemo(
