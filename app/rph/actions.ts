@@ -126,7 +126,7 @@ export async function generateAiRphDraft(formData: FormData): Promise<AiRphActio
       qualityScore: fallbackReview.score,
       qualityNotes: fallbackReview.notes,
       source: 'TEMPLATE',
-      message: `Mod 0 kos aktif. Sistem menjana RPH pintar tempatan tanpa caj API. Skor semakan: ${fallbackReview.score}%.`,
+      message: `RPH pintar berjaya dijana. Skor semakan kualiti: ${fallbackReview.score}%.`,
     };
   }
 
