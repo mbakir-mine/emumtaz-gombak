@@ -74,10 +74,10 @@ describe('RPH pintar', () => {
 
     expect(cutiWeek?.isTeachingWeek).toBe(false);
     expect(firstTeachingWeek?.sessions.map((session) => session.tajuk)).toEqual([
-      'Ibadah — Menyatakan pengertian ibadah.',
-      'Taharah — Menyatakan pengertian taharah.',
+      'Ibadah — Menyatakan pengertian ibadah. — Pengajaran dan pembelajaran',
+      'Ibadah — Menyatakan pengertian ibadah. — Ujian/pentaksiran formatif',
     ]);
-    expect(secondTeachingWeek?.sessions[0].tajuk).toBe('Wuduk — Menyebut niat wuduk.');
+    expect(secondTeachingWeek?.sessions[0].tajuk).toBe('Ibadah — Menyatakan pengertian ibadah. — Pengukuhan, pemulihan dan pengayaan');
   });
 
   it('memecahkan tajuk besar kepada sub-standard mingguan yang kecil', () => {
@@ -109,8 +109,9 @@ describe('RPH pintar', () => {
     expect(teachingSessions[0].standard).toContain('2.1');
     expect(teachingSessions[0].standard).toContain('2.2');
     expect(teachingSessions[0].standard).not.toContain('2.3');
-    expect(teachingSessions[1].standard).toContain('2.3');
-    expect(teachingSessions[1].standard).toContain('2.4');
+    expect(teachingSessions[1].phase).toBe('PENTAKSIRAN');
+    expect(teachingSessions[1].standard).toContain('2.1');
+    expect(teachingSessions[2].phase).toBe('PENGUKUHAN');
     expect(teachingSessions[2].standard).toContain('Nilai murni:');
   });
 });

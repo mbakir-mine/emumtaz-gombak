@@ -53,6 +53,7 @@ export type RphAnnualPlanSession = {
   standard: string;
   nilaiMurni: string;
   kind: 'TOPIK' | 'PENGUKUHAN';
+  phase: 'PENGAJARAN' | 'PENTAKSIRAN' | 'PENGUKUHAN';
 };
 
 export type RphAnnualPlanWeek = {
@@ -229,7 +230,11 @@ export function buildAnnualRphPlan({
 }): RphAnnualPlanWeek[] {
   const slots = Math.max(1, Math.min(12, Math.round(Number(weeklySlots) || 1)));
   const sortedTopics = [...topics].sort((a, b) => a.susunan - b.susunan || a.tajuk.localeCompare(b.tajuk, 'ms'));
-  const topicUnits = buildTopicUnits(sortedTopics);
+  const topicUnits = buildTopicUnits(sortedTopics).flatMap((unit) => [
+    { ...unit, phase: 'PENGAJARAN' as const, tajuk: `${unit.tajuk} — Pengajaran dan pembelajaran` },
+    { ...unit, phase: 'PENTAKSIRAN' as const, tajuk: `${unit.tajuk} — Ujian/pentaksiran formatif` },
+    { ...unit, phase: 'PENGUKUHAN' as const, tajuk: `${unit.tajuk} — Pengukuhan, pemulihan dan pengayaan` },
+  ]);
   const firstMonday = getRphWeekStart(`${year}-01-04`);
   const plan: RphAnnualPlanWeek[] = [];
   let unitIndex = 0;
@@ -256,6 +261,7 @@ export function buildAnnualRphPlan({
             standard: unit.standard,
             nilaiMurni: unit.nilaiMurni,
             kind: 'TOPIK',
+            phase: unit.phase,
           });
           unitIndex += 1;
         } else {
@@ -266,6 +272,7 @@ export function buildAnnualRphPlan({
             standard: 'Mengukuhkan standard pembelajaran terdahulu berdasarkan tahap penguasaan murid.',
             nilaiMurni: 'istiqamah dan usaha berterusan',
             kind: 'PENGUKUHAN',
+            phase: 'PENGUKUHAN',
           });
         }
       }
