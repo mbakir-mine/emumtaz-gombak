@@ -259,7 +259,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
               <label>Tahap / keperluan murid<input name="tahap_murid" value={builder.tahapMurid} onChange={(event) => updateBuilder('tahapMurid', event.target.value)} /></label>
               <label>EMK, nilai & PAK21<input name="emk" value={builder.emk} onChange={(event) => updateBuilder('emk', event.target.value)} /></label>
             </div>
-            <button className="rph-generate-button" type="button" onClick={generateAiDraft} disabled={!builder.tajuk || !selectedClass || !selectedSubject || pending}><span>✦</span><strong>{pending ? 'Menjana RPH pintar…' : 'Jana RPH pintar 0 kos'}</strong><small>Objektif, aktiviti, BBM, pentaksiran dan semakan kualiti tanpa caj API</small></button>
+            <button className="rph-generate-button" type="button" onClick={generateAiDraft} disabled={!builder.tajuk || !selectedClass || !selectedSubject || pending}><span>✦</span><strong>{pending ? 'Menjana RPH pintar…' : 'Jana RPH pintar'}</strong><small>Objektif, aktiviti, BBM, pentaksiran dan semakan kualiti</small></button>
 
             <div className="rph-section-heading"><span className="rph-step-number">03</span><div><h3>Semak & sesuaikan</h3><p>Semua cadangan boleh disunting mengikut realiti kelas.</p></div></div>
             <div className="rph-editor-grid">
