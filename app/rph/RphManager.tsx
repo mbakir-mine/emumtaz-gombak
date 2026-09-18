@@ -2,10 +2,10 @@
 
 import { useActionState, useMemo, useRef, useState, useTransition } from 'react';
 import type { ClassRecord, RphRecord, RphTopic, RphWeeklyReview, RphWeeklySubmission, RphWeeklySubmissionItem, School, SubjectRecord, TakwimEvent, UserRecord } from '@/lib/data';
-import { generateRphContent, type RphPedagogy } from '@/lib/rph';
+import type { RphPedagogy } from '@/lib/rph';
 import { useAccessProfile } from '../ui/AuthGate';
 import { scopeClasses, scopeSchools, scopeUsers } from '../ui/scopedData';
-import { deleteRphDraft, saveRphDraft, updateRphStatus, type RphActionState } from './actions';
+import { deleteRphDraft, generateAiRphDraft, saveRphDraft, updateRphStatus, type RphActionState } from './actions';
 import RphSubmissionManager from './RphSubmissionManager';
 
 const initialState: RphActionState = { ok: false, message: '' };
@@ -129,20 +129,39 @@ export default function RphManager({ schools, classes, subjects, users, records,
     }));
   }
 
-  function generateDraft() {
-    const classRecord = classMap.get(selectedClass);
-    const content = generateRphContent({
-      tajuk: builder.tajuk,
-      standard: builder.standard,
-      namaKelas: classRecord ? classLabel(classRecord) : 'kelas dipilih',
-      namaSubjek: subjectMap.get(selectedSubject) ?? selectedSubject,
-      tempoh: builder.tempoh,
-      pedagogi: builder.pedagogi,
-      tahapMurid: builder.tahapMurid,
-      emk: builder.emk,
+  function buildRphFormData() {
+    const formData = new FormData();
+    formData.set('kod_sekolah', selectedSchool);
+    formData.set('class_id', selectedClass);
+    formData.set('teacher_id', isTeacherProfile ? profile?.id ?? '' : selectedTeacher);
+    formData.set('kod_subjek', selectedSubject);
+    formData.set('tajuk', builder.tajuk);
+    formData.set('standard_pembelajaran', builder.standard);
+    formData.set('pedagogi', builder.pedagogi);
+    formData.set('tempoh', String(builder.tempoh));
+    formData.set('tahap_murid', builder.tahapMurid);
+    formData.set('emk', builder.emk);
+    return formData;
+  }
+
+  function generateAiDraft() {
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await generateAiRphDraft(buildRphFormData());
+      if (result.ok) {
+        setBuilder((current) => ({
+          ...current,
+          objektif: result.objektif ?? current.objektif,
+          aktiviti: result.aktiviti ?? current.aktiviti,
+          bbm: result.bbm ?? current.bbm,
+          pentaksiran: result.pentaksiran ?? current.pentaksiran,
+          refleksi: result.refleksi ?? current.refleksi,
+        }));
+      }
+      const qualityNotes = result.qualityNotes?.length ? ` Nota: ${result.qualityNotes.join(' ')}` : '';
+      const source = result.source === 'TEMPLATE' ? ' (template sandaran)' : '';
+      setFeedback({ ok: result.ok, message: `${result.message}${source}${qualityNotes}` });
     });
-    setBuilder((current) => ({ ...current, ...content }));
-    setFeedback({ ok: true, message: 'Cadangan lengkap dijana. Semak dan sunting sebelum menyimpan.' });
   }
 
   function loadRecord(record: RphRecord, duplicate = false) {
@@ -240,7 +259,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
               <label>Tahap / keperluan murid<input name="tahap_murid" value={builder.tahapMurid} onChange={(event) => updateBuilder('tahapMurid', event.target.value)} /></label>
               <label>EMK, nilai & PAK21<input name="emk" value={builder.emk} onChange={(event) => updateBuilder('emk', event.target.value)} /></label>
             </div>
-            <button className="rph-generate-button" type="button" onClick={generateDraft} disabled={!builder.tajuk || !selectedClass || !selectedSubject}><span>✦</span><strong>Jana cadangan RPH</strong><small>Objektif, aktiviti berfasa, BBM dan pentaksiran</small></button>
+            <button className="rph-generate-button" type="button" onClick={generateAiDraft} disabled={!builder.tajuk || !selectedClass || !selectedSubject || pending}><span>✦</span><strong>{pending ? 'Menjana RPH AI…' : 'Jana RPH AI berkualiti'}</strong><small>Objektif, aktiviti, BBM, pentaksiran dan semakan kualiti</small></button>
 
             <div className="rph-section-heading"><span className="rph-step-number">03</span><div><h3>Semak & sesuaikan</h3><p>Semua cadangan boleh disunting mengikut realiti kelas.</p></div></div>
             <div className="rph-editor-grid">

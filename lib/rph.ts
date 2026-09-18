@@ -19,6 +19,18 @@ export type RphDraftContent = {
   refleksi: string;
 };
 
+export type RphQualityReview = {
+  score: number;
+  checks: {
+    hasStandard: boolean;
+    hasMeasurableObjective: boolean;
+    hasTimedActivities: boolean;
+    hasAssessmentEvidence: boolean;
+    hasDifferentiation: boolean;
+  };
+  notes: string[];
+};
+
 const pedagogyActivities: Record<RphPedagogy, string> = {
   KOLABORATIF: 'Murid bekerja dalam kumpulan kecil, membahagi peranan dan membentangkan hasil perbincangan.',
   INKUIRI: 'Murid meneliti rangsangan, membina soalan dan mendapatkan jawapan melalui bimbingan serta penerokaan.',
@@ -59,6 +71,30 @@ export function generateRphContent(input: RphDraftInput): RphDraftContent {
     bbm: `Bahan rangsangan berkaitan ${tajuk}, buku teks, lembaran tugasan berbeza aras, papan putih dan bahan digital guru.`,
     pentaksiran: 'Soal jawab diagnostik, senarai semak pemerhatian, hasil tugasan dan tiket keluar. Evidens dinilai berdasarkan ketepatan, kefahaman dan penglibatan murid.',
     refleksi: '___ / ___ murid mencapai objektif. ___ murid memerlukan pengukuhan. Tindakan susulan: pemulihan berfokus / latihan pengayaan pada sesi berikutnya.',
+  };
+}
+
+export function reviewRphQuality(input: RphDraftInput, content: RphDraftContent): RphQualityReview {
+  const joined = `${content.objektif}\n${content.aktiviti}\n${content.pentaksiran}\n${content.refleksi}`.toLowerCase();
+  const checks = {
+    hasStandard: input.standard.trim().length >= 20,
+    hasMeasurableObjective: /\b(menyatakan|menerangkan|menjelaskan|membaca|menulis|menghafaz|mengaplikasikan|melaksanakan|membedakan|merumus)\b/i.test(content.objektif),
+    hasTimedActivities: /\b\d+\s*minit\b/i.test(content.aktiviti),
+    hasAssessmentEvidence: /\b(evidens|pemerhatian|senarai semak|hasil|tiket keluar|soal jawab|lembaran)\b/i.test(content.pentaksiran),
+    hasDifferentiation: /\b(pemulihan|pengayaan|pembezaan|bimbingan|cabaran)\b/i.test(joined),
+  };
+  const notes: string[] = [];
+  if (!checks.hasStandard) notes.push('Standard DSKP perlu jelas sebelum RPH dihantar.');
+  if (!checks.hasMeasurableObjective) notes.push('Objektif perlu menggunakan kata kerja yang boleh diukur.');
+  if (!checks.hasTimedActivities) notes.push('Aktiviti perlu mempunyai agihan masa.');
+  if (!checks.hasAssessmentEvidence) notes.push('Pentaksiran perlu menyebut evidens atau instrumen.');
+  if (!checks.hasDifferentiation) notes.push('Tambah pemulihan, pengayaan atau pembezaan murid.');
+
+  const passed = Object.values(checks).filter(Boolean).length;
+  return {
+    score: Math.round((passed / Object.keys(checks).length) * 100),
+    checks,
+    notes,
   };
 }
 

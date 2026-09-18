@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateRphContent, getRphWeekEnd, getRphWeekStart, isRphPedagogy, isRphStatus } from '@/lib/rph';
+import { generateRphContent, getRphWeekEnd, getRphWeekStart, isRphPedagogy, isRphStatus, reviewRphQuality } from '@/lib/rph';
 
 describe('RPH pintar', () => {
   it('menghasilkan pelan pengajaran lengkap dengan agihan masa', () => {
@@ -26,6 +26,28 @@ describe('RPH pintar', () => {
     expect(isRphStatus('DIPADAM')).toBe(false);
     expect(isRphPedagogy('INKUIRI')).toBe(true);
     expect(isRphPedagogy('RAW')).toBe(false);
+  });
+
+  it('menyemak kualiti kandungan RPH sebelum guru menyimpan', () => {
+    const input = {
+      tajuk: 'Wuduk',
+      standard: 'Menyatakan rukun dan sunat wuduk serta mengaplikasikan cara berwuduk dengan betul.',
+      namaKelas: 'Tahun 1 - Kafa',
+      namaSubjek: 'Fiqh',
+      tempoh: 60,
+      pedagogi: 'MASTERI' as const,
+      tahapMurid: 'murid sederhana dan memerlukan bimbingan',
+      emk: 'Nilai kebersihan dan amalan harian',
+    };
+    const draft = generateRphContent(input);
+    const review = reviewRphQuality(input, draft);
+
+    expect(review.score).toBe(100);
+    expect(review.checks.hasStandard).toBe(true);
+    expect(review.checks.hasMeasurableObjective).toBe(true);
+    expect(review.checks.hasTimedActivities).toBe(true);
+    expect(review.checks.hasAssessmentEvidence).toBe(true);
+    expect(review.checks.hasDifferentiation).toBe(true);
   });
 
   it('menormalkan tarikh kepada minggu Isnin hingga Ahad', () => {
