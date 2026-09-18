@@ -115,7 +115,8 @@ export async function generateAiRphDraft(formData: FormData): Promise<AiRphActio
   };
   const fallback = generateRphContent(input);
   const fallbackReview = reviewRphQuality(input, fallback);
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const aiProvider = process.env.OPENAI_RPH_PROVIDER?.trim().toLowerCase();
+  const apiKey = aiProvider === 'openai' ? process.env.OPENAI_API_KEY?.trim() : '';
   const model = process.env.OPENAI_RPH_MODEL?.trim() || 'gpt-5';
 
   if (!apiKey) {
@@ -125,7 +126,7 @@ export async function generateAiRphDraft(formData: FormData): Promise<AiRphActio
       qualityScore: fallbackReview.score,
       qualityNotes: fallbackReview.notes,
       source: 'TEMPLATE',
-      message: `OPENAI_API_KEY belum dikonfigurasi. Sistem menjana template berkualiti sebagai sandaran. Skor semakan: ${fallbackReview.score}%.`,
+      message: `Mod 0 kos aktif. Sistem menjana RPH pintar tempatan tanpa caj API. Skor semakan: ${fallbackReview.score}%.`,
     };
   }
 
