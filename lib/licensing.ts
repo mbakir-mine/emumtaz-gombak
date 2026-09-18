@@ -1,6 +1,6 @@
 import { optionalSchoolModules, type OptionalSchoolModuleKey } from './schoolModules';
 
-export type LicensePlanCode = 'PERCUBAAN' | 'ASAS' | 'PRO' | 'ENTERPRISE';
+export type LicensePlanCode = 'PERCUBAAN' | 'ASAS' | 'PRO' | 'PREMIER';
 
 export type LicenseAccessRecord = {
   status: string;
@@ -16,7 +16,7 @@ export const licensePlanModules: Record<LicensePlanCode, OptionalSchoolModuleKey
   PERCUBAAN: allModules,
   ASAS: ['TAKWIM', 'KEHADIRAN_HARIAN', 'PELAPORAN_PBD'],
   PRO: allModules.filter((module) => module !== 'RPH_AI'),
-  ENTERPRISE: allModules,
+  PREMIER: allModules,
 };
 
 export function isLicensePlanCode(value: string): value is LicensePlanCode {

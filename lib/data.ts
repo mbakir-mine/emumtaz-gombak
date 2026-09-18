@@ -63,7 +63,7 @@ export type SchoolModuleAccess = {
 export type SchoolLicense = {
   id: string;
   kod_sekolah: string;
-  plan_code: 'PERCUBAAN' | 'ASAS' | 'PRO' | 'ENTERPRISE';
+  plan_code: 'PERCUBAAN' | 'ASAS' | 'PRO' | 'PREMIER';
   status: 'PERCUBAAN' | 'AKTIF' | 'DIGANTUNG' | 'TAMAT';
   starts_on: string;
   ends_on: string | null;
@@ -839,15 +839,20 @@ async function getTeacherDashboardRows(
   const schoolMap = new Map(schools.map((school) => [school.kod_sekolah, school]));
   const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
   const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject]));
+  const activeStudentsByClass = new Map<string, StudentRecord[]>();
+  students.forEach((student) => {
+    if (student.status !== 'AKTIF' || !student.class_id) return;
+    const classStudents = activeStudentsByClass.get(student.class_id) ?? [];
+    classStudents.push(student);
+    activeStudentsByClass.set(student.class_id, classStudents);
+  });
 
   const teacherClasses = (classAssignments ?? [])
     .map((assignment: any) => {
       const classRecord = classMap.get(assignment.class_id);
       if (!classRecord) return null;
       const school = schoolMap.get(classRecord.kod_sekolah);
-      const classStudents = students.filter(
-        (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
-      );
+      const classStudents = activeStudentsByClass.get(classRecord.id) ?? [];
 
       return {
         user_id: assignment.user_id,
@@ -869,9 +874,7 @@ async function getTeacherDashboardRows(
       const subject = subjectMap.get(assignment.kod_subjek);
       if (!classRecord || !subject) return null;
       const school = schoolMap.get(classRecord.kod_sekolah);
-      const classStudents = students.filter(
-        (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
-      );
+      const classStudents = activeStudentsByClass.get(classRecord.id) ?? [];
 
       return {
         user_id: assignment.user_id,
@@ -1053,7 +1056,7 @@ function matchesExamKey(item: { tahun_akademik: number; kod_peperiksaan: string 
   return `${item.tahun_akademik}-${item.kod_peperiksaan}` === key;
 }
 
-export async function getSetupCounts(): Promise<SetupCounts> {
+async function getSetupCountsUncached(): Promise<SetupCounts> {
   if (!hasSupabaseEnv) {
     return {
       schools: 0,
@@ -1102,6 +1105,8 @@ export async function getSetupCounts(): Promise<SetupCounts> {
 
   return { schools, users, subjects, exams, classes, students, marks, schoolCategories, studentGender, classesByYear };
 }
+
+export const getSetupCounts = cache(getSetupCountsUncached);
 
 async function getSchoolsUncached(): Promise<School[]> {
   const supabase = await getSupabaseServerClient();
@@ -1980,7 +1985,7 @@ export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
   return data ?? [];
 }
 
-export async function getDashboardInsights(selectedExamKey?: string): Promise<DashboardInsights> {
+async function getDashboardInsightsUncached(selectedExamKey?: string): Promise<DashboardInsights> {
   const [schools, classes, exams, rules, subjects, schoolSummaries, studentSummaries, students, users, moduleAccesses] = await Promise.all([
     getSchools(),
     getClasses(),
@@ -2218,14 +2223,19 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     .sort((a, b) => (a.gps ?? 99) - (b.gps ?? 99) || (b.purata ?? -1) - (a.purata ?? -1));
 
   const classCompletionMap = new Map<string, MarkCompletionClass>();
+  const studentsByClass = new Map<string, StudentRecord[]>();
+  students.forEach((student) => {
+    if (student.status !== 'AKTIF' || !student.class_id) return;
+    const classStudents = studentsByClass.get(student.class_id) ?? [];
+    classStudents.push(student);
+    studentsByClass.set(student.class_id, classStudents);
+  });
 
   classes
     .filter((classRecord) => !selectedExam || classRecord.tahun_akademik === selectedExam.tahun_akademik)
     .forEach((classRecord) => {
     const requiredSubjects = rulesByTahun.get(classRecord.tahun) ?? [];
-    const classStudents = students.filter(
-      (student) => student.class_id === classRecord.id && student.status === 'AKTIF',
-    );
+    const classStudents = studentsByClass.get(classRecord.id) ?? [];
     const expected = classStudents.length * requiredSubjects.length;
     let completed = 0;
 
@@ -2342,6 +2352,8 @@ export async function getDashboardInsights(selectedExamKey?: string): Promise<Da
     psraSchools: [],
   };
 }
+
+export const getDashboardInsights = cache(getDashboardInsightsUncached);
 
 export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
   const supabase = await getSupabaseServerClient();

@@ -361,7 +361,10 @@ export default function IndividualReportTable({
     return true;
   });
 
-  const allowedSchools = new Set(schoolOptions.map((school) => school.kod_sekolah));
+  const allowedSchools = useMemo(
+    () => new Set(schoolOptions.map((school) => school.kod_sekolah)),
+    [schoolOptions],
+  );
 
   const resetResults = () => {
     setShowResults(false);

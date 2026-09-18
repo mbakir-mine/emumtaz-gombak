@@ -4,7 +4,7 @@
 create table if not exists public.school_licenses (
   id uuid primary key default gen_random_uuid(),
   kod_sekolah text not null unique references public.schools(kod_sekolah) on update cascade on delete cascade,
-  plan_code text not null default 'ASAS' check (plan_code in ('PERCUBAAN', 'ASAS', 'PRO', 'ENTERPRISE')),
+  plan_code text not null default 'ASAS' check (plan_code in ('PERCUBAAN', 'ASAS', 'PRO', 'PREMIER')),
   status text not null default 'PERCUBAAN' check (status in ('PERCUBAAN', 'AKTIF', 'DIGANTUNG', 'TAMAT')),
   starts_on date not null default current_date,
   ends_on date,

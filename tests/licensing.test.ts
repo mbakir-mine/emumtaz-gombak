@@ -35,7 +35,7 @@ describe('evaluateLicenseAccess', () => {
     const configured = ['TAKWIM', 'PELAPORAN_PBD', 'RPH_AI'] as const;
     expect(modulesAllowedByLicense('ASAS', [...configured])).toEqual(['TAKWIM', 'PELAPORAN_PBD']);
     expect(modulesAllowedByLicense(null, [...configured])).toEqual([...configured]);
-    expect(modulesAllowedByLicense('ENTERPRISE', [...configured])).toEqual([...configured]);
+    expect(modulesAllowedByLicense('PREMIER', [...configured])).toEqual([...configured]);
   });
 
   it('calculates renewal windows using whole calendar days', () => {

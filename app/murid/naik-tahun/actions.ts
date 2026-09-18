@@ -145,7 +145,12 @@ export async function promoteStudents(
     return { ok: false, message: `Gagal membaca kelas tahun ${targetYear}: ${targetError.message}` };
   }
 
-  const sources = ((sourceRows ?? []) as any[]).map((item) => ({
+  type RawEnrollment = {
+    [key: string]: unknown;
+    students?: unknown;
+    classes?: unknown;
+  };
+  const sources = ((sourceRows ?? []) as RawEnrollment[]).map((item) => ({
     ...item,
     students: Array.isArray(item.students) ? item.students[0] : item.students,
     classes: Array.isArray(item.classes) ? item.classes[0] : item.classes,

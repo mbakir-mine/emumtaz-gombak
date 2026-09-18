@@ -30,7 +30,7 @@ function LicenseRow({ school, license }: { school: School; license?: SchoolLicen
           <input type="hidden" name="kod_sekolah" value={school.kod_sekolah} />
           <select name="plan_code" defaultValue={license?.plan_code ?? 'ASAS'} aria-label={`Pakej ${school.kod_sekolah}`}>
             <option value="PERCUBAAN">Percubaan</option><option value="ASAS">Asas</option>
-            <option value="PRO">Pro</option><option value="ENTERPRISE">Enterprise</option>
+            <option value="PRO">Pro</option><option value="PREMIER">Premier</option>
           </select>
           <select name="status" defaultValue={license?.status ?? 'AKTIF'} aria-label={`Status ${school.kod_sekolah}`}>
             <option value="PERCUBAAN">Percubaan</option><option value="AKTIF">Aktif</option>

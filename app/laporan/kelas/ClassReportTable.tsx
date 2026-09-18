@@ -369,11 +369,6 @@ export default function ClassReportTable({
     setSortDirection('asc');
   };
 
-  const sortLabel = (key: SortKey) => {
-    if (sortKey !== key) return '';
-    return sortDirection === 'asc' ? '↑' : '↓';
-  };
-
   const renderSortButton = (label: string, key: SortKey, title?: string) => {
     const indicator = sortKey === key ? (sortDirection === 'asc' ? '\u2191' : '\u2193') : '';
 
@@ -580,7 +575,7 @@ export default function ClassReportTable({
                     <td colSpan={reportSubjects.length + 6}>Tiada murid aktif dalam kelas ini.</td>
                   </tr>
                 ) : (
-                  reportRows.map(({ student, gender, mykid, subjectMarks, totalMarks, average, gpm }, index) => {
+                  reportRows.map(({ student, mykid, subjectMarks, totalMarks, average, gpm }, index) => {
                     return (
                       <tr key={student.id}>
                         <td>{index + 1}</td>

@@ -114,10 +114,6 @@ export default function SidebarNav({ active }: { active: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const profile = useAccessProfile();
-  const visibleItems = profile ? visibleNavItems(profile.role, profile.allowed_nav, profile.enabled_modules) : [];
-  const visibleKeys = new Set(visibleItems.map((item) => item.key));
-  const allItemMap = new Map(navItems.map((item) => [item.key, item]));
-
   async function logout() {
     await supabase?.auth.signOut();
     await syncServerSession(null);
@@ -126,6 +122,9 @@ export default function SidebarNav({ active }: { active: string }) {
 
   const groups = useMemo(() => groupedMenu
     .map((group) => {
+      const visibleItems = profile ? visibleNavItems(profile.role, profile.allowed_nav, profile.enabled_modules) : [];
+      const visibleKeys = new Set(visibleItems.map((item) => item.key));
+      const allItemMap = new Map(navItems.map((item) => [item.key, item]));
       const children = group.items
         .filter((key) => {
           if (visibleKeys.has(key) || key === 'changePassword') return true;
@@ -150,7 +149,7 @@ export default function SidebarNav({ active }: { active: string }) {
         isActive: group.key === active || group.items.includes(active) || pathActive,
       };
     })
-    .filter((group) => group.children.length > 0), [active, allItemMap, pathname, profile, visibleKeys]);
+    .filter((group) => group.children.length > 0), [active, pathname, profile]);
   const activeGroupKey = groups.find((group) => group.isActive)?.key ?? null;
   const [openGroupKey, setOpenGroupKey] = useState<string | null>(activeGroupKey);
 

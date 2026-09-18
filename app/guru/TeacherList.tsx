@@ -20,7 +20,6 @@ function accessLabel(user: UserRecord) {
 
 const adminRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'];
 const teacherRoles = ['GURU_KELAS', 'GURU_SUBJEK'];
-const countedRoles = ['ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
 const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
 const statusOptions = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
 
@@ -43,10 +42,6 @@ function userZone(user: UserRecord, schoolMap: Map<string, School>) {
   if (user.zon) return user.zon;
   if (!user.kod_sekolah) return null;
   return schoolMap.get(user.kod_sekolah)?.zon ?? null;
-}
-
-function countUsersByRole(users: UserRecord[], role: string) {
-  return users.filter((user) => user.role === role).length;
 }
 
 function countUsersByCategory(users: UserRecord[], schools: Map<string, School>, category: string) {

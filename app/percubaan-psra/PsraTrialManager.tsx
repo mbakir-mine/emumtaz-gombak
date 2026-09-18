@@ -335,7 +335,10 @@ export default function PsraTrialManager({
     () => new Map(records.map((record) => [`${record.student_id}|${record.paper_code}`, record])),
     [records],
   );
-  const selectedSubjectCodes = assignedSubjectsByClass.get(selectedClassId) ?? new Set<string>();
+  const selectedSubjectCodes = useMemo(
+    () => assignedSubjectsByClass.get(selectedClassId) ?? new Set<string>(),
+    [assignedSubjectsByClass, selectedClassId],
+  );
   const isClassTeacher = assignedClassIds.has(selectedClassId);
   const editablePapers = useMemo(
     () =>

@@ -14,7 +14,6 @@ import { SCHOOL_CATEGORY_ORDER } from '@/lib/schoolCategories';
 import { supabase } from '@/lib/supabase';
 
 const zoneOrder = ['BARAT', 'TENGAH', 'TIMUR'];
-const yearOrder = [1, 2, 3, 4, 5, 6];
 
 type StudentFilter = {
   label: string;

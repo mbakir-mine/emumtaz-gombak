@@ -5,7 +5,7 @@ import { getSupabaseServerClient, isVerifiedOwner } from '@/lib/supabase-server'
 
 export type LicenseActionState = { ok: boolean; message: string };
 
-const plans = new Set(['PERCUBAAN', 'ASAS', 'PRO', 'ENTERPRISE']);
+const plans = new Set(['PERCUBAAN', 'ASAS', 'PRO', 'PREMIER']);
 const statuses = new Set(['PERCUBAAN', 'AKTIF', 'DIGANTUNG', 'TAMAT']);
 
 function positiveInteger(value: FormDataEntryValue | null) {

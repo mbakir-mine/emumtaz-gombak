@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,7 +26,7 @@ export async function checkDatabaseHealth() {
   return { ok: !error } as const;
 }
 
-export async function isVerifiedOwner() {
+async function isVerifiedOwnerUncached() {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) return false;
   const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
   if (!accessToken) return false;
@@ -48,8 +49,9 @@ export async function isVerifiedOwner() {
     .limit(1);
   return !error && Boolean(data?.length);
 }
+export const isVerifiedOwner = cache(isVerifiedOwnerUncached);
 
-export async function getVerifiedStudentScope() {
+async function getVerifiedStudentScopeUncached() {
   if (!hasSupabaseServerEnv || !supabaseServiceRoleKey) return null;
 
   const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
@@ -89,8 +91,9 @@ export async function getVerifiedStudentScope() {
 
   return { client, schoolCodes: [...schoolCodes] };
 }
+export const getVerifiedStudentScope = cache(getVerifiedStudentScopeUncached);
 
-export async function getSupabaseServerClient() {
+async function getSupabaseServerClientUncached() {
   if (!hasSupabaseServerEnv) return null;
 
   const accessToken = (await cookies()).get('emumtaz_access_token')?.value;
@@ -129,6 +132,7 @@ export async function getSupabaseServerClient() {
 
   return createClient(supabaseUrl as string, supabaseAnonKey as string, options);
 }
+export const getSupabaseServerClient = cache(getSupabaseServerClientUncached);
 
 export async function getAuthenticatedSupabaseServerClient() {
   if (!hasSupabaseServerEnv) return null;
