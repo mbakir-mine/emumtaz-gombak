@@ -132,4 +132,17 @@ describe('RPH pintar', () => {
     expect(teachingSessions[2].phase).toBe('PENGUKUHAN');
     expect(teachingSessions[2].standard).toContain('Nilai murni:');
   });
+
+  it('menghadkan sukatan Tahun 6 sehingga bulan Jun', () => {
+    const plan = buildAnnualRphPlan({
+      year: 2026,
+      yearLevel: 6,
+      weeklySlots: 1,
+      topics: [{ id: 't6', tajuk: 'Haji dan Umrah', standard_kandungan: 'Standard 1', standard_pembelajaran: '1.1 Menyatakan pengertian haji.', susunan: 1 }],
+      events: [],
+    });
+    const july = plan.find((week) => week.weekStart.startsWith('2026-07'));
+    expect(july?.sessions[0].tajuk).toContain('Ulang kaji');
+    expect(plan.filter((week) => week.isTeachingWeek && week.weekStart.startsWith('2026-07')).flatMap((week) => week.sessions).every((session) => session.kind === 'PENGUKUHAN')).toBe(true);
+  });
 });

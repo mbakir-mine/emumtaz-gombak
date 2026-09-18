@@ -225,11 +225,13 @@ function buildTopicUnits(topics: RphAnnualPlanTopic[]) {
 
 export function buildAnnualRphPlan({
   year,
+  yearLevel,
   topics,
   weeklySlots,
   events,
 }: {
   year: number;
+  yearLevel?: number;
   topics: RphAnnualPlanTopic[];
   weeklySlots: number;
   events: RphAnnualPlanEvent[];
@@ -256,7 +258,8 @@ export function buildAnnualRphPlan({
     const isTeachingWeek = !weekEvents.some(isBlockingTakwimEvent);
     const sessions: RphAnnualPlanSession[] = [];
 
-    if (isTeachingWeek) {
+    const beforeYear6Deadline = yearLevel !== 6 || Number(weekStart.slice(5, 7)) <= 6;
+    if (isTeachingWeek && beforeYear6Deadline) {
       for (let slot = 1; slot <= slots; slot += 1) {
         const unit = topicUnits[unitIndex];
         if (unit) {
@@ -281,6 +284,18 @@ export function buildAnnualRphPlan({
             phase: 'PENGUKUHAN',
           });
         }
+      }
+    } else if (isTeachingWeek && yearLevel === 6) {
+      for (let slot = 1; slot <= slots; slot += 1) {
+        sessions.push({
+          slot,
+          tajuk: 'Ulang kaji, pengukuhan dan persediaan peperiksaan Tahun 6',
+          subTajuk: null,
+          standard: 'Mengukuhkan semua standard pembelajaran yang telah selesai sebelum Jun melalui ulang kaji, pentaksiran dan bimbingan berfokus.',
+          nilaiMurni: 'istiqamah, disiplin dan usaha berterusan',
+          kind: 'PENGUKUHAN',
+          phase: 'PENGUKUHAN',
+        });
       }
     }
 

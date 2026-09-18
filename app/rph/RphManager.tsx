@@ -105,6 +105,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
   const weeklySlots = activeRequirement?.bil_slot_seminggu ?? 1;
   const annualPlan = useMemo(() => buildAnnualRphPlan({
     year: currentAcademicYear,
+    yearLevel: selectedClassRecord?.tahun,
     weeklySlots,
     topics: filteredTopics,
     events: takwimEvents
