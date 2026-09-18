@@ -7022,7 +7022,19 @@ textarea {
 }
 
 .attendance-toolbar {
-  grid-template-columns: minmax(180px, 0.45fr) minmax(260px, 1fr) minmax(220px, 0.7fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+
+.attendance-toolbar label {
+  min-width: 0;
+}
+
+.attendance-toolbar input,
+.attendance-toolbar select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .attendance-month-head {
@@ -7079,10 +7091,18 @@ textarea {
 }
 
 .attendance-matrix {
+  width: max-content;
   min-width: 1500px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
+
+.attendance-col-number { width: 42px; }
+.attendance-col-gender { width: 42px; }
+.attendance-col-name { width: 260px; }
+.attendance-col-day { width: 42px; }
+.attendance-col-summary { width: 76px; }
 
 .attendance-matrix th,
 .attendance-matrix td {

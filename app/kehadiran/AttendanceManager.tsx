@@ -383,6 +383,16 @@ export default function AttendanceManager({
 
           <div className="table-scroll attendance-matrix-wrap">
             <table className="attendance-matrix">
+              <colgroup>
+                <col className="attendance-col-number" />
+                <col className="attendance-col-gender" />
+                <col className="attendance-col-name" />
+                {monthDays.map((date) => <col className="attendance-col-day" key={`col-${date.iso}`} />)}
+                <col className="attendance-col-summary" />
+                <col className="attendance-col-summary" />
+                <col className="attendance-col-summary" />
+                <col className="attendance-col-summary" />
+              </colgroup>
               <thead>
                 <tr>
                   <th rowSpan={2}>Bil</th>
