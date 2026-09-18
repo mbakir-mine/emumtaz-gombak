@@ -49,7 +49,9 @@ export type RphAnnualPlanEvent = {
 export type RphAnnualPlanSession = {
   slot: number;
   tajuk: string;
+  subTajuk: string | null;
   standard: string;
+  nilaiMurni: string;
   kind: 'TOPIK' | 'PENGUKUHAN';
 };
 
@@ -149,6 +151,71 @@ function isBlockingTakwimEvent(event: RphAnnualPlanEvent) {
   return /\b(cuti|peperiksaan|ujian|pentaksiran|psra|upkk|ramadan|ramadhan|raya|libur)\b/i.test(haystack);
 }
 
+const nobleValues = [
+  'kebersihan',
+  'disiplin',
+  'tanggungjawab',
+  'hormat',
+  'kerjasama',
+  'amanah',
+  'sabar',
+  'syukur',
+  'kasih sayang',
+  'istiqamah',
+];
+
+function valueForTopic(topicTitle: string, standardText: string, index: number) {
+  const haystack = `${topicTitle} ${standardText}`.toLowerCase();
+  if (/\b(kebersihan|taharah|wuduk|mandi|istinja|bersugi|kuku|rambut|aurat)\b/i.test(haystack)) return 'kebersihan dan menjaga maruah diri';
+  if (/\b(doa|berdoa|syukur|ibadah)\b/i.test(haystack)) return 'syukur dan bergantung kepada Allah';
+  if (/\b(ibu bapa|guru|rakan|pergaulan|jiran|ziarah)\b/i.test(haystack)) return 'hormat, kasih sayang dan adab bergaul';
+  if (/\b(benar|janji|amanah|tanggungjawab)\b/i.test(haystack)) return 'amanah dan bertanggungjawab';
+  return nobleValues[index % nobleValues.length];
+}
+
+function summarizeSubTopic(standard: string) {
+  const withoutNumber = standard.replace(/^\s*\d+(?:\.\d+)+\s*/, '').trim();
+  const beforeColon = withoutNumber.split(':')[0]?.trim();
+  const phrase = beforeColon || withoutNumber;
+  return phrase.length > 72 ? `${phrase.slice(0, 69).trim()}…` : phrase;
+}
+
+function splitLearningStandards(standard: string | null) {
+  const text = (standard ?? '').trim();
+  if (!text) return [];
+  const matches = [...text.matchAll(/(?:^|\n)\s*(\d+(?:\.\d+)+)\s+([\s\S]*?)(?=\n\s*\d+(?:\.\d+)+\s+|$)/g)];
+  if (matches.length > 0) {
+    return matches.map((match) => `${match[1]} ${match[2].trim()}`.replace(/\s+/g, ' '));
+  }
+  return text.split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
+function chunkLearningStandards(standards: string[], size = 2) {
+  const chunks: string[][] = [];
+  for (let index = 0; index < standards.length; index += size) {
+    chunks.push(standards.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function buildTopicUnits(topics: RphAnnualPlanTopic[]) {
+  return topics.flatMap((topic, topicIndex) => {
+    const standards = splitLearningStandards(topic.standard_pembelajaran);
+    const chunks = standards.length > 0 ? chunkLearningStandards(standards, 2) : [[]];
+    return chunks.map((chunk, chunkIndex) => {
+      const standardText = chunk.join('\n');
+      const subTajuk = chunk.length > 0 ? chunk.map(summarizeSubTopic).join(' + ') : null;
+      return {
+        topic,
+        tajuk: subTajuk ? `${topic.tajuk} — ${subTajuk}` : topic.tajuk,
+        subTajuk,
+        standard: [topic.standard_kandungan, standardText, `Nilai murni: ${valueForTopic(topic.tajuk, standardText, topicIndex + chunkIndex)}`].filter(Boolean).join('\n\n'),
+        nilaiMurni: valueForTopic(topic.tajuk, standardText, topicIndex + chunkIndex),
+      };
+    });
+  });
+}
+
 export function buildAnnualRphPlan({
   year,
   topics,
@@ -162,9 +229,10 @@ export function buildAnnualRphPlan({
 }): RphAnnualPlanWeek[] {
   const slots = Math.max(1, Math.min(12, Math.round(Number(weeklySlots) || 1)));
   const sortedTopics = [...topics].sort((a, b) => a.susunan - b.susunan || a.tajuk.localeCompare(b.tajuk, 'ms'));
+  const topicUnits = buildTopicUnits(sortedTopics);
   const firstMonday = getRphWeekStart(`${year}-01-04`);
   const plan: RphAnnualPlanWeek[] = [];
-  let topicIndex = 0;
+  let unitIndex = 0;
   let cursor = firstMonday;
   let weekNumber = 1;
 
@@ -179,20 +247,24 @@ export function buildAnnualRphPlan({
 
     if (isTeachingWeek) {
       for (let slot = 1; slot <= slots; slot += 1) {
-        const topic = sortedTopics[topicIndex];
-        if (topic) {
+        const unit = topicUnits[unitIndex];
+        if (unit) {
           sessions.push({
             slot,
-            tajuk: topic.tajuk,
-            standard: [topic.standard_kandungan, topic.standard_pembelajaran].filter(Boolean).join('\n\n'),
+            tajuk: unit.tajuk,
+            subTajuk: unit.subTajuk,
+            standard: unit.standard,
+            nilaiMurni: unit.nilaiMurni,
             kind: 'TOPIK',
           });
-          topicIndex += 1;
+          unitIndex += 1;
         } else {
           sessions.push({
             slot,
             tajuk: 'Pengukuhan, pentaksiran formatif dan pemulihan/pengayaan',
+            subTajuk: null,
             standard: 'Mengukuhkan standard pembelajaran terdahulu berdasarkan tahap penguasaan murid.',
+            nilaiMurni: 'istiqamah dan usaha berterusan',
             kind: 'PENGUKUHAN',
           });
         }

@@ -149,6 +149,16 @@ export default function RphManager({ schools, classes, subjects, users, records,
     }));
   }
 
+  function loadAnnualPlanSession(tajuk: string, standard: string) {
+    setBuilder((current) => ({
+      ...current,
+      tajuk,
+      standard: standard || current.standard,
+    }));
+    setView('BUILDER');
+    setFeedback({ ok: true, message: 'Cadangan mingguan dimuatkan. Jana RPH pintar untuk lengkapkan aktiviti dan pentaksiran.' });
+  }
+
   function buildRphFormData() {
     const formData = new FormData();
     formData.set('kod_sekolah', selectedSchool);
@@ -320,7 +330,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
             <div><strong>{weeklySlots}</strong><span>Masa seminggu</span></div>
             <div><strong>{filteredTopics.length}</strong><span>Tajuk DSKP tersedia</span></div>
             <div><strong>{plannedTeachingWeeks}</strong><span>Minggu PdP dicadang</span></div>
-            <div><strong>{plannedTopicSessions}</strong><span>Sesi topik disusun</span></div>
+            <div><strong>{plannedTopicSessions}</strong><span>Sesi standard disusun</span></div>
           </div>
           {!selectedClass || !selectedSubject ? (
             <div className="rph-empty"><span>🗓</span><h3>Pilih kelas dan subjek</h3><p>Sistem akan susun cadangan tahunan selepas kelas dan mata pelajaran dipilih.</p></div>
@@ -334,8 +344,8 @@ export default function RphManager({ schools, classes, subjects, users, records,
                 {week.isTeachingWeek ? <ol>{week.sessions.map((session) => (
                   <li key={`${week.weekStart}-${session.slot}`}>
                     <span>Masa {session.slot}</span>
-                    <button type="button" onClick={() => { selectTopic(session.tajuk); setView('BUILDER'); }}>{session.tajuk}</button>
-                    <small>{session.standard || 'Standard akan disesuaikan dalam pembina RPH.'}</small>
+                    <button type="button" onClick={() => loadAnnualPlanSession(session.tajuk, session.standard)}>{session.tajuk}</button>
+                    <small>{session.standard || 'Standard akan disesuaikan dalam pembina RPH.'}{session.nilaiMurni ? `\nNilai murni: ${session.nilaiMurni}` : ''}</small>
                   </li>
                 ))}</ol> : <p className="rph-year-break">Minggu ini dikecualikan daripada cadangan PdP berdasarkan takwim.</p>}
               </article>

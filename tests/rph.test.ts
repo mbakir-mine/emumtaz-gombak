@@ -73,7 +73,44 @@ describe('RPH pintar', () => {
     const secondTeachingWeek = plan.filter((week) => week.isTeachingWeek)[1];
 
     expect(cutiWeek?.isTeachingWeek).toBe(false);
-    expect(firstTeachingWeek?.sessions.map((session) => session.tajuk)).toEqual(['Ibadah', 'Taharah']);
-    expect(secondTeachingWeek?.sessions[0].tajuk).toBe('Wuduk');
+    expect(firstTeachingWeek?.sessions.map((session) => session.tajuk)).toEqual([
+      'Ibadah — Menyatakan pengertian ibadah.',
+      'Taharah — Menyatakan pengertian taharah.',
+    ]);
+    expect(secondTeachingWeek?.sessions[0].tajuk).toBe('Wuduk — Menyebut niat wuduk.');
+  });
+
+  it('memecahkan tajuk besar kepada sub-standard mingguan yang kecil', () => {
+    const plan = buildAnnualRphPlan({
+      year: 2026,
+      weeklySlots: 1,
+      topics: [
+        {
+          id: 'akhlak-2',
+          tajuk: 'Adab dan fadhilat kebersihan diri',
+          standard_kandungan: 'Standard 2: Adab dan Fadhilat Kebersihan Diri',
+          standard_pembelajaran: [
+            "2.1 Qada' hajat: menyatakan adab qada' hajat dan doa masuk tandas.",
+            '2.2 Mandi: menyatakan adab mandi dan fadhilat mandi.',
+            '2.3 Bersugi: menyatakan adab bersugi dan fadhilat bersugi.',
+            '2.4 Memotong kuku: menyatakan tertib, adab dan fadhilat memotong kuku.',
+            '2.5 Menyisir rambut: menyatakan adab menyisir rambut.',
+            '2.6 Bercelak: menyatakan adab bercelak.',
+          ].join('\n'),
+          susunan: 1,
+        },
+      ],
+      events: [],
+    });
+    const teachingSessions = plan.filter((week) => week.isTeachingWeek).flatMap((week) => week.sessions).slice(0, 3);
+
+    expect(teachingSessions).toHaveLength(3);
+    expect(teachingSessions[0].tajuk).toContain("Qada' hajat");
+    expect(teachingSessions[0].standard).toContain('2.1');
+    expect(teachingSessions[0].standard).toContain('2.2');
+    expect(teachingSessions[0].standard).not.toContain('2.3');
+    expect(teachingSessions[1].standard).toContain('2.3');
+    expect(teachingSessions[1].standard).toContain('2.4');
+    expect(teachingSessions[2].standard).toContain('Nilai murni:');
   });
 });
