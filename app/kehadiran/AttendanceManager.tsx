@@ -38,6 +38,12 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function isWeekend(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  const dayOfWeek = new Date(year, month - 1, day).getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
 function savedAttendanceValue(key: string) {
   if (typeof window === 'undefined') return '';
   return window.localStorage.getItem(`emumtaz-attendance-${key}`) ?? '';
@@ -238,7 +244,9 @@ export default function AttendanceManager({
     [selectedSchool, takwimEvents, year],
   );
   const selectedDateTakwimEvents = activeTakwimEvents.filter((event) => takwimEventInDay(event, selectedDate));
+  const selectedDateIsWeekend = isWeekend(selectedDate);
   const todayClassStatus = useMemo(() => {
+    if (isWeekend(selectedDate)) return [];
     const dateRecords = records.filter((record) => record.attendance_date === selectedDate);
     return schoolClasses.map((item) => {
       const classStudentIds = scopedStudents.filter((student) => student.class_id === item.id && student.status === 'AKTIF').map((student) => student.id);
@@ -360,6 +368,12 @@ export default function AttendanceManager({
         <span className="workflow-step"><b>2</b> Semak laporan bulanan</span>
         <span className="workflow-hint">Simpan kehadiran di bawah. Jadual bulanan akan dikemas kini secara automatik.</span>
       </div>
+
+      {selectedDateIsWeekend && (
+        <div className="attendance-holiday-note">
+          <strong>Sabtu dan Ahad ialah hari cuti.</strong> Tiada rekod kehadiran diperlukan untuk tarikh ini.
+        </div>
+      )}
 
       {!activeClass ? (
         <p className="empty">Pilih kelas untuk menanda kehadiran.</p>
@@ -525,7 +539,7 @@ export default function AttendanceManager({
                 >
                   TANDA SEMUA HADIR
                 </button>
-                <button className="button" type="submit">
+                <button className="button" type="submit" disabled={selectedDateIsWeekend}>
                   SIMPAN KEHADIRAN
                 </button>
               </div>

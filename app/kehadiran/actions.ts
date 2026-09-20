@@ -27,6 +27,12 @@ export async function saveDailyAttendance(
     return { ok: false, message: 'Pilih tarikh dan kelas yang mempunyai murid.' };
   }
 
+  const [year, month, day] = attendanceDate.split('-').map(Number);
+  const dayOfWeek = new Date(year, month - 1, day).getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return { ok: false, message: 'Sabtu dan Ahad ialah hari cuti. Kehadiran tidak perlu direkod.' };
+  }
+
   const { data: students, error: studentError } = await supabase
     .from('students')
     .select('id,kod_sekolah,class_id')

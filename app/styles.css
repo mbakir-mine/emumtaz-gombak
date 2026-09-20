@@ -7014,6 +7014,15 @@ textarea {
 .workflow-step.active b { color: #fff; background: #087b61; }
 .workflow-line { width: 28px; height: 1px; background: #cbdcd5; }
 .workflow-hint { margin-left: auto; color: #82908b; }
+.attendance-holiday-note {
+  margin: 10px 0 14px;
+  padding: 11px 14px;
+  border: 1px solid #f0d18d;
+  border-radius: 8px;
+  color: #75560c;
+  background: #fff9e9;
+}
+.attendance-holiday-note strong { margin-right: 4px; }
 
 @media (max-width: 850px) {
   .attendance-overview-grid { grid-template-columns: 1fr; }
