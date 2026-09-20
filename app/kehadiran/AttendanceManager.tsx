@@ -33,6 +33,7 @@ const dayNames = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'
 const dayShort = ['Aha', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'];
 
 type AttendanceDetailMode = 'daily' | 'student' | null;
+type AttendanceTab = 'attendance' | 'reports';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -166,6 +167,8 @@ export default function AttendanceManager({
   takwimEvents: TakwimEvent[];
 }) {
   const profile = useAccessProfile();
+  const isTeacher = profile?.role === 'GURU_KELAS' || profile?.role === 'GURU_SUBJEK';
+  const isAdmin = !isTeacher;
   const scopedSchools = useMemo(() => scopeSchools(profile, schools), [profile, schools]);
   const scopedClasses = useMemo(() => scopeClasses(profile, classes, schools), [classes, profile, schools]);
   const scopedStudents = useMemo(() => scopeStudents(profile, students, classes, schools), [classes, profile, schools, students]);
@@ -184,6 +187,7 @@ export default function AttendanceManager({
   );
   const [selectedClass, setSelectedClass] = useState(() => savedAttendanceValue('class') || schoolClasses[0]?.id || '');
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [activeTab, setActiveTab] = useState<AttendanceTab>('attendance');
   // Terus buka rekod harian supaya semua tindakan utama berada dalam satu paparan.
   const [detailMode, setDetailMode] = useState<AttendanceDetailMode>('daily');
   useEffect(() => {
@@ -281,6 +285,29 @@ export default function AttendanceManager({
         <span>{classStudents.length} murid</span>
       </div>
 
+      <div className="module-tabs attendance-tabs" role="tablist" aria-label="Modul kehadiran">
+        <button
+          className={activeTab === 'attendance' ? 'active' : ''}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'attendance'}
+          onClick={() => setActiveTab('attendance')}
+        >
+          Kehadiran
+          <small>{isTeacher ? 'Rekod kelas saya' : 'Rekod harian sekolah'}</small>
+        </button>
+        <button
+          className={activeTab === 'reports' ? 'active' : ''}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'reports'}
+          onClick={() => setActiveTab('reports')}
+        >
+          Laporan
+          <small>{isTeacher ? 'Ringkasan kelas' : 'Rumusan sekolah'}</small>
+        </button>
+      </div>
+
       <div className="module-toolbar attendance-toolbar">
         <label>
           Tarikh
@@ -333,7 +360,7 @@ export default function AttendanceManager({
         </label>
       </div>
 
-      <div className="attendance-overview-grid">
+      {isAdmin && <div className="attendance-overview-grid">
         <div className={`attendance-alert-card ${pendingClasses.length ? 'has-pending' : 'is-complete'}`}>
           <div>
             <span className="attendance-card-label">Peringatan hari ini</span>
@@ -360,7 +387,14 @@ export default function AttendanceManager({
           </div>
           <small>{schoolMonthSummary.classes} kelas aktif · laporan dikemas kini automatik</small>
         </div>
-      </div>
+      </div>}
+
+      {isTeacher && (
+        <div className="attendance-role-note">
+          <strong>Paparan guru</strong>
+          <span>Anda hanya mengurus rekod kelas yang ditetapkan kepada profil anda.</span>
+        </div>
+      )}
 
       <div className="attendance-workflow-note">
         <span className="workflow-step active"><b>1</b> Rekod harian</span>
@@ -375,7 +409,24 @@ export default function AttendanceManager({
         </div>
       )}
 
-      {!activeClass ? (
+      {activeTab === 'reports' ? (
+        <section className="attendance-report-tab" role="tabpanel">
+          <div className="panel-head compact-head">
+            <div>
+              <h3>{isTeacher ? 'Laporan Kehadiran Kelas' : 'Laporan Kehadiran Sekolah'}</h3>
+              <p className="table-note">{monthNames[monthIndex]} {year} · {activeSchool?.nama_sekolah ?? selectedSchool}</p>
+            </div>
+            <span>{schoolMonthSummary.markedDays} hari direkod</span>
+          </div>
+          <div className="attendance-report-kpis">
+            <div><strong>{schoolMonthSummary.attendanceRate}%</strong><span>Kadar kehadiran</span></div>
+            <div><strong>{schoolMonthSummary.hadir}</strong><span>Hadir</span></div>
+            <div><strong>{schoolMonthSummary.tidakHadir}</strong><span>Tidak hadir</span></div>
+            <div><strong>{schoolMonthSummary.classes}</strong><span>Kelas aktif</span></div>
+          </div>
+          <p className="table-note">Klik nama murid dalam tab Kehadiran untuk melihat kalendar bulanan individu.</p>
+        </section>
+      ) : !activeClass ? (
         <p className="empty">Pilih kelas untuk menanda kehadiran.</p>
       ) : classStudents.length === 0 ? (
         <p className="empty">Tiada murid aktif dalam kelas ini.</p>

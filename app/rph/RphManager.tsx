@@ -116,7 +116,7 @@ export default function RphManager({ schools, classes, subjects, users, records,
         tarikh_mula: event.tarikh_mula,
         tarikh_tamat: event.tarikh_tamat,
       })),
-  }), [currentAcademicYear, filteredTopics, selectedSchool, takwimEvents, weeklySlots]);
+  }), [currentAcademicYear, filteredTopics, selectedClassRecord?.tahun, selectedSchool, takwimEvents, weeklySlots]);
   const plannedTeachingWeeks = annualPlan.filter((week) => week.isTeachingWeek).length;
   const plannedTopicSessions = annualPlan.flatMap((week) => week.sessions).filter((session) => session.kind === 'TOPIK').length;
   const schoolRecords = records.filter((record) => record.kod_sekolah === selectedSchool);
