@@ -1184,15 +1184,28 @@ export async function getUserNotifications(limit = 100): Promise<UserNotificatio
 async function getClassesUncached(): Promise<ClassRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('classes')
-    .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas,sesi,status')
-    .order('kod_sekolah')
-    .order('tahun')
-    .order('nama_kelas');
 
-  if (error) return [];
-  return data ?? [];
+  const pageSize = 1000;
+  let from = 0;
+  const rows: ClassRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('classes')
+      .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas,sesi,status')
+      .order('kod_sekolah')
+      .order('tahun')
+      .order('nama_kelas')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
 }
 export const getClasses = cache(getClassesUncached);
 
