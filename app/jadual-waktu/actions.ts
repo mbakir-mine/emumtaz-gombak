@@ -405,6 +405,7 @@ type AutoSlot = {
 
 type AutoClass = {
   id: string;
+  sesi: 'PAGI' | 'PETANG';
   tahun: number;
   nama_kelas: string;
 };
@@ -422,6 +423,7 @@ type AutoRequirement = {
 
 type TimetableUnit = {
   class_id: string;
+  sesi: 'PAGI' | 'PETANG';
   kod_subjek: string;
   kod_komponen: string | null;
   assignment_label: string | null;
@@ -474,7 +476,7 @@ function pickBestSlot({
 
     const hasConflict = slotGroup.some((slot) => {
       const classSlotKey = `${unit.class_id}|${slot.id}`;
-      const teacherSlotKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${slot.id}`;
+      const teacherSlotKey = `${unit.teacher_id ?? 'NO_TEACHER'}|${unit.sesi}|${slot.id}`;
       return classSlotUsage.has(classSlotKey) || Boolean(unit.teacher_id && teacherSlotUsage.has(teacherSlotKey));
     });
 
@@ -520,7 +522,7 @@ export async function generateAutoTimetable(
   const [{ data: classes, error: classError }, { data: slots, error: slotError }] = await Promise.all([
     supabase
       .from('classes')
-      .select('id,tahun,nama_kelas')
+      .select('id,tahun,nama_kelas,sesi')
       .eq('kod_sekolah', kodSekolah)
       .eq('tahun_akademik', tahunAkademik)
       .eq('status', 'AKTIF')
@@ -596,6 +598,7 @@ export async function generateAutoTimetable(
         for (let index = 0; index < doubleUnits; index += 1) {
           units.push({
             class_id: requirement.class_id,
+            sesi: yearClasses.find((item) => item.id === requirement.class_id)?.sesi === 'PETANG' ? 'PETANG' : 'PAGI',
             kod_subjek: requirement.kod_subjek,
             kod_komponen: requirement.kod_komponen,
             assignment_label: requirement.assignment_label,
@@ -609,6 +612,7 @@ export async function generateAutoTimetable(
         for (let index = 0; index < singleUnits; index += 1) {
           units.push({
             class_id: requirement.class_id,
+            sesi: yearClasses.find((item) => item.id === requirement.class_id)?.sesi === 'PETANG' ? 'PETANG' : 'PAGI',
             kod_subjek: requirement.kod_subjek,
             kod_komponen: requirement.kod_komponen,
             assignment_label: requirement.assignment_label,
@@ -662,7 +666,7 @@ export async function generateAutoTimetable(
 
     slotGroup.forEach((slot) => {
       classSlotUsage.add(`${unit.class_id}|${slot.id}`);
-      if (unit.teacher_id) teacherSlotUsage.add(`${unit.teacher_id}|${slot.id}`);
+      if (unit.teacher_id) teacherSlotUsage.add(`${unit.teacher_id}|${unit.sesi}|${slot.id}`);
     });
 
     const slot = slotGroup[0];

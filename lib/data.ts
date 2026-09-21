@@ -106,6 +106,7 @@ export type ClassRecord = {
   tahun_akademik: number;
   tahun: number;
   nama_kelas: string;
+  sesi: 'PAGI' | 'PETANG';
   status: string;
 };
 
@@ -1185,7 +1186,7 @@ async function getClassesUncached(): Promise<ClassRecord[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('classes')
-    .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas,status')
+    .select('id,kod_sekolah,tahun_akademik,tahun,nama_kelas,sesi,status')
     .order('kod_sekolah')
     .order('tahun')
     .order('nama_kelas');

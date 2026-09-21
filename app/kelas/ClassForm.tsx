@@ -58,6 +58,14 @@ export default function ClassForm({ schools }: { schools: School[] }) {
         <input name="nama_kelas" placeholder="Contoh: 5 AMANAH" required />
       </label>
 
+      <label>
+        <span>Sesi</span>
+        <select name="sesi" defaultValue="PAGI" required>
+          <option value="PAGI">Pagi</option>
+          <option value="PETANG">Petang</option>
+        </select>
+      </label>
+
       <div className="form-actions">
         <button className="button" type="submit" disabled={pending}>
           {pending ? 'Menyimpan...' : 'Simpan Kelas'}

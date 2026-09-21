@@ -29,6 +29,7 @@ export async function createClass(
   const tahunAkademik = Number(formData.get('tahun_akademik'));
   const tahun = Number(formData.get('tahun'));
   const namaKelas = String(formData.get('nama_kelas') ?? '').trim().toUpperCase();
+  const sesi = String(formData.get('sesi') ?? 'PAGI') === 'PETANG' ? 'PETANG' : 'PAGI';
 
   if (!kodSekolah || !tahunAkademik || !tahun || !namaKelas) {
     return { ok: false, message: 'Lengkapkan semua medan kelas.' };
@@ -40,6 +41,7 @@ export async function createClass(
       tahun_akademik: tahunAkademik,
       tahun,
       nama_kelas: namaKelas,
+      sesi,
       status: 'AKTIF',
     },
   ];
@@ -50,12 +52,13 @@ export async function createClass(
       tahun_akademik: tahunAkademik + 1,
       tahun: tahun + 1,
       nama_kelas: nextClassName(tahun, namaKelas),
+      sesi,
       status: 'AKTIF',
     });
   }
 
   const { error } = await supabase.from('classes').upsert(rows, {
-    onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas',
+    onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas,sesi',
   });
 
   if (error) {
