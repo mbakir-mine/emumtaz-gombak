@@ -1354,32 +1354,58 @@ export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]
 export async function getSchoolUsers(): Promise<UserRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('app_users')
-    .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
-    .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
-    .neq('role', 'OWNER')
-    .order('role')
-    .order('kod_sekolah')
-    .order('nama');
 
-  if (error) return [];
-  return data ?? [];
+  const pageSize = 1000;
+  let from = 0;
+  const rows: UserRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
+      .in('role', ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'])
+      .neq('role', 'OWNER')
+      .order('role')
+      .order('kod_sekolah')
+      .order('nama')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
 }
 
 export async function getAllAppUsers(): Promise<UserRecord[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('app_users')
-    .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
-    .order('status')
-    .order('kod_sekolah')
-    .order('role')
-    .order('nama');
 
-  if (error) return [];
-  return data ?? [];
+  const pageSize = 1000;
+  let from = 0;
+  const rows: UserRecord[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id,auth_user_id,email,nama,role,kod_sekolah,daerah,zon,status,allowed_nav')
+      .order('status')
+      .order('kod_sekolah')
+      .order('role')
+      .order('nama')
+      .range(from, from + pageSize - 1);
+
+    if (error) return rows;
+    if (!data || data.length === 0) return rows;
+
+    rows.push(...data);
+
+    if (data.length < pageSize) return rows;
+    from += pageSize;
+  }
 }
 
 export async function getAppUserById(id: string): Promise<UserRecord | null> {
