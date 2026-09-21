@@ -140,6 +140,13 @@ export const navItems: NavItem[] = [
     roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
     moduleKey: 'PERCUBAAN_PSRA',
   },
+  {
+    key: 'reportUpkk',
+    label: 'Laporan Percubaan UPKK',
+    href: '/percubaan-upkk/laporan',
+    roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'],
+    moduleKey: 'PERCUBAAN_UPKK',
+  },
   { key: 'reportAnnual', label: 'Perbandingan Tahunan', href: '/perbandingan', roles: ['OWNER', 'ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH'] },
   { key: 'users', label: 'Pengesahan', href: '/pengguna', roles: ['OWNER', 'ADMIN_DAERAH'] },
   { key: 'securityAudit', label: 'Audit Keselamatan', href: '/audit-keselamatan', roles: ['OWNER'] },
