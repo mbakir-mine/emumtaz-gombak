@@ -11,7 +11,6 @@ import { evaluateLicenseAccess, licenseAllowsAccess, modulesAllowedByLicense } f
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 const serverSessionReadyKey = 'emumtaz_server_session_ready';
 const publicPaths = ['/login', '/daftar', '/akses'];
-const accessCacheTtlMs = 5 * 60 * 1000;
 const AccessProfileContext = createContext<AccessProfile | null>(null);
 
 type AccessCache = {
@@ -151,9 +150,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           setProfile(cachedProfile);
           setReady(true);
 
-          // Refresh older permissions in the background. Fresh snapshots make the
-          // normal menu path entirely local and immediately renderable.
-          if (cached && Date.now() - cached.cachedAt < accessCacheTtlMs) return;
+          // Keep refreshing the server session even when the profile snapshot is
+          // still fresh. Server-rendered pages need the HttpOnly cookie before
+          // tenant-scoped classes, students, and assignments can be read.
         } else {
           setReady(false);
           setProfile(null);
