@@ -36,6 +36,7 @@
             <a href="{{ route('reports.index') }}"><span>Laporan</span>▤</a>
             <a href="{{ route('reports.analysis') }}"><span>Analisis</span>◈</a>
             <a href="{{ route('takwim.index') }}"><span>Takwim</span>▣</a>
+            <a href="{{ route('rph.index') }}"><span>RPH</span>▤</a>
             <div class="menu-section">Tetapan Sistem</div>
             <a href="{{ route('admin.school-modules') }}"><span>Modul Sekolah</span>⚙</a>
             <a href="{{ route('admin.users') }}"><span>Pengguna</span>•</a>

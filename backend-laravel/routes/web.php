@@ -27,6 +27,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportPageController;
 use App\Http\Controllers\ReportVerificationPageController;
 use App\Http\Controllers\RphController;
+use App\Http\Controllers\RphPageController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolModuleController;
 use App\Http\Controllers\SchoolModulePageController;
@@ -60,6 +61,7 @@ Route::get('/laporan', [ReportPageController::class, 'index'])->middleware('auth
 Route::get('/analisis', [ReportPageController::class, 'index'])->middleware('auth')->name('reports.analysis');
 Route::get('/takwim', [TakwimPageController::class, 'index'])->middleware('auth')->name('takwim.index');
 Route::post('/takwim', [TakwimPageController::class, 'store'])->middleware('auth')->name('takwim.store');
+Route::get('/rph', [RphPageController::class, 'index'])->middleware('auth')->name('rph.index');
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/schools', [WebAdminController::class, 'schools'])->name('schools');
