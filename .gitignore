@@ -9,3 +9,14 @@ supabase/.temp/
 
 .vercel
 .env*
+
+# Deployment/build artifacts (keep source code only)
+backend-laravel/vendor/
+backend-laravel/storage/framework/
+backend-laravel/storage/logs/
+backend-laravel/.phpunit.result.cache
+deploy-cpanel-*/
+backend-cors-update-staging/
+frontend-login-fix-20260928/
+*.zip
+.codex-remote-attachments/

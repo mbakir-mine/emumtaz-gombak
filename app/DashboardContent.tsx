@@ -16,7 +16,7 @@ import type {
 import { useAccessProfile } from './ui/AuthGate';
 import { schoolCategoryRank } from '@/lib/schoolCategories';
 import { PSRA_PAPERS, type PsraPaperMarkRecord } from '@/lib/psra';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 type MetricItem = {
   label: string;
@@ -803,7 +803,8 @@ function PsraDashboard({
     let cancelled = false;
 
     async function loadRecords() {
-      if (!supabase || !selection) {
+      const baseUrl = getTrustedSelfHostedUrl();
+      if (!baseUrl || !selection) {
         setLoading(false);
         setErrorMessage('Sambungan data Percubaan PSRA tidak tersedia.');
         return;
@@ -811,68 +812,12 @@ function PsraDashboard({
 
       setLoading(true);
       setErrorMessage('');
-      const dedicatedRows: PsraPaperMarkRecord[] = [];
-      const pageSize = 1000;
-      let dedicatedError = '';
-
-      for (let from = 0; ; from += pageSize) {
-        const { data, error } = await supabase
-          .from('psra_trial_paper_marks')
-          .select('id,kod_sekolah,tahun_akademik,class_id,student_id,sesi,paper_code,markah,entered_by,updated_by,updated_at')
-          .eq('tahun_akademik', selection.year)
-          .eq('sesi', selection.session)
-          .order('id')
-          .range(from, from + pageSize - 1);
-
-        if (cancelled) return;
-        if (error) {
-          dedicatedError = error.message;
-          break;
-        }
-
-        const batch = (data ?? []) as PsraPaperMarkRecord[];
-        dedicatedRows.push(...batch);
-        if (batch.length < pageSize) break;
-      }
-
+      const response = await fetch(`${baseUrl}/api/assessments/psra/dashboard?${new URLSearchParams({ tahun_akademik: String(selection.year), sesi: String(selection.session), ...(selection.examId ? { exam_id: selection.examId } : {}) })}`, { credentials: 'include', cache: 'no-store' });
+      const payload = response.ok ? await response.json() as { data?: PsraPaperMarkRecord[] } : null;
+      const dedicatedRows = (payload?.data ?? []).filter((record) => record.paper_code && record.markah !== null);
       const standardRows: PsraPaperMarkRecord[] = [];
-      let standardError = '';
-      if (selection.examId) {
-        for (let from = 0; ; from += pageSize) {
-          const { data, error } = await supabase
-            .from('marks')
-            .select('id,kod_sekolah,class_id,student_id,kod_subjek,markah')
-            .eq('exam_id', selection.examId)
-            .order('id')
-            .range(from, from + pageSize - 1);
-
-          if (cancelled) return;
-          if (error) {
-            standardError = error.message;
-            break;
-          }
-
-          const batch = data ?? [];
-          standardRows.push(
-            ...batch
-              .filter((record) => record.markah !== null)
-              .map((record) => ({
-                id: record.id,
-                kod_sekolah: record.kod_sekolah,
-                tahun_akademik: selection.year,
-                class_id: record.class_id,
-                student_id: record.student_id,
-                sesi: selection.session,
-                paper_code: record.kod_subjek,
-                markah: Number(record.markah),
-                entered_by: '',
-                updated_by: '',
-                updated_at: '',
-              })),
-          );
-          if (batch.length < pageSize) break;
-        }
-      }
+      const dedicatedError = response.ok ? '' : `HTTP ${response.status}`;
+      const standardError = '';
 
       if (!cancelled) {
         const paperCodes = new Set(PSRA_PAPERS.map((paper) => paper.subjectCode as string));

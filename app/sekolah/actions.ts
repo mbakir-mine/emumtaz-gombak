@@ -1,13 +1,14 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 const allowedZones = ['BARAT', 'TIMUR', 'TENGAH', ''];
 
 export async function updateSchoolZone(formData: FormData) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return;
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return;
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim().toUpperCase();
   const zon = String(formData.get('zon') ?? '').trim().toUpperCase();
@@ -16,10 +17,7 @@ export async function updateSchoolZone(formData: FormData) {
     return;
   }
 
-  await supabase
-    .from('schools')
-    .update({ zon: zon || null })
-    .eq('kod_sekolah', kodSekolah);
+  await fetch(`${selfHostedUrl}/api/schools/${encodeURIComponent(kodSekolah)}/zone`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ zon: zon || null }), cache: 'no-store' });
 
   revalidatePath('/sekolah');
   revalidatePath('/');

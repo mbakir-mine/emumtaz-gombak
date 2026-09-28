@@ -1,208 +1,67 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { parseCsv, pickValue } from '@/lib/csv';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
-export type TeacherActionState = {
-  ok: boolean;
-  message: string;
-};
-
+export type TeacherActionState = { ok: boolean; message: string };
 const allowedStatuses = ['MENUNGGU', 'AKTIF', 'DIGANTUNG'];
 
-function normalizeStatus(value: FormDataEntryValue | null) {
-  return String(value ?? '').trim().toUpperCase();
+async function api(path: string, init: RequestInit = {}) {
+  const base = getTrustedSelfHostedUrl();
+  if (!base) throw new Error('Backend self-hosted belum disambungkan.');
+  const headers = new Headers(init.headers);
+  headers.set('Content-Type', 'application/json');
+  headers.set('Cookie', (await cookies()).toString());
+  return fetch(`${base}${path}`, { ...init, headers, cache: 'no-store' });
 }
+
+function status(formData: FormData) { return String(formData.get('status') ?? '').trim().toUpperCase(); }
 
 export async function updateTeacherStatus(formData: FormData) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return;
-
-  const id = String(formData.get('id') ?? '').trim();
-  const status = normalizeStatus(formData.get('status'));
-
-  if (!id || !allowedStatuses.includes(status)) return;
-
-  await supabase
-    .from('app_users')
-    .update({ status })
-    .eq('id', id)
-    .in('role', ['GURU_KELAS', 'GURU_SUBJEK']);
-
-  revalidatePath('/guru');
-  revalidatePath('/pengguna');
-  revalidatePath('/');
+  const id = String(formData.get('id') ?? '').trim(); const value = status(formData);
+  if (!id || !allowedStatuses.includes(value)) return;
+  await api(`/api/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: value }) });
+  revalidatePath('/guru'); revalidatePath('/pengguna'); revalidatePath('/');
 }
 
-export async function bulkUpdateTeacherStatus(
-  _previousState: TeacherActionState,
-  formData: FormData,
-): Promise<TeacherActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
+export async function bulkUpdateTeacherStatus(_state: TeacherActionState, formData: FormData): Promise<TeacherActionState> {
+  const value = status(formData); const ids = formData.getAll('user_ids').map(String).filter(Boolean);
+  if (!allowedStatuses.includes(value)) return { ok: false, message: 'Sila pilih status yang sah.' };
+  if (!ids.length) return { ok: false, message: 'Tiada guru dipilih untuk dikemaskini.' };
+  for (const id of ids) {
+    const response = await api(`/api/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: value }) });
+    if (!response.ok) return { ok: false, message: `Gagal kemaskini status guru (${response.status}).` };
   }
-
-  const status = normalizeStatus(formData.get('status'));
-  const ids = formData
-    .getAll('user_ids')
-    .map((value) => String(value).trim())
-    .filter(Boolean);
-
-  if (!allowedStatuses.includes(status)) {
-    return { ok: false, message: 'Sila pilih status yang sah.' };
-  }
-
-  if (ids.length === 0) {
-    return { ok: false, message: 'Tiada guru dipilih untuk dikemaskini.' };
-  }
-
-  const { error } = await supabase
-    .from('app_users')
-    .update({ status })
-    .in('id', ids)
-    .in('role', ['GURU_KELAS', 'GURU_SUBJEK']);
-
-  if (error) {
-    return { ok: false, message: `Gagal kemaskini status guru: ${error.message}` };
-  }
-
-  revalidatePath('/guru');
-  revalidatePath('/pengguna');
-  revalidatePath('/');
-  return { ok: true, message: `${ids.length} status guru berjaya dikemaskini kepada ${status}.` };
+  revalidatePath('/guru'); revalidatePath('/pengguna'); revalidatePath('/');
+  return { ok: true, message: `${ids.length} status guru berjaya dikemaskini kepada ${value}.` };
 }
 
-export async function createTeacher(
-  _previousState: TeacherActionState,
-  formData: FormData,
-): Promise<TeacherActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
-  const nama = String(formData.get('nama') ?? '').trim().toUpperCase();
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  const role = String(formData.get('role') ?? '').trim();
-  const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
-
-  if (!nama || !email || !role || !kodSekolah) {
-    return { ok: false, message: 'Lengkapkan semua medan guru.' };
-  }
-
-  if (!['GURU_KELAS', 'GURU_SUBJEK', 'ADMIN_SEKOLAH'].includes(role)) {
-    return { ok: false, message: 'Role guru tidak sah.' };
-  }
-
-  const { error } = await supabase.from('app_users').upsert(
-    {
-      nama,
-      email,
-      role,
-      kod_sekolah: kodSekolah,
-      // Creating a profile here does not create an Auth password. Keep it pending
-      // until Pengesahan provisions a temporary password for the teacher.
-      status: 'MENUNGGU',
-      must_change_password: false,
-    },
-    {
-      onConflict: 'email,role,kod_sekolah',
-    },
-  );
-
-  if (error) {
-    return { ok: false, message: `Gagal simpan guru: ${error.message}` };
-  }
-
-  revalidatePath('/guru');
-  revalidatePath('/');
-  return {
-    ok: true,
-    message: `${nama} berjaya didaftarkan. Aktifkan di Pengesahan untuk menjana kata laluan sementara.`,
-  };
+export async function createTeacher(_state: TeacherActionState, formData: FormData): Promise<TeacherActionState> {
+  const name = String(formData.get('nama') ?? '').trim().toUpperCase(); const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const role = String(formData.get('role') ?? '').trim(); const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
+  if (!name || !email || !role || !kodSekolah) return { ok: false, message: 'Lengkapkan semua medan guru.' };
+  if (!['GURU_KELAS', 'GURU_SUBJEK', 'ADMIN_SEKOLAH'].includes(role)) return { ok: false, message: 'Role guru tidak sah.' };
+  const response = await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ name, email, role, kod_sekolah: kodSekolah }) });
+  if (!response.ok) return { ok: false, message: `Gagal simpan guru (${response.status}).` };
+  revalidatePath('/guru'); revalidatePath('/');
+  return { ok: true, message: `${name} berjaya didaftarkan. Aktifkan di Pengesahan untuk menjana kata laluan sementara.` };
 }
 
-const allowedImportRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
+const roleMap: Record<string, string> = { ADMIN_DAERAH: 'ADMIN_DAERAH', ADMIN_ZON: 'ADMIN_ZON', ADMIN_SEKOLAH: 'ADMIN_SEKOLAH', GURU_KELAS: 'GURU_KELAS', GURU_SUBJEK: 'GURU_SUBJEK' };
 
-function normalizeRole(value: string) {
-  const clean = value.trim().toUpperCase().replace(/\s+/g, '_');
-  const mapped: Record<string, string> = {
-    ADMIN_DAERAH: 'ADMIN_DAERAH',
-    ADMIN_ZON: 'ADMIN_ZON',
-    ADMIN_SEKOLAH: 'ADMIN_SEKOLAH',
-    GURU_KELAS: 'GURU_KELAS',
-    GURU_SUBJEK: 'GURU_SUBJEK',
-  };
-
-  return mapped[clean] ?? 'GURU_SUBJEK';
-}
-
-export async function importTeachers(
-  _previousState: TeacherActionState,
-  formData: FormData,
-): Promise<TeacherActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
+export async function importTeachers(_state: TeacherActionState, formData: FormData): Promise<TeacherActionState> {
   const file = formData.get('csv_file');
-  const defaultStatus = String(formData.get('default_status') ?? 'MENUNGGU').trim().toUpperCase();
-
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: 'Sila pilih fail CSV pengguna.' };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: 'Sila pilih fail CSV pengguna.' };
+  const defaultStatus = String(formData.get('default_status') ?? 'MENUNGGU').trim().toUpperCase(); const parsed = parseCsv(await file.text());
+  let count = 0;
+  for (const row of parsed.rows) {
+    const roleKey = pickValue(row, ['role', 'peranan']).trim().toUpperCase().replace(/\s+/g, '_');
+    const payload = { name: pickValue(row, ['nama', 'nama_guru', 'nama_pengguna', 'nama_penuh']).toUpperCase(), email: pickValue(row, ['email', 'emel']).toLowerCase(), role: roleMap[roleKey] ?? 'GURU_SUBJEK', kod_sekolah: pickValue(row, ['kod_sekolah', 'sekolah']), zon: pickValue(row, ['zon']) || null };
+    if (!payload.name || !payload.email || !payload.kod_sekolah) continue;
+    if ((await api('/api/admin/users', { method: 'POST', body: JSON.stringify(payload) })).ok) count += 1;
   }
-
-  const parsed = parseCsv(await file.text());
-  const rows = parsed.rows
-    .map((row) => {
-      const role = normalizeRole(pickValue(row, ['role', 'peranan']));
-      return {
-        nama: pickValue(row, ['nama', 'nama_guru', 'nama_pengguna', 'nama_penuh']).toUpperCase(),
-        email: pickValue(row, ['email', 'emel']).toLowerCase(),
-        role,
-        kod_sekolah: ['ADMIN_DAERAH', 'ADMIN_ZON'].includes(role)
-          ? null
-          : pickValue(row, ['kod_sekolah', 'kod sekolah', 'sekolah']).toUpperCase(),
-        zon: role === 'ADMIN_ZON' ? pickValue(row, ['zon']).toUpperCase() : null,
-        status: pickValue(row, ['status']).toUpperCase() || defaultStatus,
-        must_change_password: true,
-      };
-    })
-    .filter((row) => row.nama && row.email && allowedImportRoles.includes(row.role));
-
-  if (rows.length === 0) {
-    return {
-      ok: false,
-      message: 'Tiada rekod sah ditemui. Pastikan header CSV ada nama, email, role dan kod_sekolah/zon.',
-    };
-  }
-
-  const invalid = rows.find((row) => {
-    if (row.role === 'ADMIN_ZON') return !['BARAT', 'TIMUR', 'TENGAH'].includes(row.zon ?? '');
-    if (['ADMIN_DAERAH'].includes(row.role)) return false;
-    return !row.kod_sekolah;
-  });
-
-  if (invalid) {
-    return { ok: false, message: `Rekod ${invalid.email} tidak lengkap. Semak kod_sekolah atau zon.` };
-  }
-
-  const { error } = await supabase.from('app_users').upsert(rows, {
-    onConflict: 'email,role,kod_sekolah',
-  });
-
-  if (error) {
-    return { ok: false, message: `Import pengguna gagal: ${error.message}` };
-  }
-
-  revalidatePath('/guru');
-  revalidatePath('/pengguna');
-  revalidatePath('/');
-  return {
-    ok: true,
-    message: `${rows.length} profil pengguna berjaya diimport. Akaun Auth/login boleh dibuat selepas ini jika belum wujud.`,
-  };
+  revalidatePath('/guru'); revalidatePath('/pengguna');
+  return { ok: count > 0, message: `${count} pengguna berjaya diimport dengan status ${defaultStatus}.` };
 }

@@ -1,12 +1,14 @@
 import AppFrame from '../ui/AppFrame';
 import { getSchoolLicenses, getSchools } from '@/lib/data';
 import LicenseManager from './LicenseManager';
+import { getSelfHostedLicenses } from '@/lib/selfHostedLicenses';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function LicensePage() {
-  const [schools, licenses] = await Promise.all([getSchools(), getSchoolLicenses()]);
+  const selfHostedLicenses = await getSelfHostedLicenses();
+  const [schools, licenses] = await Promise.all([getSchools(), selfHostedLicenses ?? getSchoolLicenses()]);
   return (
     <AppFrame
       title="Lesen Sekolah"

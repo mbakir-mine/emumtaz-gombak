@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type KhalifahComponentActionState = {
   ok: boolean;
@@ -44,8 +45,8 @@ export async function addKhalifahMudaComponent(
   _previousState: KhalifahComponentActionState,
   formData: FormData,
 ): Promise<KhalifahComponentActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
     return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh menambah Komponen Sahsiah IHAB.' };
   }
@@ -59,13 +60,8 @@ export async function addKhalifahMudaComponent(
   }
   if (!Number.isFinite(row.sort_order)) row.sort_order = 0;
 
-  const { error } = await supabase.from('khalifah_muda_components').insert(row);
-  if (error) {
-    if (error.message.includes('khalifah_muda_components')) {
-      return { ok: false, message: 'Jadual khalifah_muda_components belum wujud. Jalankan SQL 038 dahulu.' };
-    }
-    return { ok: false, message: `Gagal tambah komponen: ${error.message}` };
-  }
+  const response = await fetch(`${selfHostedUrl}/api/character/khalifah-muda/component`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify(row), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: 'Gagal tambah komponen pada backend Laravel.' };
 
   revalidatePath('/komponen-khalifah-muda');
   revalidatePath('/khalifah-muda');
@@ -76,8 +72,8 @@ export async function updateKhalifahMudaComponent(
   _previousState: KhalifahComponentActionState,
   formData: FormData,
 ): Promise<KhalifahComponentActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
   if (!validateAdmin(readText(formData, 'access_role'))) {
     return { ok: false, message: 'Hanya pentadbir yang dibenarkan boleh mengubah Komponen Sahsiah IHAB.' };
   }
@@ -92,8 +88,8 @@ export async function updateKhalifahMudaComponent(
   }
   if (!Number.isFinite(row.sort_order)) row.sort_order = 0;
 
-  const { error } = await supabase.from('khalifah_muda_components').update(row).eq('id', id);
-  if (error) return { ok: false, message: `Gagal kemas kini komponen: ${error.message}` };
+  const response = await fetch(`${selfHostedUrl}/api/character/khalifah-muda/component`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ id, ...row }), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: 'Gagal kemas kini komponen pada backend Laravel.' };
 
   revalidatePath('/komponen-khalifah-muda');
   revalidatePath('/khalifah-muda');

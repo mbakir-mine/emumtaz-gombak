@@ -10,11 +10,15 @@ import {
   getTeacherSubjectComponentAssignments,
 } from '@/lib/data';
 import PbdEntryManager from './PbdEntryManager';
+import { getSelfHostedPbdData } from '@/lib/selfHostedPbd';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PbdPage() {
+  const selfHosted = await getSelfHostedPbdData();
+  if (selfHosted) return <AppFrame title="PBD" subtitle="Pentaksiran Bilik Darjah berasingan daripada UPSA dan UASA." active="pbd"><PbdEntryManager {...selfHosted} /></AppFrame>;
+
   const [schools, classes, students, subjects, subjectAssignments, componentAssignments, pbdMarks, moduleAccesses] =
     await Promise.all([
       getSchools(),

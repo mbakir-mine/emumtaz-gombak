@@ -1,13 +1,5 @@
 import type { NextConfig } from 'next';
 
-const supabaseOrigin = (() => {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin;
-  } catch {
-    return '';
-  }
-})();
-
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -18,14 +10,14 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin} ${supabaseOrigin.replace('https://', 'wss://')}` : ''}`,
+  "connect-src 'self'",
   "worker-src 'self' blob:",
   ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
 ].join('; ');
 
 const nextConfig: NextConfig = {
-  // cPanel runs the generated standalone server; Vercel supplies its own adapter.
-  output: process.env.VERCEL ? undefined : 'standalone',
+  // The self-hosted deployment runs the generated standalone server on cPanel.
+  output: 'standalone',
   poweredByHeader: false,
   async headers() {
     return [

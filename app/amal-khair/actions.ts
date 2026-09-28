@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type AmalKhairActionState = {
   ok: boolean;
@@ -12,8 +13,8 @@ export async function createAmalKhairRecord(
   _previousState: AmalKhairActionState,
   formData: FormData,
 ): Promise<AmalKhairActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const studentId = String(formData.get('student_id') ?? '').trim();
   const categoryId = String(formData.get('category_id') ?? '').trim();
@@ -24,36 +25,11 @@ export async function createAmalKhairRecord(
     return { ok: false, message: 'Pilih murid, kategori dan mata Amal Khair.' };
   }
 
-  const { data: student, error: studentError } = await supabase
-    .from('students')
-    .select('id,kod_sekolah,class_id,nama_murid')
-    .eq('id', studentId)
-    .maybeSingle();
-
-  if (studentError || !student) {
-    return { ok: false, message: 'Murid tidak ditemui.' };
-  }
-
-  const { error } = await supabase.from('amal_khair_records').insert({
-    student_id: student.id,
-    kod_sekolah: student.kod_sekolah,
-    class_id: student.class_id,
-    category_id: categoryId,
-    mata,
-    catatan: catatan || null,
+  const response = await fetch(`${selfHostedUrl}/api/amal-khair`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() },
+    body: JSON.stringify({ student_id: studentId, category_id: categoryId, mata, catatan: catatan || null }), cache: 'no-store',
   });
-
-  if (error) {
-    if (error.message.includes('amal_khair_records')) {
-      return {
-        ok: false,
-        message: 'Jadual Amal Khair belum wujud. Jalankan SQL 024_optional_school_modules_core.sql di Supabase.',
-      };
-    }
-
-    return { ok: false, message: `Gagal simpan Amal Khair: ${error.message}` };
-  }
-
+  if (!response.ok) return { ok: false, message: 'Gagal simpan Amal Khair pada backend Laravel.' };
   revalidatePath('/amal-khair');
-  return { ok: true, message: `Rekod Amal Khair ${student.nama_murid} berjaya disimpan.` };
+  return { ok: true, message: 'Rekod Amal Khair berjaya disimpan.' };
 }

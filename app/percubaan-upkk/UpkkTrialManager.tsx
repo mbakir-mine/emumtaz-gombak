@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ClassRecord, ExamRecord, MarkRecord, School, SchoolModuleAccess, StudentRecord } from '@/lib/data';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import { DEFAULT_UPKK_GRADES, UPKK_WRITTEN_PAPERS, UPKK_WRITTEN_PAPER_MAX, UPKK_WRITTEN_TOTAL_MAX, upkkGrade, upkkPercentage, type UpkkGradeSettings, type UpkkWrittenMark, type UpkkWrittenPaperKey } from '@/lib/upkkTrial';
 import { useAccessProfile } from '../ui/AuthGate';
 
@@ -13,6 +13,7 @@ type Draft = Record<UpkkWrittenPaperKey, string>;
 const blankDraft = () => Object.fromEntries(UPKK_WRITTEN_PAPERS.map((paper) => [paper.key, ''])) as Draft;
 const active = (status: string | null | undefined) => (status ?? '').toUpperCase() === 'AKTIF';
 const whole = (value: string) => /^\d+$/.test(value) && Number(value) >= 0 && Number(value) <= UPKK_WRITTEN_PAPER_MAX;
+const supabase = null as any;
 
 export default function UpkkTrialManager({ schools, moduleAccesses, classes, students, exams }: Props) {
   const profile = useAccessProfile();
@@ -38,7 +39,17 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
 
   const load = useCallback(async () => {
     setRecords([]);
-    if (!supabase || !hasAccess || !schoolCode || !classId) return;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if ((!supabase && !selfHostedUrl) || !hasAccess || !schoolCode || !classId) return;
+    if (selfHostedUrl) {
+      const response = await fetch(`${selfHostedUrl}/api/assessments/upkk/context?kod_sekolah=${encodeURIComponent(schoolCode)}&tahun_akademik=${year}&class_id=${classId}&sesi=${session}`, { credentials: 'include', cache: 'no-store' });
+      if (!response.ok) { setMessage(`Gagal memuatkan markah UPKK (${response.status}).`); return; }
+      const payload = await response.json() as { trial?: UpkkWrittenMark[]; grades?: UpkkGradeSettings };
+      setRecords((payload.trial ?? []).map((record) => ({ ...record, source: 'upkk_trial_paper_marks' as const })));
+      setGrades(payload.grades ?? { kod_sekolah: schoolCode, ...DEFAULT_UPKK_GRADES });
+      return;
+    }
+    if (!supabase) return;
     const exam = exams.find(
       (item) =>
         Number(item.tahun_akademik) === year &&
@@ -103,12 +114,22 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
   const selectedPercentage = upkkPercentage(selectedTotal, UPKK_WRITTEN_TOTAL_MAX);
 
   async function saveMarks() {
-    if (!supabase || !schoolCode || !classId || !studentId) return;
-    const client = supabase;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if ((!supabase && !selfHostedUrl) || !schoolCode || !classId || !studentId) return;
     const papers = UPKK_WRITTEN_PAPERS.filter((paper) => draft[paper.key] !== '');
     const invalid = papers.find((paper) => !whole(draft[paper.key]));
     if (!papers.length || invalid) return setMessage(invalid ? `Markah ${invalid.label} mesti nombor bulat 0 hingga ${UPKK_WRITTEN_PAPER_MAX}.` : 'Masukkan sekurang-kurangnya satu markah.');
     setPending(true); setMessage('');
+    if (selfHostedUrl) {
+      const results = await Promise.all(papers.map((paper) => fetch(`${selfHostedUrl}/api/assessments/upkk/papers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ kod_sekolah: schoolCode, tahun_akademik: year, class_id: classId, student_id: studentId, sesi: session, paper_code: paper.paperCode, markah: Number(draft[paper.key]) }) })));
+      const failed = results.find((result) => !result.ok);
+      setMessage(failed ? `Gagal menyimpan markah (${failed.status}).` : `${papers.length} markah Percubaan UPKK ${session} berjaya disimpan.`);
+      if (!failed) await load();
+      setPending(false);
+      return;
+    }
+    if (!supabase) return;
+    const client = supabase;
     const results = await Promise.all(papers.map((paper) => {
       const existing = recordMap.get(`${studentId}|${paper.paperCode}`);
       if (existing?.source === 'marks') {
@@ -131,9 +152,17 @@ export default function UpkkTrialManager({ schools, moduleAccesses, classes, stu
   }
 
   async function saveGrades() {
-    if (!supabase || !schoolCode) return;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if ((!supabase && !selfHostedUrl) || !schoolCode) return;
     if (!(grades.grade_a_min > grades.grade_b_min && grades.grade_b_min > grades.grade_c_min && grades.grade_c_min > 0 && grades.grade_a_min <= 100)) return setMessage('Julat gred mesti tersusun A, B, C dan D tanpa pertindihan.');
     setPending(true);
+    if (selfHostedUrl) {
+      const response = await fetch(`${selfHostedUrl}/api/assessments/upkk/grades`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ ...grades, kod_sekolah: schoolCode }) });
+      setMessage(response.ok ? 'Tetapan gred sekolah berjaya disimpan.' : `Gagal menyimpan gred (${response.status}).`);
+      setPending(false);
+      return;
+    }
+    if (!supabase) return;
     const { error } = await supabase.from('upkk_trial_grade_settings').upsert({ ...grades, kod_sekolah: schoolCode }, { onConflict: 'kod_sekolah' });
     setMessage(error ? `Gagal menyimpan gred: ${error.message}` : 'Tetapan gred sekolah berjaya disimpan.'); setPending(false);
   }

@@ -1,6 +1,7 @@
 'use server';
 
-import { getAuthenticatedSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type IssuedReport = {
   ok: boolean;
@@ -22,20 +23,16 @@ export async function issueReportVerification(input: {
     return { ok: false, message: 'Maklumat laporan tidak sah.' };
   }
 
-  const supabase = await getAuthenticatedSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Sila log masuk semula.' };
-  const { data, error } = await supabase.rpc('issue_report_verification', {
-    p_report_type: reportType,
-    p_scope_label: scopeLabel,
-    p_snapshot_hash: snapshotHash,
-  });
-  const row = Array.isArray(data) ? data[0] : null;
-  if (error || !row) return { ok: false, message: `Laporan gagal disahkan: ${error?.message ?? 'Tiada rekod'}` };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
+  const response = await fetch(`${selfHostedUrl}/api/report-verifications`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ report_type: reportType, scope_label: scopeLabel, snapshot_hash: snapshotHash }), cache: 'no-store' });
+  const payload = await response.json().catch(() => null) as { data?: { token?: string; reference_number?: string; issued_at?: string }; message?: string } | null;
+  if (!response.ok || !payload?.data) return { ok: false, message: payload?.message ?? `Laporan gagal disahkan (${response.status}).` };
   return {
     ok: true,
     message: 'Salinan rasmi berjaya didaftarkan.',
-    token: row.token,
-    referenceNumber: row.reference_number,
-    issuedAt: row.issued_at,
+    token: payload.data.token,
+    referenceNumber: payload.data.reference_number,
+    issuedAt: payload.data.issued_at,
   };
 }

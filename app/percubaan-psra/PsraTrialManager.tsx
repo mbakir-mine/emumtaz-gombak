@@ -19,7 +19,7 @@ import {
   type PsraPaperMarkRecord,
 } from '@/lib/psra';
 import { cleanMykid } from '@/lib/mykid';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import { useAccessProfile } from '../ui/AuthGate';
 
 type Props = {
@@ -37,6 +37,7 @@ type LoadedPsraMark = PsraPaperMarkRecord & {
 };
 
 type ScoreDraft = Record<PsraPaperKey, string>;
+const supabase = null as any;
 
 const blankDraft = (): ScoreDraft => ({
   akhlak_sirah: '',
@@ -265,7 +266,16 @@ export default function PsraTrialManager({
 
   const loadRecords = useCallback(async () => {
     setRecords([]);
-    if (!supabase || !hasModuleAccess || !selectedSchool || !selectedClassId) return;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if ((!supabase && !selfHostedUrl) || !hasModuleAccess || !selectedSchool || !selectedClassId) return;
+    if (selfHostedUrl) {
+      const response = await fetch(`${selfHostedUrl}/api/assessments/psra/dashboard?tahun_akademik=${selectedYear}&sesi=${session}`, { credentials: 'include', cache: 'no-store' });
+      if (!response.ok) { setMessage(`Gagal memuatkan markah PSRA (${response.status}).`); return; }
+      const payload = await response.json() as { data?: PsraPaperMarkRecord[] };
+      setRecords((payload.data ?? []).filter((record) => record.kod_sekolah === selectedSchool && record.class_id === selectedClassId).map((record) => ({ ...record, source: 'psra_trial_paper_marks' as const })));
+      return;
+    }
+    if (!supabase) return;
     const exam = exams.find(
       (item) =>
         Number(item.tahun_akademik) === selectedYear &&
@@ -398,8 +408,8 @@ export default function PsraTrialManager({
   const mumtaz = completedStudents.filter((item) => item.percentage >= 90).length;
 
   async function saveMarks() {
-    if (!supabase || !selectedStudentId || !selectedClassId || !selectedSchool) return;
-    const client = supabase;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if ((!supabase && !selfHostedUrl) || !selectedStudentId || !selectedClassId || !selectedSchool) return;
     if (!editablePapers.length) {
       setMessage('Akaun ini belum ditugaskan sebagai guru kelas atau guru subjek bagi kelas ini.');
       return;
@@ -417,6 +427,16 @@ export default function PsraTrialManager({
 
     setPending(true);
     setMessage('');
+    if (selfHostedUrl) {
+      const results = await Promise.all(papersToSave.map((paper) => fetch(`${selfHostedUrl}/api/assessments/psra/papers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ kod_sekolah: selectedSchool, tahun_akademik: selectedYear, class_id: selectedClassId, student_id: selectedStudentId, sesi: session, paper_code: paper.subjectCode, markah: scoreNumber(draft[paper.key]) }) })));
+      const failed = results.find((result) => !result.ok);
+      setMessage(failed ? `Gagal menyimpan markah (${failed.status}).` : `${papersToSave.length} kertas PSRA berjaya disimpan.`);
+      if (!failed) await loadRecords();
+      setPending(false);
+      return;
+    }
+    if (!supabase) return;
+    const client = supabase;
     const results = await Promise.all(
       papersToSave.map(async (paper) => {
         const existing = paperRecordMap.get(`${selectedStudentId}|${paper.subjectCode}`);

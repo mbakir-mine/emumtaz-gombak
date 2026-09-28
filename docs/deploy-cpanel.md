@@ -1,7 +1,7 @@
 # Deployment e-Mumtaz ke cPanel
 
-Aplikasi ini menggunakan Next.js SSR dan Supabase. Ia perlu dijalankan sebagai
-Node.js Application di cPanel; jangan gunakan `out/` sebagai laman statik.
+Aplikasi ini menggunakan Next.js SSR sebagai frontend dan Laravel + MySQL/MariaDB
+sebagai backend. Supabase dan Vercel tidak diperlukan untuk production.
 
 ## 1. Sediakan build deployment
 
@@ -34,25 +34,22 @@ Dalam cPanel → **Setup Node.js App**:
 - Startup file: `server.js`
 - Application URL: `emumtaz.ismp.my`
 
-Tambahkan environment variables berikut. Nilai sebenar ambil daripada `.env.local`
-dan masukkan melalui panel cPanel, bukan ke Git:
+Tambahkan environment variables berikut melalui panel cPanel, bukan ke Git:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://PROJECT_REF.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=SUPABASE_ANON_KEY
+NEXT_PUBLIC_SELF_HOSTED_API_URL=https://emumtaz.ismp.my
+NEXT_PUBLIC_SITE_URL=https://emumtaz.ismp.my
+EMUMTAZ_APP_URL=https://emumtaz.ismp.my
 ```
 
 Selepas simpan, tekan **Restart Application**.
 
-## 3. Supabase Auth
+## 3. Laravel backend
 
-Di Supabase → Authentication → URL Configuration:
-
-- Site URL: `https://emumtaz.ismp.my`
-- Redirect URL: `https://emumtaz.ismp.my/**`
-
-Kekalkan URL Vercel buat sementara sehingga DNS sudah berpindah dan login di
-cPanel telah diuji.
+Upload folder `backend-laravel` di luar `public_html`, jalankan arahan dalam
+`backend-laravel/DEPLOYMENT-CPANEL.md`, dan arahkan subdomain/domain ke folder
+`backend-laravel/public`. Frontend dan backend perlu berkongsi domain/origin yang
+sesuai supaya cookie sesi Laravel dihantar dengan selamat.
 
 ## 4. DNS dan SSL
 
@@ -63,7 +60,6 @@ URL cPanel. Selepas aplikasi stabil:
 2. Tunggu DNS tersebar.
 3. Jalankan AutoSSL cPanel dan sahkan `https://emumtaz.ismp.my`.
 4. Uji login, markah, laporan, PSRA, UPKK, dan refresh halaman.
-5. Hanya selepas itu nyahaktifkan domain custom Vercel.
 
 ## Nota keselamatan
 

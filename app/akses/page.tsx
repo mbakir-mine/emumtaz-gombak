@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { roleLabel, uniqueAccessProfiles, type AccessProfile } from '@/lib/access';
-import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
+import { roleLabel, type AccessProfile } from '@/lib/access';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 const selectedProfileKey = 'emumtaz_selected_profile_id';
 
@@ -15,66 +15,25 @@ function accessText(profile: AccessProfile) {
 
 export default function AksesPage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState<AccessProfile[]>([]);
+  const [profiles] = useState<AccessProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     async function loadProfiles() {
-      if (!hasSupabaseEnv || !supabase) {
-        setMessage('Tetapan Supabase belum lengkap.');
+      const selfHostedUrl = getTrustedSelfHostedUrl();
+      if (!selfHostedUrl) {
+        setMessage('Backend Laravel belum dikonfigurasi.');
         setLoading(false);
         return;
       }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const email = sessionData.session?.user.email?.toLowerCase();
-
-      if (!email) {
+      const response = await fetch(`${selfHostedUrl}/api/auth/session`, { credentials: 'include', cache: 'no-store' });
+      const payload = await response.json().catch(() => null) as { authenticated?: boolean } | null;
+      if (!payload?.authenticated) {
         router.replace('/login');
         return;
       }
-
-      let { data, error } = await supabase
-        .from('app_users')
-        .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav,must_change_password')
-        .eq('email', email)
-        .eq('status', 'AKTIF')
-        .order('role');
-
-      if (error?.message?.includes('must_change_password')) {
-        const fallback = await supabase
-          .from('app_users')
-          .select('id,email,nama,role,kod_sekolah,zon,status,allowed_nav')
-          .eq('email', email)
-          .eq('status', 'AKTIF')
-          .order('role');
-
-        data = (fallback.data ?? []).map((item) => ({ ...item, must_change_password: false }));
-        error = fallback.error;
-      }
-
-      if (error) {
-        setMessage('Ralat membaca profil akses.');
-        setLoading(false);
-        return;
-      }
-
-      const activeProfiles = uniqueAccessProfiles((data ?? []) as AccessProfile[]);
-      if (activeProfiles.length === 0) {
-        setMessage('Tiada profil aktif ditemui untuk email ini.');
-        setLoading(false);
-        return;
-      }
-
-      if (activeProfiles.length === 1) {
-        window.localStorage.setItem(selectedProfileKey, activeProfiles[0].id);
-        router.replace('/');
-        return;
-      }
-
-      setProfiles(activeProfiles);
-      setLoading(false);
+      router.replace('/');
     }
 
     loadProfiles();
@@ -117,8 +76,12 @@ export default function AksesPage() {
           type="button"
           onClick={async () => {
             window.localStorage.removeItem(selectedProfileKey);
-            await supabase?.auth.signOut();
-            await syncServerSession(null);
+            const selfHostedUrl = getTrustedSelfHostedUrl();
+            if (selfHostedUrl) {
+              await fetch(`${selfHostedUrl}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+              router.replace('/login');
+              return;
+            }
             router.replace('/login');
           }}
         >

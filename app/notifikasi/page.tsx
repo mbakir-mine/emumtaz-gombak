@@ -2,6 +2,7 @@ import Link from 'next/link';
 import AppFrame from '../ui/AppFrame';
 import { getUserNotifications } from '@/lib/data';
 import { markNotificationRead } from './actions';
+import { getSelfHostedNotifications } from '@/lib/selfHostedNotifications';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,7 +12,8 @@ function formatTime(value: string) {
 }
 
 export default async function NotificationsPage() {
-  const notifications = await getUserNotifications(100);
+  const selfHostedNotifications = await getSelfHostedNotifications();
+  const notifications = selfHostedNotifications ?? await getUserNotifications(100);
   const unread = notifications.filter((item) => !item.read).length;
   return <AppFrame title="Notifikasi" subtitle={`${unread} belum dibaca daripada ${notifications.length} notifikasi terkini.`} active="notifications">
     <section className="panel notification-list">

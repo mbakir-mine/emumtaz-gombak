@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Akses Ibu Bapa — e-Mumtaz')
+@section('content')<h1>Akses ibu bapa</h1><p class="muted">Gunakan kod akses yang dikeluarkan oleh pihak sekolah.</p><div class="card"><form method="POST" action="{{ route('parent.login.store') }}">@csrf<label>Kod sekolah <input name="kod_sekolah" value="{{ old('kod_sekolah') }}" required></label><label>MyKid murid <input name="mykid" value="{{ old('mykid') }}" required></label><label>Kod akses 8 aksara <input name="code" maxlength="8" required></label><button>Masuk</button></form>@if($errors->any())<p class="muted">{{ $errors->first() }}</p>@endif</div>@endsection

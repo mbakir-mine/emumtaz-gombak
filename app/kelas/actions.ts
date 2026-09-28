@@ -1,29 +1,20 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export type ClassActionState = {
   ok: boolean;
   message: string;
 };
 
-function classStem(name: string) {
-  return name.replace(/^\s*\d+\s*/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
-}
-
-function nextClassName(tahun: number, namaKelas: string) {
-  return `${tahun + 1} ${classStem(namaKelas)}`;
-}
-
 export async function createClass(
   _previousState: ClassActionState,
   formData: FormData,
 ): Promise<ClassActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim();
   const tahunAkademik = Number(formData.get('tahun_akademik'));
@@ -35,43 +26,10 @@ export async function createClass(
     return { ok: false, message: 'Lengkapkan semua medan kelas.' };
   }
 
-  const rows = [
-    {
-      kod_sekolah: kodSekolah,
-      tahun_akademik: tahunAkademik,
-      tahun,
-      nama_kelas: namaKelas,
-      sesi,
-      status: 'AKTIF',
-    },
-  ];
-
-  if (tahun < 6) {
-    rows.push({
-      kod_sekolah: kodSekolah,
-      tahun_akademik: tahunAkademik + 1,
-      tahun: tahun + 1,
-      nama_kelas: nextClassName(tahun, namaKelas),
-      sesi,
-      status: 'AKTIF',
-    });
-  }
-
-  const { error } = await supabase.from('classes').upsert(rows, {
-    onConflict: 'kod_sekolah,tahun_akademik,tahun,nama_kelas,sesi',
-  });
-
-  if (error) {
-    return { ok: false, message: `Gagal simpan kelas: ${error.message}` };
-  }
+  const response = await fetch(`${selfHostedUrl}/api/classes`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ kod_sekolah: kodSekolah, tahun_akademik: tahunAkademik, tahun, nama_kelas: namaKelas, sesi }), cache: 'no-store' }).catch(() => null);
+  if (!response?.ok) return { ok: false, message: 'Gagal simpan kelas pada backend Laravel.' };
 
   revalidatePath('/kelas');
   revalidatePath('/');
-  return {
-    ok: true,
-    message:
-      tahun < 6
-        ? `Kelas ${namaKelas} berjaya disimpan bersama kelas cadangan ${nextClassName(tahun, namaKelas)} untuk ${tahunAkademik + 1}.`
-        : `Kelas ${namaKelas} berjaya disimpan.`,
-  };
+  return { ok: true, message: `Kelas ${namaKelas} berjaya disimpan.` };
 }

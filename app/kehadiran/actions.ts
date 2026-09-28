@@ -1,77 +1,24 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
-export type AttendanceActionState = {
-  ok: boolean;
-  message: string;
-};
-
+export type AttendanceActionState = { ok: boolean; message: string };
 const allowedStatuses = ['HADIR', 'TIDAK_HADIR', 'SAKIT', 'CUTI', 'LEWAT', 'AKTIVITI'];
 
-export async function saveDailyAttendance(
-  _previousState: AttendanceActionState,
-  formData: FormData,
-): Promise<AttendanceActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
-
+export async function saveDailyAttendance(_previousState: AttendanceActionState, formData: FormData): Promise<AttendanceActionState> {
+  const baseUrl = getTrustedSelfHostedUrl();
+  if (!baseUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
   const attendanceDate = String(formData.get('attendance_date') ?? '').trim();
-  const studentIds = formData
-    .getAll('student_id')
-    .map((value) => String(value).trim())
-    .filter(Boolean);
-
-  if (!attendanceDate || studentIds.length === 0) {
-    return { ok: false, message: 'Pilih tarikh dan kelas yang mempunyai murid.' };
-  }
-
+  const classId = String(formData.get('class_id') ?? '').trim();
+  const studentIds = formData.getAll('student_id').map((value) => String(value).trim()).filter(Boolean);
+  if (!attendanceDate || !classId || studentIds.length === 0) return { ok: false, message: 'Pilih tarikh, kelas dan murid terlebih dahulu.' };
   const [year, month, day] = attendanceDate.split('-').map(Number);
-  const dayOfWeek = new Date(year, month - 1, day).getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return { ok: false, message: 'Sabtu dan Ahad ialah hari cuti. Kehadiran tidak perlu direkod.' };
-  }
-
-  const { data: students, error: studentError } = await supabase
-    .from('students')
-    .select('id,kod_sekolah,class_id')
-    .in('id', studentIds);
-
-  if (studentError) {
-    return { ok: false, message: `Gagal semak murid: ${studentError.message}` };
-  }
-
-  const rows = (students ?? []).map((student) => {
-    const rawStatus = String(formData.get(`status_${student.id}`) ?? 'HADIR').trim().toUpperCase();
-    const status = allowedStatuses.includes(rawStatus) ? rawStatus : 'HADIR';
-    const catatan = String(formData.get(`catatan_${student.id}`) ?? '').trim();
-
-    return {
-      attendance_date: attendanceDate,
-      student_id: student.id,
-      kod_sekolah: student.kod_sekolah,
-      class_id: student.class_id,
-      status,
-      catatan: catatan || null,
-    };
-  });
-
-  const { error } = await supabase.from('daily_attendance').upsert(rows, {
-    onConflict: 'attendance_date,student_id',
-  });
-
-  if (error) {
-    if (error.message.includes('daily_attendance')) {
-      return {
-        ok: false,
-        message: 'Jadual daily_attendance belum wujud. Jalankan SQL 024_optional_school_modules_core.sql di Supabase.',
-      };
-    }
-
-    return { ok: false, message: `Gagal simpan kehadiran: ${error.message}` };
-  }
-
+  if ([0, 6].includes(new Date(year, month - 1, day).getDay())) return { ok: false, message: 'Sabtu dan Ahad ialah hari cuti. Kehadiran tidak perlu direkod.' };
+  const records = studentIds.map((studentId) => { const rawStatus = String(formData.get(`status_${studentId}`) ?? 'HADIR').trim().toUpperCase(); return { student_id: studentId, status: allowedStatuses.includes(rawStatus) ? rawStatus : 'HADIR', catatan: String(formData.get(`catatan_${studentId}`) ?? '').trim() || null }; });
+  const response = await fetch(`${baseUrl}/api/attendance`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ class_id: classId, attendance_date: attendanceDate, records }), cache: 'no-store' }).catch(() => null);
+  if (!response?.ok) return { ok: false, message: `Gagal menyimpan kehadiran pada backend Laravel (${response?.status ?? 'rangkaian'}).` };
   revalidatePath('/kehadiran');
-  return { ok: true, message: `${rows.length} rekod kehadiran berjaya disimpan.` };
+  return { ok: true, message: `${records.length} rekod kehadiran berjaya disimpan.` };
 }

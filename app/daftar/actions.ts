@@ -1,12 +1,6 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import { createHmac } from 'node:crypto';
-import { headers } from 'next/headers';
-import { createPendingSelfRegisteredAuthUser, type AuthProvisionProfile } from '@/lib/authProvisioning';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 const allowedRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
 const allowedZones = ['BARAT', 'TIMUR', 'TENGAH'];
@@ -15,17 +9,6 @@ export type RegisterUserState = {
   ok: boolean;
   message: string;
 };
-
-function createAdminClient() {
-  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
-
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
 
 function readText(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
@@ -39,33 +22,12 @@ function strongPassword(value: string) {
   return value.length >= 8 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 }
 
-function protectedHash(value: string) {
-  return createHmac('sha256', supabaseServiceRoleKey as string).update(value).digest('hex');
-}
-
-async function registrationSource() {
-  const requestHeaders = await headers();
-  const forwarded = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return (
-    requestHeaders.get('cf-connecting-ip')?.trim() ||
-    forwarded ||
-    requestHeaders.get('x-real-ip')?.trim() ||
-    'unknown-source'
-  ).slice(0, 128);
-}
-
 export async function registerPendingUser(
   _previousState: RegisterUserState,
   formData: FormData,
 ): Promise<RegisterUserState> {
-  const admin = createAdminClient();
-  if (!admin) {
-    return {
-      ok: false,
-      message:
-        'SUPABASE_SERVICE_ROLE_KEY belum ditetapkan pada server. Pendaftaran password memerlukan tetapan server.',
-    };
-  }
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const nama = readText(formData, 'nama').toUpperCase();
   const email = readText(formData, 'email').toLowerCase();
@@ -97,67 +59,12 @@ export async function registerPendingUser(
   if (needsSchool && !kodSekolah) return { ok: false, message: 'Sila pilih sekolah.' };
   if (needsZone && !allowedZones.includes(zon)) return { ok: false, message: 'Sila pilih zon yang sah.' };
 
-  const { data: attemptAllowed, error: rateLimitError } = await admin.rpc('consume_registration_attempt', {
-    request_ip_hash: protectedHash(await registrationSource()),
-    request_email_hash: protectedHash(email),
+  const response = await fetch(`${selfHostedUrl}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nama, email, role, kod_sekolah: kodSekolah || null, zon: zon || null, password }),
+    cache: 'no-store',
   });
-  if (rateLimitError) {
-    console.error('Semakan kadar pendaftaran gagal.', rateLimitError.message);
-    return { ok: false, message: 'Pendaftaran tidak dapat diproses buat masa ini. Sila cuba lagi kemudian.' };
-  }
-  if (!attemptAllowed) {
-    return { ok: false, message: 'Terlalu banyak percubaan pendaftaran. Sila cuba semula selepas satu jam.' };
-  }
-
-  const { data: existingProfiles, error: existingError } = await admin
-    .from('app_users')
-    .select('id,status')
-    .ilike('email', email);
-
-  if (existingError) {
-    console.error('Semakan profil pendaftaran gagal.', existingError.message);
-    return { ok: false, message: 'Pendaftaran tidak dapat disemak buat masa ini. Sila cuba lagi.' };
-  }
-  if ((existingProfiles ?? []).some((profile) => profile.status === 'AKTIF')) {
-    return { ok: false, message: 'Email ini sudah mempunyai akaun aktif. Sila kembali ke Login.' };
-  }
-  if ((existingProfiles ?? []).some((profile) => profile.status === 'MENUNGGU')) {
-    return { ok: true, message: 'Permohonan akaun ini sudah diterima dan sedang menunggu pengesahan Admin.' };
-  }
-
-  const profile: AuthProvisionProfile = {
-    id: '',
-    email,
-    nama,
-    role,
-    kod_sekolah: needsSchool ? kodSekolah : null,
-    zon: needsZone ? zon : null,
-  };
-  const auth = await createPendingSelfRegisteredAuthUser(profile, password);
-  if (!auth.ok) {
-    console.error('Penciptaan akaun pendaftaran gagal.', auth.message);
-    return { ok: false, message: 'Permohonan tidak dapat diproses. Sila semak maklumat atau cuba lagi.' };
-  }
-
-  const { error: insertError } = await admin.from('app_users').insert({
-    email,
-    nama,
-    role,
-    kod_sekolah: profile.kod_sekolah,
-    zon: profile.zon,
-    status: 'MENUNGGU',
-    auth_user_id: auth.authUserId,
-    must_change_password: false,
-  });
-
-  if (insertError) {
-    await admin.auth.admin.deleteUser(auth.authUserId);
-    console.error('Pendaftaran profil gagal.', insertError.message);
-    return { ok: false, message: 'Permohonan gagal disimpan. Sila cuba lagi.' };
-  }
-
-  return {
-    ok: true,
-    message: 'Pendaftaran berjaya dihantar. Akaun hanya boleh digunakan selepas Admin mengaktifkan status pengguna.',
-  };
+  if (!response.ok) return { ok: false, message: 'Pendaftaran tidak dapat diproses. Email mungkin telah digunakan.' };
+  return { ok: true, message: 'Pendaftaran berjaya dihantar. Akaun hanya boleh digunakan selepas Admin mengaktifkan status pengguna.' };
 }

@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient, isVerifiedOwner } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export type LicenseActionState = { ok: boolean; message: string };
 
@@ -19,9 +20,8 @@ export async function saveSchoolLicense(
   _previousState: LicenseActionState,
   formData: FormData,
 ): Promise<LicenseActionState> {
-  if (!(await isVerifiedOwner())) return { ok: false, message: 'Akses Pemilik Sistem diperlukan.' };
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim().toUpperCase();
   const planCode = String(formData.get('plan_code') ?? '').trim().toUpperCase();
@@ -42,18 +42,8 @@ export async function saveSchoolLicense(
     return { ok: false, message: 'Had murid dan pengguna mesti nombor bulat positif.' };
   }
 
-  const { error } = await supabase.from('school_licenses').upsert({
-    kod_sekolah: kodSekolah,
-    plan_code: planCode,
-    status,
-    starts_on: startsOn,
-    ends_on: endsOn,
-    max_students: maxStudents,
-    max_users: maxUsers,
-    notes,
-  }, { onConflict: 'kod_sekolah' });
-
-  if (error) return { ok: false, message: `Gagal menyimpan lesen: ${error.message}` };
+  const response = await fetch(`${selfHostedUrl}/api/licenses`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ kod_sekolah: kodSekolah, plan_code: planCode, status, starts_on: startsOn, ends_on: endsOn, max_students: maxStudents, max_users: maxUsers, notes }), cache: 'no-store' }).catch(() => null);
+  if (!response?.ok) return { ok: false, message: 'Gagal menyimpan lesen pada backend self-hosted.' };
   revalidatePath('/lesen');
   return { ok: true, message: 'Lesen sekolah berjaya disimpan.' };
 }

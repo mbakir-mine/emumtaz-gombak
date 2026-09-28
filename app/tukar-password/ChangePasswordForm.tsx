@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export default function ChangePasswordForm() {
   const router = useRouter();
@@ -20,79 +20,18 @@ export default function ChangePasswordForm() {
     setMessage('');
     setSuccess(false);
 
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap.');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setMessage('Kata laluan baharu mesti sekurang-kurangnya 8 aksara.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setMessage('Pengesahan kata laluan baharu tidak sama.');
-      return;
-    }
-
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (!selfHostedUrl) { setMessage('Backend Laravel belum dikonfigurasi.'); return; }
+    if (newPassword.length < 8 || newPassword !== confirmPassword) { setMessage('Password baharu tidak sah atau pengesahan tidak sama.'); return; }
     setLoading(true);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const user = sessionData.session?.user;
-    const email = user?.email;
-
-    if (!email) {
-      setLoading(false);
-      setMessage('Sesi login tidak dijumpai. Sila login semula.');
-      return;
-    }
-
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email,
-      password: currentPassword,
-    });
-
-    if (verifyError) {
-      setLoading(false);
-      setMessage('Kata laluan semasa tidak tepat.');
-      return;
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-
-    if (error) {
-      setLoading(false);
-      setMessage(`Gagal menukar kata laluan: ${error.message}`);
-      return;
-    }
-
-    await supabase.auth.signOut({ scope: 'others' });
-
-    let flagUpdateFailed = false;
-    if (user?.id) {
-      const { error: idUpdateError } = await supabase
-        .from('app_users')
-        .update({ must_change_password: false })
-        .eq('auth_user_id', user.id);
-      flagUpdateFailed = Boolean(idUpdateError);
-    }
-    const { error: emailUpdateError } = await supabase
-      .from('app_users')
-      .update({ must_change_password: false })
-      .ilike('email', email);
-    flagUpdateFailed = flagUpdateFailed || Boolean(emailUpdateError);
-
+    const response = await fetch(`${selfHostedUrl}/api/auth/change-password`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current_password: currentPassword, password: newPassword, password_confirmation: confirmPassword }) });
     setLoading(false);
-
+    if (!response.ok) { setMessage('Kata laluan semasa tidak tepat atau password baharu tidak sah.'); return; }
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    if (flagUpdateFailed) {
-      setMessage('Kata laluan berjaya ditukar, tetapi status wajib tukar kata laluan gagal dikemaskini. Sila maklumkan Pentadbir Utama.');
-      return;
-    }
-
     setSuccess(true);
-    setMessage('Kata laluan berjaya ditukar. Sesi lain telah ditamatkan.');
+    setMessage('Kata laluan berjaya ditukar.');
     router.replace('/');
   }
 

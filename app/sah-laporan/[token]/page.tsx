@@ -1,14 +1,17 @@
 import Link from 'next/link';
-import { getAuthenticatedSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default async function VerifyReportPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const supabase = uuid.test(token) ? await getAuthenticatedSupabaseServerClient() : null;
-  const { data } = supabase
-    ? await supabase.from('report_verifications').select('reference_number,report_type,scope_label,snapshot_hash,issued_at,revoked_at').eq('token', token).maybeSingle()
-    : { data: null };
+  const baseUrl = getTrustedSelfHostedUrl();
+  const response = baseUrl && uuid.test(token)
+    ? await fetch(`${baseUrl}/api/report-verifications/${encodeURIComponent(token)}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' }).catch(() => null)
+    : null;
+  const payload = response?.ok ? await response.json() as { data?: { reference_number: string; report_type: string; scope_label: string; snapshot_hash: string; issued_at: string; revoked_at: string | null } } : null;
+  const data = payload?.data ?? null;
 
   return (
     <section className="panel verification-page">

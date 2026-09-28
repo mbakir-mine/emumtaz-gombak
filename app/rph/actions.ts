@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { generateRphContent, isRphPedagogy, isRphStatus, reviewRphQuality, type RphDraftContent } from '@/lib/rph';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type RphActionState = { ok: boolean; message: string };
 export type AiRphActionState = RphActionState & Partial<RphDraftContent> & {
@@ -47,46 +48,32 @@ async function validateReferences({
   classId,
   kodSekolah,
   kodSubjek,
-  teacherId,
 }: {
   classId: string;
   kodSekolah: string;
   kodSubjek: string;
-  teacherId: string;
 }) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false as const, message: 'Supabase belum disambungkan.' };
-
-  const [classResult, subjectResult, teacherResult] = await Promise.all([
-    supabase.from('classes').select('id,kod_sekolah,tahun,nama_kelas,status').eq('id', classId).maybeSingle(),
-    supabase.from('subjects').select('kod_subjek,nama_subjek,status').eq('kod_subjek', kodSubjek).maybeSingle(),
-    teacherId
-      ? supabase.from('app_users').select('id,nama,kod_sekolah,status').eq('id', teacherId).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
-
-  if (classResult.error || !classResult.data || classResult.data.kod_sekolah !== kodSekolah || classResult.data.status !== 'AKTIF') {
-    return { ok: false as const, message: 'Kelas tidak sah atau anda tiada akses untuk kelas ini.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const cookieHeader = (await cookies()).toString();
+    const [classesResponse, subjectsResponse] = await Promise.all([
+      fetch(`${selfHostedUrl}/api/classes`, { headers: { Cookie: cookieHeader }, cache: 'no-store' }),
+      fetch(`${selfHostedUrl}/api/subjects`, { headers: { Cookie: cookieHeader }, cache: 'no-store' }),
+    ]);
+    const classesPayload = await classesResponse.json().catch(() => null) as { data?: Array<Record<string, unknown>> } | null;
+    const subjectsPayload = await subjectsResponse.json().catch(() => null) as { data?: Array<Record<string, unknown>> } | null;
+    const classRow = classesPayload?.data?.find((row) => String(row.id) === classId);
+    const subjectRow = subjectsPayload?.data?.find((row) => String(row.kod_subjek) === kodSubjek);
+    if (!classesResponse.ok || !classRow || String(classRow.kod_sekolah) !== kodSekolah || String(classRow.status) !== 'AKTIF') return { ok: false as const, message: 'Kelas tidak sah atau anda tiada akses untuk kelas ini.' };
+    if (!subjectsResponse.ok || !subjectRow || String(subjectRow.status) !== 'AKTIF') return { ok: false as const, message: 'Mata pelajaran tidak sah atau tidak aktif.' };
+    return { ok: true as const, selfHostedUrl, namaKelas: `Tahun ${classRow.tahun} - ${classRow.nama_kelas}`, namaSubjek: String(subjectRow.nama_subjek ?? kodSubjek) };
   }
-  if (subjectResult.error || !subjectResult.data || subjectResult.data.status !== 'AKTIF') {
-    return { ok: false as const, message: 'Mata pelajaran tidak sah atau tidak aktif.' };
-  }
-  if (teacherId && (teacherResult.error || !teacherResult.data || teacherResult.data.status !== 'AKTIF' || teacherResult.data.kod_sekolah !== kodSekolah)) {
-    return { ok: false as const, message: 'Guru yang dipilih tidak sah untuk sekolah ini.' };
-  }
-
-  return {
-    ok: true as const,
-    supabase,
-    namaKelas: `Tahun ${classResult.data.tahun} - ${classResult.data.nama_kelas}`,
-    namaSubjek: subjectResult.data.nama_subjek,
-  };
+  return { ok: false as const, message: 'Backend Laravel belum disambungkan.' };
 }
 
 export async function generateAiRphDraft(formData: FormData): Promise<AiRphActionState> {
   const kodSekolah = readText(formData, 'kod_sekolah', 32);
   const classId = readText(formData, 'class_id', 64);
-  const teacherId = readText(formData, 'teacher_id', 64);
   const kodSubjek = readText(formData, 'kod_subjek', 32);
   const tajuk = readText(formData, 'tajuk', 200);
   const standard = readText(formData, 'standard_pembelajaran', 3000);
@@ -100,7 +87,7 @@ export async function generateAiRphDraft(formData: FormData): Promise<AiRphActio
     return { ok: false, message: 'Pilih sekolah, kelas, subjek dan tajuk sebelum menjana RPH AI.' };
   }
 
-  const reference = await validateReferences({ classId, kodSekolah, kodSubjek, teacherId });
+  const reference = await validateReferences({ classId, kodSekolah, kodSubjek });
   if (!reference.ok) return { ok: false, message: reference.message };
 
   const input = {
@@ -251,7 +238,7 @@ export async function saveRphDraft(_previousState: RphActionState, formData: For
     return fail('Lengkapkan sekolah, kelas, subjek, tarikh dan tajuk.');
   }
 
-  const reference = await validateReferences({ classId, kodSekolah, kodSubjek, teacherId });
+  const reference = await validateReferences({ classId, kodSekolah, kodSubjek });
   if (!reference.ok) return fail(reference.message);
 
   const generated = generateRphContent({
@@ -281,47 +268,38 @@ export async function saveRphDraft(_previousState: RphActionState, formData: For
     status: readText(formData, 'status', 16) === 'SEDIA' ? 'SEDIA' : 'DRAF',
   };
 
-  const query = recordId
-    ? reference.supabase.from('rph_records').update(payload).eq('id', recordId).eq('kod_sekolah', kodSekolah).select('id').maybeSingle()
-    : reference.supabase.from('rph_records').insert(payload).select('id').single();
-  const { data: savedRecord, error } = await query;
-
-  if (error) {
-    if (error.message.includes('rph_records')) {
-      return fail('Modul RPH belum tersedia. Jalankan migrasi pangkalan data modul sekolah dahulu.');
-    }
-    return fail(`Gagal simpan RPH: ${error.message}`);
+  if ('selfHostedUrl' in reference) {
+    const response = await fetch(`${reference.selfHostedUrl}/api/rph`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ ...payload, id: recordId || undefined }), cache: 'no-store' });
+    if (!response.ok) return fail('Gagal simpan RPH pada backend Laravel.');
+    revalidatePath('/rph');
+    return { ok: true, message: recordId ? 'RPH berjaya dikemas kini.' : 'RPH berjaya disimpan dalam koleksi.' };
   }
-  if (!savedRecord) return fail('RPH tidak ditemui atau anda tiada kebenaran untuk mengemas kininya.');
 
-  revalidatePath('/rph');
-  return { ok: true, message: recordId ? 'RPH berjaya dikemas kini.' : 'RPH berjaya disimpan dalam koleksi.' };
+  return fail('Backend Laravel belum disambungkan.');
 }
 
 export async function updateRphStatus(recordId: string, status: string): Promise<RphActionState> {
   if (!recordId || !isRphStatus(status)) return fail('Permintaan status tidak sah.');
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return fail('Supabase belum disambungkan.');
-  const { data: record, error: readError } = await supabase.from('rph_records').select('id').eq('id', recordId).maybeSingle();
-  if (readError || !record) return fail('RPH tidak ditemui atau anda tiada akses.');
-  const { data: updatedRecord, error } = await supabase.from('rph_records').update({ status }).eq('id', record.id).select('id').maybeSingle();
-  if (error) return fail(`Gagal mengemas kini status: ${error.message}`);
-  if (!updatedRecord) return fail('Status tidak berubah kerana anda tiada kebenaran mengemas kini RPH ini.');
-  revalidatePath('/rph');
-  return { ok: true, message: status === 'SELESAI' ? 'RPH ditandakan selesai.' : 'Status RPH berjaya dikemas kini.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/${recordId}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ status }), cache: 'no-store' });
+    if (!response.ok) return fail('Gagal mengemas kini status RPH.');
+    revalidatePath('/rph');
+    return { ok: true, message: status === 'SELESAI' ? 'RPH ditandakan selesai.' : 'Status RPH berjaya dikemas kini.' };
+  }
+  return fail('Backend Laravel belum disambungkan.');
 }
 
 export async function deleteRphDraft(recordId: string): Promise<RphActionState> {
   if (!recordId) return fail('RPH tidak sah.');
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return fail('Supabase belum disambungkan.');
-  const { data: record, error: readError } = await supabase.from('rph_records').select('id').eq('id', recordId).maybeSingle();
-  if (readError || !record) return fail('RPH tidak ditemui atau anda tiada akses.');
-  const { data: deletedRecord, error } = await supabase.from('rph_records').delete().eq('id', record.id).select('id').maybeSingle();
-  if (error) return fail('RPH tidak dapat dipadam. Hanya pentadbir sekolah dibenarkan memadam rekod.');
-  if (!deletedRecord) return fail('RPH tidak dipadam kerana anda tiada kebenaran pentadbir.');
-  revalidatePath('/rph');
-  return { ok: true, message: 'RPH telah dipadam.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/${recordId}`, { method: 'DELETE', headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return fail('RPH tidak dapat dipadam.');
+    revalidatePath('/rph');
+    return { ok: true, message: 'RPH telah dipadam.' };
+  }
+  return fail('Backend Laravel belum disambungkan.');
 }
 
 export const createRphDraft = saveRphDraft;

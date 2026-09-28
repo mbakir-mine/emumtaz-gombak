@@ -48,10 +48,6 @@ function accessLabel(user: UserRecord, schoolNames: Map<string, string>) {
 }
 
 function compactActionMessage(message: string) {
-  if (message.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-    return 'Gagal: tambah SUPABASE_SERVICE_ROLE_KEY di Vercel dan redeploy.';
-  }
-
   if (message.includes('RESEND_API_KEY') || message.includes('EMUMTAZ_EMAIL_FROM')) {
     return 'Akaun siap. Email belum diset.';
   }

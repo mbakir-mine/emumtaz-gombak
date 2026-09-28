@@ -11,7 +11,7 @@ import type {
   SubjectRecord,
 } from '@/lib/data';
 import { resolveComponentFullMark, resolveSubjectFullMark } from '@/lib/markSettings';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import { allowedSubjectForTahun } from '@/lib/subjects';
 import { useAccessProfile } from '../ui/AuthGate';
 
@@ -177,15 +177,9 @@ export default function SchoolMarkSettingsManager({
   }
 
   async function saveSettings() {
-    if (!supabase || !selectedSchool || !selectedExam) return;
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (!selfHostedUrl || !selectedSchool || !selectedExam) return;
     setMessage('');
-
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData.user) {
-      setMessage('Sesi pengguna telah tamat. Sila log masuk semula.');
-      return;
-    }
-    const authUserId = authData.user.id;
 
     const subjectRows: SubjectSettingWrite[] = [];
     const componentRows: ComponentSettingWrite[] = [];
@@ -218,7 +212,7 @@ export default function SchoolMarkSettingsManager({
           kod_komponen: component.kod_komponen,
           markah_penuh: componentMark,
           status: 'AKTIF',
-          updated_by: authUserId,
+          updated_by: '',
           updated_at: new Date().toISOString(),
         });
       }
@@ -236,27 +230,16 @@ export default function SchoolMarkSettingsManager({
         kod_subjek: subject.kod_subjek,
         markah_penuh: fullMark,
         status: 'AKTIF',
-        updated_by: authUserId,
+        updated_by: '',
         updated_at: new Date().toISOString(),
       });
     }
 
     setSaving(true);
-    const saveResult = await supabase.rpc('save_school_mark_settings', {
-      p_kod_sekolah: selectedSchool,
-      p_tahun_akademik: selectedAcademicYear,
-      p_kod_peperiksaan: selectedExam,
-      p_tahun: selectedYear,
-      p_subjects: subjectRows.map(({ kod_subjek, markah_penuh }) => ({ kod_subjek, markah_penuh })),
-      p_components: componentRows.map(({ kod_subjek, kod_komponen, markah_penuh }) => ({
-        kod_subjek,
-        kod_komponen,
-        markah_penuh,
-      })),
-    });
-    if (saveResult.error) {
+    const saveResponse = await fetch(`${selfHostedUrl}/api/mark-settings/school`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kod_sekolah: selectedSchool, tahun_akademik: selectedAcademicYear, kod_peperiksaan: selectedExam, tahun: selectedYear, subjects: subjectRows.map(({ kod_subjek, markah_penuh }) => ({ kod_subjek, markah_penuh })), components: componentRows.map(({ kod_subjek, kod_komponen, markah_penuh }) => ({ kod_subjek, kod_komponen, markah_penuh })) }) });
+    if (!saveResponse.ok) {
       setSaving(false);
-      setMessage(`Gagal menyimpan tetapan: ${saveResult.error.message}`);
+      setMessage('Gagal menyimpan tetapan markah pada backend Laravel.');
       return;
     }
 

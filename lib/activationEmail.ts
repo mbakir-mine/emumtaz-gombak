@@ -8,8 +8,7 @@ type ActivationEmailProfile = {
 
 function appLoginUrl() {
   const explicitUrl = process.env.EMUMTAZ_APP_URL || process.env.NEXT_PUBLIC_APP_URL;
-  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '';
-  const baseUrl = (explicitUrl || vercelUrl).replace(/\/$/, '');
+  const baseUrl = (explicitUrl || '').replace(/\/$/, '');
   return baseUrl ? `${baseUrl}/login` : '';
 }
 

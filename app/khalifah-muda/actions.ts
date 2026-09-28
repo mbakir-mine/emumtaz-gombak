@@ -1,200 +1,28 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { KHALIFAH_MUDA_MODULE_KEY, findKhalifahMudaIndicator } from '@/lib/khalifahMuda';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { findKhalifahMudaIndicator } from '@/lib/khalifahMuda';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
-export type KhalifahMudaActionState = {
-  ok: boolean;
-  message: string;
-};
+export type KhalifahMudaActionState = { ok: boolean; message: string };
+const text = (formData: FormData, key: string) => String(formData.get(key) ?? '').trim();
 
-function readText(formData: FormData, key: string) {
-  return String(formData.get(key) ?? '').trim();
-}
-
-async function ensureModuleAccess(kodSekolah: string, accessRole: string) {
-  const supabase = await getSupabaseServerClient();
-  if (accessRole === 'OWNER') return true;
-  if (!supabase) return false;
-  const { data, error } = await supabase
-    .from('school_module_access')
-    .select('id')
-    .eq('kod_sekolah', kodSekolah)
-    .eq('module_key', KHALIFAH_MUDA_MODULE_KEY)
-    .eq('enabled', true)
-    .maybeSingle();
-
-  return !error && Boolean(data);
-}
-
-async function ensureYearSixClass(classId: string, kodSekolah: string) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('classes')
-    .select('id,kod_sekolah,tahun,tahun_akademik,status')
-    .eq('id', classId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  if (data.kod_sekolah !== kodSekolah || Number(data.tahun) !== 6 || data.status !== 'AKTIF') return null;
-  return data;
-}
-
-async function getActiveClassStudents(classId: string, kodSekolah: string) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('students')
-    .select('id,kod_sekolah,class_id,nama_murid,status')
-    .eq('kod_sekolah', kodSekolah)
-    .eq('class_id', classId)
-    .eq('status', 'AKTIF');
-
-  if (error) return [];
-  return data ?? [];
-}
-
-async function getKhalifahMudaIndicator(indicatorKey: string) {
-  const supabase = await getSupabaseServerClient();
-  const fallback = findKhalifahMudaIndicator(indicatorKey);
-  if (!supabase || !indicatorKey) return fallback;
-
-  const { data, error } = await supabase
-    .from('khalifah_muda_components')
-    .select('key,label,domain,kind,points,status')
-    .eq('key', indicatorKey)
-    .eq('status', 'AKTIF')
-    .maybeSingle();
-
-  if (error || !data) return fallback;
-  return {
-    key: data.key,
-    label: data.label,
-    domain: data.domain,
-    kind: data.kind,
-    points: Number(data.points ?? 0),
-  };
-}
-
-export async function createKhalifahMudaClassRecord(
-  _previousState: KhalifahMudaActionState,
-  formData: FormData,
-): Promise<KhalifahMudaActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
-
-  const kodSekolah = readText(formData, 'kod_sekolah');
-  const classId = readText(formData, 'class_id');
-  const accessRole = readText(formData, 'access_role');
-  const indicatorKey = readText(formData, 'indicator_key');
-  const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
-  const catatan = readText(formData, 'catatan');
-  const indicator = await getKhalifahMudaIndicator(indicatorKey);
-  const selectedStudentIds = new Set(formData.getAll('student_ids').map((value) => String(value)));
-
-  if (!kodSekolah || !classId || !indicator || indicator.kind !== 'AKTIVITI_KELAS') {
-    return { ok: false, message: 'Lengkapkan sekolah, kelas Tahun 6 dan aktiviti kelas.' };
+async function saveRecord(formData: FormData, scope: 'KELAS' | 'INDIVIDU'): Promise<KhalifahMudaActionState> {
+  const baseUrl = getTrustedSelfHostedUrl();
+  if (!baseUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
+  const kodSekolah = text(formData, 'kod_sekolah');
+  const classId = text(formData, 'class_id');
+  const indicator = findKhalifahMudaIndicator(text(formData, 'indicator_key'));
+  const studentIds = scope === 'KELAS' ? formData.getAll('student_ids').map(String).filter(Boolean) : [text(formData, 'student_id')];
+  if (!kodSekolah || !classId || !indicator || studentIds.length === 0 || (scope === 'KELAS' && indicator.kind !== 'AKTIVITI_KELAS') || (scope === 'INDIVIDU' && indicator.kind === 'AKTIVITI_KELAS')) return { ok: false, message: scope === 'KELAS' ? 'Lengkapkan sekolah, kelas Tahun 6 dan aktiviti kelas.' : 'Pilih murid Tahun 6 dan indikator peristiwa.' };
+  for (const studentId of studentIds) {
+    const response = await fetch(`${baseUrl}/api/character/khalifah-muda`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ kod_sekolah: kodSekolah, class_id: classId, student_id: studentId, record_date: text(formData, 'record_date') || new Date().toISOString().slice(0, 10), record_scope: scope, record_kind: indicator.kind, domain: indicator.domain, indicator_key: indicator.key, indicator_label: indicator.label, points: indicator.points, catatan: text(formData, 'catatan') || null }), cache: 'no-store' });
+    if (!response.ok) return { ok: false, message: `Gagal simpan rekod Khalifah Muda (${response.status}).` };
   }
-
-  if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
-    return { ok: false, message: 'Sekolah ini belum diberi akses Modul Sahsiah IHAB.' };
-  }
-
-  const classRecord = await ensureYearSixClass(classId, kodSekolah);
-  if (!classRecord) {
-    return { ok: false, message: 'Modul Sahsiah IHAB hanya untuk kelas Tahun 6 aktif.' };
-  }
-
-  const classStudents = await getActiveClassStudents(classId, kodSekolah);
-  const selectedStudents = classStudents.filter((student) => selectedStudentIds.has(student.id));
-
-  if (selectedStudents.length === 0) {
-    return { ok: false, message: 'Tick sekurang-kurangnya seorang murid yang hadir.' };
-  }
-
-  const { error } = await supabase.from('khalifah_muda_records').insert(
-    selectedStudents.map((student) => ({
-      kod_sekolah: kodSekolah,
-      class_id: classId,
-      student_id: student.id,
-      record_date: recordDate,
-      record_scope: 'KELAS',
-      record_kind: indicator.kind,
-      domain: indicator.domain,
-      indicator_key: indicator.key,
-      indicator_label: indicator.label,
-      points: indicator.points,
-      catatan: catatan || null,
-    })),
-  );
-
-  if (error) {
-    return { ok: false, message: `Gagal simpan rekod kelas: ${error.message}` };
-  }
-
   revalidatePath('/khalifah-muda');
-  return { ok: true, message: `Rekod aktiviti kelas berjaya disimpan untuk ${selectedStudents.length} murid.` };
+  return { ok: true, message: scope === 'KELAS' ? `Rekod aktiviti kelas berjaya disimpan untuk ${studentIds.length} murid.` : 'Rekod murid berjaya disimpan.' };
 }
 
-export async function createKhalifahMudaStudentRecord(
-  _previousState: KhalifahMudaActionState,
-  formData: FormData,
-): Promise<KhalifahMudaActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
-
-  const kodSekolah = readText(formData, 'kod_sekolah');
-  const classId = readText(formData, 'class_id');
-  const studentId = readText(formData, 'student_id');
-  const accessRole = readText(formData, 'access_role');
-  const indicatorKey = readText(formData, 'indicator_key');
-  const recordDate = readText(formData, 'record_date') || new Date().toISOString().slice(0, 10);
-  const catatan = readText(formData, 'catatan');
-  const indicator = await getKhalifahMudaIndicator(indicatorKey);
-
-  if (!kodSekolah || !classId || !studentId || !indicator || indicator.kind === 'AKTIVITI_KELAS') {
-    return { ok: false, message: 'Pilih murid Tahun 6 dan indikator peristiwa.' };
-  }
-
-  if (!(await ensureModuleAccess(kodSekolah, accessRole))) {
-    return { ok: false, message: 'Sekolah ini belum diberi akses Modul Sahsiah IHAB.' };
-  }
-
-  const classRecord = await ensureYearSixClass(classId, kodSekolah);
-  if (!classRecord) {
-    return { ok: false, message: 'Modul Sahsiah IHAB hanya untuk kelas Tahun 6 aktif.' };
-  }
-
-  const { data: student, error: studentError } = await supabase
-    .from('students')
-    .select('id,kod_sekolah,class_id,nama_murid,status')
-    .eq('id', studentId)
-    .maybeSingle();
-
-  if (studentError || !student || student.kod_sekolah !== kodSekolah || student.class_id !== classId) {
-    return { ok: false, message: 'Murid tidak berada dalam kelas Tahun 6 pilihan.' };
-  }
-
-  const { error } = await supabase.from('khalifah_muda_records').insert({
-    kod_sekolah: kodSekolah,
-    class_id: classId,
-    student_id: student.id,
-    record_date: recordDate,
-    record_scope: 'INDIVIDU',
-    record_kind: indicator.kind,
-    domain: indicator.domain,
-    indicator_key: indicator.key,
-    indicator_label: indicator.label,
-    points: indicator.points,
-    catatan: catatan || null,
-  });
-
-  if (error) {
-    return { ok: false, message: `Gagal simpan rekod murid: ${error.message}` };
-  }
-
-  revalidatePath('/khalifah-muda');
-  return { ok: true, message: `Rekod ${student.nama_murid} berjaya disimpan.` };
-}
+export async function createKhalifahMudaClassRecord(_previousState: KhalifahMudaActionState, formData: FormData) { return saveRecord(formData, 'KELAS'); }
+export async function createKhalifahMudaStudentRecord(_previousState: KhalifahMudaActionState, formData: FormData) { return saveRecord(formData, 'INDIVIDU'); }

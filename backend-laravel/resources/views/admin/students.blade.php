@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Murid — e-Mumtaz')
+@section('content')<h1>Murid</h1>@include('admin._student-form')<div class="card"><table><thead><tr><th>MyKid</th><th>Nama</th><th>Sekolah</th><th>Kelas</th><th>Tahun</th><th>Status</th></tr></thead><tbody>@forelse($students as $student)<tr><td>{{ $student->mykid }}</td><td>{{ $student->nama }}</td><td>{{ $student->kod_sekolah }}</td><td>{{ $student->class?->nama_kelas ?: '—' }}</td><td>{{ $student->tahun_akademik }}</td><td>{{ $student->status }}</td></tr>@empty<tr><td colspan="6">Tiada rekod.</td></tr>@endforelse</tbody></table></div>{{ $students->links() }}@endsection

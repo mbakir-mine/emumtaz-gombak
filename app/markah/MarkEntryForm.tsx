@@ -5,7 +5,6 @@ import { saveMarks } from './actions';
 import type { MarkComponentRecord, MarkRecord, StudentRecord, SubjectComponentRecord } from '@/lib/data';
 import { gradeForMark } from '@/lib/subjects';
 import { DEFAULT_UPKK_GRADES, upkkGrade, type UpkkGradeSettings } from '@/lib/upkkTrial';
-import { supabase } from '@/lib/supabase';
 import { normalizeMark } from '@/lib/markSettings';
 
 const initialState = {
@@ -70,7 +69,7 @@ export default function MarkEntryForm({
     return initial;
   });
   const hasComponents = activeComponents.length > 0;
-  const [upkkGrades, setUpkkGrades] = useState<UpkkGradeSettings>({ kod_sekolah: kodSekolah, ...DEFAULT_UPKK_GRADES });
+  const [upkkGrades] = useState<UpkkGradeSettings>({ kod_sekolah: kodSekolah, ...DEFAULT_UPKK_GRADES });
   const [genderOrder, setGenderOrder] = useState<'none' | 'asc' | 'desc'>('none');
   const displayedStudents = useMemo(() => {
     if (genderOrder === 'none') return students;
@@ -82,18 +81,6 @@ export default function MarkEntryForm({
       return left.nama_murid.localeCompare(right.nama_murid, 'ms-MY');
     });
   }, [genderOrder, students]);
-
-  useEffect(() => {
-    if (!isUpkkTrial || !supabase || !kodSekolah) return;
-    void supabase
-      .from('upkk_trial_grade_settings')
-      .select('kod_sekolah,grade_a_min,grade_b_min,grade_c_min')
-      .eq('kod_sekolah', kodSekolah)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setUpkkGrades(data as UpkkGradeSettings);
-      });
-  }, [isUpkkTrial, kodSekolah]);
 
   const displayGrade = (markah: number | null | undefined) => {
     if (markah === null || markah === undefined || Number.isNaN(markah)) return '';

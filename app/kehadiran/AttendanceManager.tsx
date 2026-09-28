@@ -569,6 +569,7 @@ export default function AttendanceManager({
           {detailMode === 'daily' && (
           <form action={action} className="attendance-daily-form">
             <input type="hidden" name="attendance_date" value={selectedDate} />
+            <input type="hidden" name="class_id" value={selectedClass} />
             <div className="panel-head compact-head">
               <div>
                 <h3>Kemaskini Kehadiran {selectedDate}</h3>

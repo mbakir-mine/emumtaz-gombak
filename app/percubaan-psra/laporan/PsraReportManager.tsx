@@ -15,8 +15,9 @@ import type {
 } from '@/lib/data';
 import { PSRA_PAPERS, psraGrade, type PsraPaperMarkRecord } from '@/lib/psra';
 import { cleanMykid } from '@/lib/mykid';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import { useAccessProfile } from '../../ui/AuthGate';
+const supabase = null as any;
 
 type Props = {
   schools: School[];
@@ -182,6 +183,14 @@ export default function PsraReportManager({
     );
 
     async function loadSchoolStudents() {
+      const selfHostedUrl = getTrustedSelfHostedUrl();
+      if (selfHostedUrl && selectedSchool && hasModuleAccess) {
+        void fetch(`${selfHostedUrl}/api/students?per_page=1000&kod_sekolah=${encodeURIComponent(selectedSchool)}`, { credentials: 'include', cache: 'no-store' }).then(async (response) => {
+          const payload = await response.json() as { data?: { data?: StudentRecord[] } };
+          if (!cancelled) setSchoolStudents(payload.data?.data ?? serverSchoolStudents);
+        }).catch(() => { if (!cancelled) setSchoolStudents(serverSchoolStudents); });
+        return;
+      }
       if (!supabase || !selectedSchool || !hasModuleAccess) {
         if (!cancelled) setSchoolStudents(serverSchoolStudents);
         return;
@@ -233,6 +242,15 @@ export default function PsraReportManager({
   const loadRecords = useCallback(async () => {
     setRecords([]);
     setMessage('');
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (selfHostedUrl && selectedSchool && hasModuleAccess) {
+      setLoading(true);
+      const responses = await Promise.all(yearSixClasses.map((item) => fetch(`${selfHostedUrl}/api/assessments/psra/classes/${item.id}`, { credentials: 'include', cache: 'no-store' })));
+      const payloads = await Promise.all(responses.filter((response) => response.ok).map((response) => response.json() as Promise<{ data?: PsraPaperMarkRecord[] }>));
+      const allowedClassIds = new Set(yearSixClasses.map((item) => item.id));
+      setRecords(payloads.flatMap((payload) => payload.data ?? []).filter((record) => allowedClassIds.has(record.class_id) && (canManageAll || assignedClassIds.has(record.class_id) || (subjectCodesByClass.get(record.class_id)?.has(record.paper_code) ?? false))));
+      setLoading(false); return;
+    }
     if (!supabase || !selectedSchool || !hasModuleAccess) return;
     setLoading(true);
     const exam = exams.find(

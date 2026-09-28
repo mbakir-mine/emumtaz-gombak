@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { roleLabel, type AccessProfile } from '@/lib/access';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import { useAccessProfile } from '../ui/AuthGate';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 function accessText(profile: AccessProfile) {
   if (profile.role === 'OWNER' || profile.role === 'ADMIN_DAERAH') {
@@ -44,23 +44,12 @@ export default function ProfileForm() {
       return;
     }
 
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap.');
-      return;
-    }
-
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (!selfHostedUrl) { setMessage('Backend Laravel belum dikonfigurasi.'); return; }
     setLoading(true);
-    const { error } = await supabase
-      .from('app_users')
-      .update({ nama: cleanName.toUpperCase() })
-      .eq('id', profile.id)
-      .eq('email', profile.email);
+    const response = await fetch(`${selfHostedUrl}/api/auth/profile`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama: cleanName.toUpperCase() }) });
     setLoading(false);
-
-    if (error) {
-      setMessage(`Profil gagal dikemaskini: ${error.message}`);
-      return;
-    }
+    if (!response.ok) { setMessage('Profil gagal dikemaskini.'); return; }
 
     setNama(cleanName.toUpperCase());
     setSuccess(true);

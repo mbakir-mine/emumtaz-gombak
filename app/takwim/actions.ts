@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export type TakwimActionState = {
   ok: boolean;
@@ -16,10 +17,8 @@ export async function saveTakwimEvent(
   _previousState: TakwimActionState,
   formData: FormData,
 ): Promise<TakwimActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const tahunAkademik = Number(toText(formData.get('tahun_akademik')));
   const kodSekolah = toText(formData.get('kod_sekolah'));
@@ -38,29 +37,11 @@ export async function saveTakwimEvent(
     return { ok: false, message: 'Tarikh tamat tidak boleh lebih awal daripada tarikh mula.' };
   }
 
-  const { error } = await supabase.from('takwim_events').insert({
-    tahun_akademik: tahunAkademik,
-    kod_sekolah: kodSekolah || null,
-    scope: kodSekolah ? 'SEKOLAH' : 'DAERAH',
-    kategori,
-    tajuk,
-    tarikh_mula: tarikhMula,
-    tarikh_tamat: tarikhTamat,
-    keterangan: keterangan || null,
-    warna,
-    status: 'AKTIF',
-  });
-
-  if (error) {
-    if (error.message.includes('takwim_events') || error.message.includes('school_module_access_module_key_check')) {
-      return {
-        ok: false,
-        message: 'Jadual Takwim belum tersedia. Jalankan SQL supabase/028_takwim_core.sql di Supabase dahulu.',
-      };
-    }
-
-    return { ok: false, message: `Gagal simpan takwim: ${error.message}` };
-  }
+  const response = await fetch(`${selfHostedUrl}/api/takwim`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Cookie: (await cookies()).toString() },
+    body: JSON.stringify({ tahun_akademik: tahunAkademik, kod_sekolah: kodSekolah || null, kategori, tajuk, tarikh_mula: tarikhMula, tarikh_tamat: tarikhTamat, keterangan: keterangan || null, warna }), cache: 'no-store',
+  }).catch(() => null);
+  if (!response?.ok) return { ok: false, message: 'Gagal simpan takwim pada backend self-hosted.' };
 
   revalidatePath('/takwim');
   revalidatePath('/kehadiran');

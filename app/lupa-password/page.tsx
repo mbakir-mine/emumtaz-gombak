@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export default function LupaPasswordPage() {
   const [email, setEmail] = useState('');
@@ -24,23 +24,12 @@ export default function LupaPasswordPage() {
 
     if (cooldown > 0) return;
 
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap.');
-      return;
-    }
-
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (!selfHostedUrl) { setMessage('Backend Laravel belum dikonfigurasi.'); return; }
     setLoading(true);
-    const normalizedEmail = email.trim().toLowerCase();
-    const redirectTo = `${window.location.origin}/reset-password`;
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo,
-    });
+    const response = await fetch(`${selfHostedUrl}/api/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase() }) });
     setLoading(false);
-
-    if (error) {
-      setMessage('Pautan belum dapat dihantar. Sila tunggu sebentar dan cuba semula.');
-      return;
-    }
+    if (!response.ok) { setMessage('Pautan belum dapat dihantar. Sila cuba semula.'); return; }
 
     setSuccess(true);
     setCooldown(60);

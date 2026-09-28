@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Sekolah — e-Mumtaz')
+@section('content')<h1>Sekolah</h1><p class="muted">Senarai sekolah dalam skop akaun anda.</p>@include('admin._school-form')<div class="card"><table><thead><tr><th>Kod</th><th>Nama sekolah</th><th>Daerah</th><th>Zon</th><th>Status</th></tr></thead><tbody>@forelse($schools as $school)<tr><td>{{ $school->kod_sekolah }}</td><td>{{ $school->nama_sekolah }}</td><td>{{ $school->daerah ?: '—' }}</td><td>{{ $school->zon ?: '—' }}</td><td>{{ $school->status }}</td></tr>@empty<tr><td colspan="5">Tiada rekod.</td></tr>@endforelse</tbody></table></div>@endsection

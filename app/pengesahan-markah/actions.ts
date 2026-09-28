@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getAuthenticatedSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type MarkWorkflowActionState = { ok: boolean; message: string };
 const statuses = new Set(['DRAF', 'DIHANTAR', 'DISAHKAN', 'DIKUNCI', 'PEMBETULAN']);
@@ -11,8 +12,8 @@ export async function transitionMarkSubmission(
   _previous: MarkWorkflowActionState,
   formData: FormData,
 ): Promise<MarkWorkflowActionState> {
-  const supabase = await getAuthenticatedSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const schoolCode = String(formData.get('kod_sekolah') ?? '').trim().toUpperCase();
   const examId = String(formData.get('exam_id') ?? '').trim();
@@ -24,15 +25,8 @@ export async function transitionMarkSubmission(
     return { ok: false, message: 'Skop atau status penghantaran tidak sah.' };
   }
 
-  const { error } = await supabase.rpc('transition_mark_submission', {
-    p_school_code: schoolCode,
-    p_exam_id: examId,
-    p_class_id: classId,
-    p_subject_code: subjectCode,
-    p_next_status: nextStatus,
-    p_notes: notes,
-  });
-  if (error) return { ok: false, message: `Tindakan gagal: ${error.message}` };
+  const response = await fetch(`${selfHostedUrl}/api/mark-workflows`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ kod_sekolah: schoolCode, exam_id: examId, class_id: classId, kod_subjek: subjectCode, status: nextStatus, notes }), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: 'Tindakan gagal pada backend Laravel.' };
 
   revalidatePath('/pengesahan-markah');
   revalidatePath('/notifikasi');

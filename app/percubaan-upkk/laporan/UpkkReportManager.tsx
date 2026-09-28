@@ -15,7 +15,7 @@ import type {
 } from '@/lib/data';
 import { DEFAULT_UPKK_GRADES, UPKK_WRITTEN_PAPERS, UPKK_WRITTEN_TOTAL_MAX, upkkGrade, upkkPercentage, type UpkkGradeSettings, type UpkkWrittenMark } from '@/lib/upkkTrial';
 import { cleanMykid } from '@/lib/mykid';
-import { supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import { useAccessProfile } from '../../ui/AuthGate';
 
 type Props = {
@@ -54,6 +54,7 @@ const GRADE_COLORS: Record<string, string> = {
   C: '#e2b238',
   D: '#c84d4d',
 };
+const supabase = null as any;
 
 function isActive(status: string | null | undefined) {
   return (status ?? '').toUpperCase() === 'AKTIF';
@@ -181,6 +182,14 @@ export default function UpkkReportManager({
     );
 
     async function loadSchoolStudents() {
+      const selfHostedUrl = getTrustedSelfHostedUrl();
+      if (selfHostedUrl && selectedSchool && hasModuleAccess) {
+        void fetch(`${selfHostedUrl}/api/students?per_page=1000&kod_sekolah=${encodeURIComponent(selectedSchool)}`, { credentials: 'include', cache: 'no-store' }).then(async (response) => {
+          const payload = await response.json() as { data?: { data?: StudentRecord[] } };
+          if (!cancelled) setSchoolStudents(payload.data?.data ?? serverSchoolStudents);
+        }).catch(() => { if (!cancelled) setSchoolStudents(serverSchoolStudents); });
+        return;
+      }
       if (!supabase || !selectedSchool || !hasModuleAccess) {
         if (!cancelled) setSchoolStudents(serverSchoolStudents);
         return;
@@ -232,6 +241,17 @@ export default function UpkkReportManager({
   const loadRecords = useCallback(async () => {
     setRecords([]);
     setMessage('');
+    const selfHostedUrl = getTrustedSelfHostedUrl();
+    if (selfHostedUrl && selectedSchool && hasModuleAccess) {
+      setLoading(true);
+      const responses = await Promise.all(yearFiveClasses.map((item) => fetch(`${selfHostedUrl}/api/assessments/upkk/classes/${item.id}`, { credentials: 'include', cache: 'no-store' })));
+      const payloads = await Promise.all(responses.filter((response) => response.ok).map((response) => response.json() as Promise<{ data?: UpkkWrittenMark[] }>));
+      const allowedClassIds = new Set(yearFiveClasses.map((item) => item.id));
+      setRecords(payloads.flatMap((payload) => payload.data ?? []).filter((record) => allowedClassIds.has(record.class_id) && (canManageAll || assignedClassIds.has(record.class_id) || UPKK_WRITTEN_PAPERS.some((paper) => paper.paperCode === record.paper_code && (subjectCodesByClass.get(record.class_id)?.has(paper.subjectCode) ?? false)))));
+      const gradeResponse = await fetch(`${selfHostedUrl}/api/assessments/upkk/context?kod_sekolah=${encodeURIComponent(selectedSchool)}&tahun_akademik=${selectedYear}&class_id=${yearFiveClasses[0]?.id ?? ''}&sesi=${session}`, { credentials: 'include', cache: 'no-store' });
+      if (gradeResponse.ok) setGrades((await gradeResponse.json() as { grades?: UpkkGradeSettings }).grades ?? { kod_sekolah: selectedSchool, ...DEFAULT_UPKK_GRADES });
+      setLoading(false); return;
+    }
     if (!supabase || !selectedSchool || !hasModuleAccess) return;
     setLoading(true);
     const exam = exams.find(

@@ -1,30 +1,16 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export async function updateExamAccess(formData: FormData) {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) return;
-
+  const baseUrl = getTrustedSelfHostedUrl();
+  if (!baseUrl) return;
   const id = String(formData.get('id') ?? '').trim();
-  const bukaMarkah = String(formData.get('buka_markah') ?? '').trim();
-  const tutupMarkah = String(formData.get('tutup_markah') ?? '').trim();
   const status = String(formData.get('status') ?? '').trim().toUpperCase();
-
-  if (!id || !['DIBUKA', 'DITUTUP'].includes(status)) {
-    return;
-  }
-
-  await supabase
-    .from('exams')
-    .update({
-      buka_markah: bukaMarkah || null,
-      tutup_markah: tutupMarkah || null,
-      status,
-    })
-    .eq('id', id);
-
+  if (!id || !['DIBUKA', 'DITUTUP'].includes(status)) return;
+  await fetch(`${baseUrl}/api/exams/${encodeURIComponent(id)}/access`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ buka_markah: String(formData.get('buka_markah') ?? '').trim() || null, tutup_markah: String(formData.get('tutup_markah') ?? '').trim() || null, status }), cache: 'no-store' });
   revalidatePath('/setup');
   revalidatePath('/markah');
 }

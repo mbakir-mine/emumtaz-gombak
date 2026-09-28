@@ -1,374 +1,67 @@
 'use server';
 
-import { refresh, revalidatePath } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
 import { navItems } from '@/lib/access';
-import { sendActivationEmail } from '@/lib/activationEmail';
-import {
-  provisionAuthUser,
-  resetAuthUserPassword,
-  verifyOwnerAccessToken,
-  type AuthProvisionProfile,
-} from '@/lib/authProvisioning';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
-const allowedStatuses = ['AKTIF', 'MENUNGGU', 'DIGANTUNG'];
-const allowedRoles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
-const allowedZones = ['BARAT', 'TIMUR', 'TENGAH'];
-const allowedNavKeys = navItems.filter((item) => !item.hidden && item.key !== 'dashboard').map((item) => item.key);
+export type UserStatusActionState = { ok: boolean; message: string };
+const statuses = ['AKTIF', 'MENUNGGU', 'DIGANTUNG'];
+const roles = ['ADMIN_DAERAH', 'ADMIN_ZON', 'ADMIN_SEKOLAH', 'GURU_KELAS', 'GURU_SUBJEK'];
+const navKeys = navItems.filter((item) => !item.hidden && item.key !== 'dashboard').map((item) => item.key);
 
-export type UserStatusActionState = {
-  ok: boolean;
-  message: string;
-};
-
-async function requireOwner(formData: FormData): Promise<UserStatusActionState | null> {
-  const accessToken = String(formData.get('access_token') ?? '').trim();
-  if (await verifyOwnerAccessToken(accessToken)) return null;
-  return { ok: false, message: 'Sesi Pentadbir Utama tidak sah. Sila log masuk semula.' };
+async function call(path: string, method: string, body?: unknown) {
+  const base = getTrustedSelfHostedUrl();
+  if (!base) throw new Error('Backend self-hosted belum disambungkan.');
+  const headers = new Headers({ Cookie: (await cookies()).toString() });
+  if (body !== undefined) headers.set('Content-Type', 'application/json');
+  return fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
 }
 
-function cleanStatus(value: FormDataEntryValue | null) {
-  return String(value ?? '').trim().toUpperCase();
+function clean(value: FormDataEntryValue | null) { return String(value ?? '').trim().toUpperCase(); }
+function ids(formData: FormData) { return formData.getAll('user_ids').map(String).filter(Boolean); }
+function refreshUsers(id?: string) { revalidatePath('/pengguna'); revalidatePath('/guru'); revalidatePath('/'); if (id) revalidatePath(`/pengguna/${id}`); }
+
+export async function updateUserStatusOnly(_state: UserStatusActionState, formData: FormData): Promise<UserStatusActionState> {
+  const id = String(formData.get('id') ?? '').trim(); const status = clean(formData.get('status'));
+  if (!id || !statuses.includes(status)) return { ok: false, message: 'Status tidak sah.' };
+  const response = await call(`/api/admin/users/${id}/${status === 'AKTIF' ? 'activate' : 'status'}`, status === 'AKTIF' ? 'POST' : 'PATCH', status === 'AKTIF' ? undefined : { status });
+  const payload = await response.json().catch(() => null) as { temporary_password?: string; message?: string } | null;
+  if (!response.ok) return { ok: false, message: payload?.message ?? `Gagal kemaskini status (${response.status}).` };
+  refreshUsers(id); return { ok: true, message: payload?.temporary_password ? `Pengguna diaktifkan. Kata laluan sementara: ${payload.temporary_password}.` : `Status pengguna dikemaskini kepada ${status}.` };
 }
 
-type UserForProvision = AuthProvisionProfile & {
-  status: string;
-};
-
-async function prepareActivationUpdate(user: UserForProvision, targetStatus: string) {
-  const updates: { status: string; auth_user_id?: string; must_change_password?: boolean } = { status: targetStatus };
-
-  if (targetStatus !== 'AKTIF') return { ok: true as const, updates, message: '', temporaryPassword: undefined };
-
-  const provision = await provisionAuthUser(user);
-  if (!provision.ok) return provision;
-
-  updates.auth_user_id = provision.authUserId;
-  if (user.status !== 'AKTIF' || provision.created || !user.auth_user_id) {
-    updates.must_change_password = Boolean(provision.temporaryPassword);
+export async function bulkUpdateUserStatusOnly(_state: UserStatusActionState, formData: FormData): Promise<UserStatusActionState> {
+  const status = clean(formData.get('status')); const selected = ids(formData);
+  if (!statuses.includes(status) || !selected.length) return { ok: false, message: 'Status atau pengguna tidak sah.' };
+  for (const id of selected) {
+    const response = await call(`/api/admin/users/${id}/${status === 'AKTIF' ? 'activate' : 'status'}`, status === 'AKTIF' ? 'POST' : 'PATCH', status === 'AKTIF' ? undefined : { status });
+    if (!response.ok) return { ok: false, message: `Gagal kemaskini pengguna (${response.status}).` };
   }
-
-  return {
-    ok: true as const,
-    updates,
-    message: ` ${provision.message}`,
-    temporaryPassword: provision.temporaryPassword,
-  };
+  refreshUsers(); return { ok: true, message: `${selected.length} status pengguna berjaya dikemaskini kepada ${status}.` };
 }
 
-async function activationEmailMessage(user: UserForProvision, shouldSend: boolean, temporaryPassword?: string) {
-  if (!shouldSend) return '';
-
-  const email = await sendActivationEmail(user, temporaryPassword);
-  return ` ${email.message}`;
+export async function updateUserStatus(_state: UserStatusActionState, formData: FormData): Promise<UserStatusActionState> {
+  const id = String(formData.get('id') ?? '').trim(); const status = clean(formData.get('status')); const role = clean(formData.get('role')); const zon = clean(formData.get('zon'));
+  const kodSekolah = String(formData.get('kod_sekolah') ?? '').trim() || null;
+  const allowedNav = formData.getAll('allowed_nav').map(String).filter((value) => navKeys.includes(value));
+  if (!id || !statuses.includes(status) || !roles.includes(role)) return { ok: false, message: 'Role atau status tidak sah.' };
+  const response = await call(`/api/admin/users/${id}`, 'PATCH', { status, role, zon: zon || null, kod_sekolah: kodSekolah, allowed_nav: allowedNav });
+  const payload = await response.json().catch(() => null) as { message?: string } | null;
+  if (!response.ok) return { ok: false, message: payload?.message ?? `Gagal simpan pengguna (${response.status}).` };
+  refreshUsers(id); return { ok: true, message: 'Profil pengguna berjaya dikemaskini.' };
 }
 
-export async function updateUserStatusOnly(
-  _previousState: UserStatusActionState,
-  formData: FormData,
-): Promise<UserStatusActionState> {
-  const supabase = await getSupabaseServerClient();
-  const denied = await requireOwner(formData);
-  if (denied) return denied;
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
-  const id = String(formData.get('id') ?? '').trim();
-  const status = cleanStatus(formData.get('status'));
-
-  if (!id || !allowedStatuses.includes(status)) {
-    return { ok: false, message: 'Status tidak sah.' };
-  }
-
-  const { data: user } = await supabase
-    .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (!user || user.role === 'OWNER') {
-    return { ok: false, message: 'Pengguna tidak boleh dikemaskini.' };
-  }
-
-  const typedUser = user as UserForProvision;
-  const shouldSendEmail = status === 'AKTIF' && typedUser.status !== 'AKTIF';
-  const activation = await prepareActivationUpdate(typedUser, status);
-  if (!activation.ok) {
-    return { ok: false, message: activation.message };
-  }
-
-  const { error } = await supabase.from('app_users').update(activation.updates).eq('id', id);
-
-  if (error) {
-    return { ok: false, message: `Gagal kemaskini status: ${error.message}` };
-  }
-
-  revalidatePath('/pengguna');
-  revalidatePath('/guru');
-  revalidatePath('/');
-  const emailMessage = await activationEmailMessage(typedUser, shouldSendEmail, activation.temporaryPassword);
-  return { ok: true, message: `Status pengguna dikemaskini kepada ${status}.${activation.message}${emailMessage}` };
-}
-
-export async function bulkUpdateUserStatusOnly(
-  _previousState: UserStatusActionState,
-  formData: FormData,
-): Promise<UserStatusActionState> {
-  const supabase = await getSupabaseServerClient();
-  const denied = await requireOwner(formData);
-  if (denied) return denied;
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
-  const status = cleanStatus(formData.get('status'));
-  const ids = formData
-    .getAll('user_ids')
-    .map((value) => String(value).trim())
-    .filter(Boolean);
-
-  if (!allowedStatuses.includes(status)) {
-    return { ok: false, message: 'Sila pilih status yang sah.' };
-  }
-
-  if (ids.length === 0) {
-    return { ok: false, message: 'Tiada pengguna dipilih untuk dikemaskini.' };
-  }
-
-  const { data: users } = await supabase
-    .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
-    .in('id', ids)
-    .neq('role', 'OWNER');
-
-  const safeUsers = (users ?? []) as UserForProvision[];
-  if (safeUsers.length === 0) {
-    return { ok: false, message: 'Tiada pengguna yang boleh dikemaskini.' };
-  }
-
-  if (status === 'AKTIF') {
-    let createdCount = 0;
-    let linkedCount = 0;
-    let emailedCount = 0;
-    let emailWarning = '';
-
-    for (const user of safeUsers) {
-      const shouldSendEmail = user.status !== 'AKTIF';
-      const activation = await prepareActivationUpdate(user, status);
-      if (!activation.ok) {
-        return { ok: false, message: activation.message };
-      }
-
-      if (activation.updates.auth_user_id && user.auth_user_id !== activation.updates.auth_user_id) {
-        if (activation.message.includes('dicipta')) createdCount += 1;
-        else linkedCount += 1;
-      }
-
-      const { error } = await supabase.from('app_users').update(activation.updates).eq('id', user.id);
-      if (error) {
-        return { ok: false, message: `Gagal kemaskini ${user.email}: ${error.message}` };
-      }
-
-      if (shouldSendEmail) {
-        const email = await sendActivationEmail(user, activation.temporaryPassword);
-        if (email.ok) emailedCount += 1;
-        else emailWarning = email.message;
-      }
-    }
-
-    revalidatePath('/pengguna');
-    revalidatePath('/guru');
-    revalidatePath('/');
-    return {
-      ok: true,
-      message:
-        `${safeUsers.length} status pengguna berjaya dikemaskini kepada AKTIF. ` +
-        `${createdCount} akaun login dicipta, ${linkedCount} akaun login sedia ada dipautkan. ` +
-        `${emailedCount} email aktivasi dihantar.` +
-        (emailWarning ? ` ${emailWarning}` : ''),
-    };
-  }
-
-  const safeIds = safeUsers.map((user) => user.id);
-  const { error } = await supabase.from('app_users').update({ status }).in('id', safeIds);
-
-  if (error) {
-    return { ok: false, message: `Gagal kemaskini status: ${error.message}` };
-  }
-
-  revalidatePath('/pengguna');
-  revalidatePath('/guru');
-  revalidatePath('/');
-  return { ok: true, message: `${safeIds.length} status pengguna berjaya dikemaskini kepada ${status}.` };
-}
-
-export async function updateUserStatus(
-  _previousState: UserStatusActionState,
-  formData: FormData,
-): Promise<UserStatusActionState> {
-  const supabase = await getSupabaseServerClient();
-  const denied = await requireOwner(formData);
-  if (denied) return denied;
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
-  const id = String(formData.get('id') ?? '').trim();
-  const status = String(formData.get('status') ?? '').trim().toUpperCase();
-  const role = String(formData.get('role') ?? '').trim().toUpperCase();
-  const zon = String(formData.get('zon') ?? '').trim().toUpperCase();
-  const allowedNav = formData
-    .getAll('allowed_nav')
-    .map((value) => String(value))
-    .filter((value) => allowedNavKeys.includes(value));
-
-  if (!id || !allowedStatuses.includes(status) || !allowedRoles.includes(role)) {
-    return { ok: false, message: 'Role atau status tidak sah.' };
-  }
-
-  if (role === 'ADMIN_ZON' && !allowedZones.includes(zon)) {
-    return { ok: false, message: 'Sila pilih zon untuk Admin Zon.' };
-  }
-
-  const { data: user } = await supabase
-    .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (user?.role === 'OWNER') {
-    return { ok: false, message: 'Akaun Pentadbir Utama tidak boleh diubah.' };
-  }
-
-  const updates: {
-    role: string;
-    status: string;
-    zon?: string | null;
-    kod_sekolah?: string | null;
-    allowed_nav?: string[] | null;
-    auth_user_id?: string;
-    must_change_password?: boolean;
-  } = { role, status };
-
-  if (role === 'ADMIN_DAERAH') {
-    updates.kod_sekolah = null;
-    updates.zon = null;
-  }
-
-  if (role === 'ADMIN_ZON') {
-    updates.kod_sekolah = null;
-    updates.zon = zon;
-  }
-
-  updates.allowed_nav = allowedNav;
-
-  let activationMessage = '';
-  let activationTemporaryPassword: string | undefined;
-  let activationUser: UserForProvision | null = null;
-  const shouldSendEmail = status === 'AKTIF' && user?.status !== 'AKTIF';
-  if (status === 'AKTIF' && user) {
-    activationUser = {
-      ...(user as UserForProvision),
-      role,
-      zon: role === 'ADMIN_ZON' ? zon : null,
-      kod_sekolah: role === 'ADMIN_DAERAH' || role === 'ADMIN_ZON' ? null : user.kod_sekolah,
-    };
-    const activation = await prepareActivationUpdate(
-      activationUser,
-      status,
-    );
-    if (!activation.ok) {
-      return { ok: false, message: activation.message };
-    }
-    if (activation.updates.auth_user_id) {
-      updates.auth_user_id = activation.updates.auth_user_id;
-    }
-    if (typeof activation.updates.must_change_password === 'boolean') {
-      updates.must_change_password = activation.updates.must_change_password;
-    }
-    activationMessage = activation.message;
-    activationTemporaryPassword = activation.temporaryPassword;
-  }
-
-  const { error } = await supabase.from('app_users').update(updates).eq('id', id);
-
-  if (error) {
-    return { ok: false, message: `Gagal simpan pengguna: ${error.message}` };
-  }
-
-  revalidatePath('/pengguna');
-  revalidatePath(`/pengguna/${id}`);
-  revalidatePath('/guru');
-  revalidatePath('/');
-  const emailMessage = activationUser
-    ? await activationEmailMessage(activationUser, shouldSendEmail, activationTemporaryPassword)
-    : '';
-  refresh();
-  return { ok: true, message: `Profil pengguna berjaya dikemaskini.${activationMessage}${emailMessage}` };
-}
-
-export async function resetUserPassword(
-  _previousState: UserStatusActionState,
-  formData: FormData,
-): Promise<UserStatusActionState> {
-  const supabase = await getSupabaseServerClient();
-  const denied = await requireOwner(formData);
-  if (denied) return denied;
-
-  if (!supabase) return { ok: false, message: 'Supabase belum disambungkan.' };
-  const id = String(formData.get('id') ?? '').trim();
-  if (!id) return { ok: false, message: 'Pengguna tidak sah.' };
-
-  const { data: user, error: userError } = await supabase
-    .from('app_users')
-    .select('id,email,nama,role,kod_sekolah,zon,status,auth_user_id')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (userError) return { ok: false, message: `Gagal menyemak pengguna: ${userError.message}` };
-  if (!user || user.role === 'OWNER') return { ok: false, message: 'Kata laluan pengguna ini tidak boleh direset.' };
-  if (user.status !== 'AKTIF') return { ok: false, message: 'Hanya pengguna aktif boleh menerima kata laluan sementara.' };
-
-  const reset = await resetAuthUserPassword(user as UserForProvision);
-  if (!reset.ok) return { ok: false, message: reset.message };
-
-  revalidatePath('/pengguna');
-  revalidatePath(`/pengguna/${id}`);
-  revalidatePath('/guru');
-  revalidatePath('/');
-  return {
-    ok: true,
-    message:
-      `Kata laluan sementara: ${reset.temporaryPassword}. ` +
-      'Salin dan berikan kepada pengguna secara peribadi. Pengguna wajib menukarnya selepas log masuk.',
-  };
+export async function resetUserPassword(_state: UserStatusActionState, formData: FormData): Promise<UserStatusActionState> {
+  const id = String(formData.get('id') ?? '').trim(); if (!id) return { ok: false, message: 'Pengguna tidak sah.' };
+  const response = await call(`/api/admin/users/${id}/reset-password`, 'POST');
+  const payload = await response.json().catch(() => null) as { temporary_password?: string; message?: string } | null;
+  if (!response.ok || !payload?.temporary_password) return { ok: false, message: payload?.message ?? `Gagal reset password (${response.status}).` };
+  refreshUsers(id); return { ok: true, message: `Kata laluan sementara: ${payload.temporary_password}. Salin dan berikan kepada pengguna secara peribadi.` };
 }
 
 export async function deleteUserProfile(formData: FormData) {
-  const supabase = await getSupabaseServerClient();
-  if (await requireOwner(formData)) return;
-  if (!supabase) {
-    return;
-  }
-
-  const id = String(formData.get('id') ?? '').trim();
-
-  if (!id) {
-    return;
-  }
-
-  const { data: user } = await supabase.from('app_users').select('role').eq('id', id).maybeSingle();
-
-  if (user?.role === 'OWNER') {
-    return;
-  }
-
-  await supabase.from('app_users').delete().eq('id', id);
-
-  revalidatePath('/pengguna');
-  revalidatePath('/guru');
-  revalidatePath('/');
-  redirect('/pengguna');
+  const id = String(formData.get('id') ?? '').trim(); if (!id) return;
+  await call(`/api/admin/users/${id}`, 'DELETE'); refreshUsers(); redirect('/pengguna');
 }

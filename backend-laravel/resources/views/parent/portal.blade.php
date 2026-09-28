@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Laporan Murid — e-Mumtaz')
+@section('content')<h1>Laporan murid</h1><div class="card"><p><strong>{{ $student->nama }}</strong></p><p class="muted">{{ $student->mykid }} · {{ $student->kod_sekolah }}</p></div><div class="card"><table><thead><tr><th>Subjek</th><th>Markah</th><th>Gred</th></tr></thead><tbody>@forelse($marks as $mark)<tr><td>{{ $mark->kod_subjek }}</td><td>{{ $mark->markah }}</td><td>{{ $mark->gred ?? '—' }}</td></tr>@empty<tr><td colspan="3">Tiada markah tersedia.</td></tr>@endforelse</tbody></table></div><form method="POST" action="{{ route('parent.logout') }}">@csrf<button>Log keluar</button></form>@endsection

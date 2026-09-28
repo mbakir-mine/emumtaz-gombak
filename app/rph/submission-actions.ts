@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { getRphWeekStart } from '@/lib/rph';
-import { getAuthenticatedSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type RphSubmissionActionState = { ok: boolean; message: string };
 
@@ -30,18 +31,10 @@ export async function transitionRphWeeklySubmission(
     return { ok: false, message: 'Nyatakan pembetulan yang diperlukan, sekurang-kurangnya 5 aksara.' };
   }
 
-  const supabase = await getAuthenticatedSupabaseServerClient();
-  if (!supabase) return { ok: false, message: 'Sesi pengguna tidak sah. Sila log masuk semula.' };
-
-  const { error } = await supabase.rpc('transition_rph_weekly_submission', {
-    p_actor_profile_id: actorProfileId,
-    p_school_code: schoolCode,
-    p_week_start: weekStart,
-    p_submission_id: submissionId || null,
-    p_next_action: nextAction,
-    p_note: note,
-  });
-  if (error) return { ok: false, message: `Tindakan tidak berjaya: ${error.message}` };
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
+  const response = await fetch(`${selfHostedUrl}/api/rph/weekly/transition`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ submission_id: submissionId || null, kod_sekolah: schoolCode, week_start: weekStart, next_action: nextAction, note }), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: `Tindakan tidak berjaya (${response.status}).` };
 
   revalidatePath('/rph');
   revalidatePath('/notifikasi');

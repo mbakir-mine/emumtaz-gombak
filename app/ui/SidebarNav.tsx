@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { navItems, visibleNavItems } from '@/lib/access';
-import { supabase, syncServerSession } from '@/lib/supabase';
 import { useAccessProfile } from './AuthGate';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 const groupedMenu = [
   {
@@ -117,8 +117,8 @@ export default function SidebarNav({ active }: { active: string }) {
   const pathname = usePathname();
   const profile = useAccessProfile();
   async function logout() {
-    await supabase?.auth.signOut();
-    await syncServerSession(null);
+    const baseUrl = getTrustedSelfHostedUrl();
+    if (baseUrl) await fetch(`${baseUrl}/api/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => undefined);
     router.replace('/login');
   }
 

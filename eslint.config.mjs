@@ -26,6 +26,7 @@ const eslintConfig = defineConfig([
     "_backup_before_migration_2026-07-14/**",
     "out/**",
     "build/**",
+    "backend-laravel/**",
     "next-env.d.ts",
   ]),
   {

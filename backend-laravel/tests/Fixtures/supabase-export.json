@@ -1,0 +1,12 @@
+{
+  "schools": [{"id":"11111111-1111-1111-1111-111111111111","kod_sekolah":"SRA001","nama_sekolah":"Sekolah Ujian","daerah":"GOMBAK","zon":"BARAT","status":"AKTIF"}],
+  "app_users": [{"id":"22222222-2222-2222-2222-222222222222","email":"guru@example.test","nama":"GURU UJIAN","role":"GURU_SUBJEK","kod_sekolah":"SRA001","status":"AKTIF"}],
+  "classes": [{"id":"33333333-3333-3333-3333-333333333333","kod_sekolah":"SRA001","tahun_akademik":2026,"tahun":1,"nama_kelas":"1 Amanah","status":"AKTIF"}],
+  "students": [{"id":"44444444-4444-4444-4444-444444444444","mykid":"260101010001","nama_murid":"MURID UJIAN","kod_sekolah":"SRA001","class_id":"33333333-3333-3333-3333-333333333333","status":"AKTIF"}],
+  "subjects": [{"id":"55555555-5555-5555-5555-555555555555","kod_subjek":"TAUHID","nama_subjek":"Tauhid","markah_penuh":100,"dikira_purata":true,"susunan":1,"status":"AKTIF"}],
+  "exams": [{"id":"66666666-6666-6666-6666-666666666666","kod_peperiksaan":"UPSA","nama_peperiksaan":"Ujian Pertengahan","tahun_akademik":2026,"status":"DIBUKA"}],
+  "teacher_class_assignments": [{"id":"77777777-7777-7777-7777-777777777777","user_id":"22222222-2222-2222-2222-222222222222","class_id":"33333333-3333-3333-3333-333333333333"}],
+  "teacher_subject_assignments": [{"id":"88888888-8888-8888-8888-888888888888","user_id":"22222222-2222-2222-2222-222222222222","class_id":"33333333-3333-3333-3333-333333333333","kod_subjek":"TAUHID"}],
+  "grade_scales": [{"id":"99999999-9999-9999-9999-999999999999","nama_gred":"A","markah_min":80,"markah_max":100,"susunan":1}],
+  "marks": [{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","exam_id":"66666666-6666-6666-6666-666666666666","student_id":"44444444-4444-4444-4444-444444444444","kod_sekolah":"SRA001","class_id":"33333333-3333-3333-3333-333333333333","kod_subjek":"TAUHID","markah":88,"entered_by":"22222222-2222-2222-2222-222222222222"}]
+}

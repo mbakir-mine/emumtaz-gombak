@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type ComponentMarkActionState = {
   ok: boolean;
@@ -16,10 +17,8 @@ export async function saveComponentMarkSettings(
   _previousState: ComponentMarkActionState,
   formData: FormData,
 ): Promise<ComponentMarkActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum dikonfigurasi.' };
 
   const tahunAkademik = Number(formData.get('tahun_akademik') ?? 0);
   const kodPeperiksaan = String(formData.get('kod_peperiksaan') ?? '').trim();
@@ -77,20 +76,8 @@ export async function saveComponentMarkSettings(
     };
   }
 
-  const { error } = await supabase.from('subject_component_mark_settings').upsert(rows, {
-    onConflict: 'tahun_akademik,kod_peperiksaan,tahun,kod_subjek,kod_komponen',
-  });
-
-  if (error) {
-    if (error.message.includes('subject_component_mark_settings')) {
-      return {
-        ok: false,
-        message: 'Jadual subject_component_mark_settings belum wujud. Jalankan SQL 027_subject_component_mark_settings.sql dahulu.',
-      };
-    }
-
-    return { ok: false, message: `Gagal simpan tetapan komponen markah: ${error.message}` };
-  }
+  const response = await fetch(`${selfHostedUrl}/api/mark-settings/components`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ tahun_akademik: tahunAkademik, kod_peperiksaan: kodPeperiksaan, tahun, rows: rows.map((row) => ({ kod_subjek: row.kod_subjek, kod_komponen: row.kod_komponen, markah_penuh: row.markah_penuh })) }), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: 'Gagal simpan tetapan komponen markah pada backend Laravel.' };
 
   revalidatePath('/komponen-markah');
   revalidatePath('/markah');

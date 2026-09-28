@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -13,46 +13,23 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState(
-    hasSupabaseEnv ? 'Menyemak pautan pemulihan...' : 'Tetapan Supabase belum lengkap.',
+    'Menyemak pautan pemulihan...',
   );
   const [success, setSuccess] = useState(false);
+  const selfHosted = getTrustedSelfHostedUrl();
 
   useEffect(() => {
-    if (!supabase) {
-      return;
-    }
-
-    let active = true;
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!active) return;
-      if (event === 'PASSWORD_RECOVERY' || (event === 'INITIAL_SESSION' && session) || event === 'SIGNED_IN') {
-        setReady(Boolean(session));
-        setMessage(session ? '' : 'Pautan pemulihan tidak sah atau telah tamat tempoh.');
-      }
-    });
-
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      setReady(Boolean(data.session));
-      setMessage(error || !data.session ? 'Pautan pemulihan tidak sah atau telah tamat tempoh.' : '');
-    });
-
-    return () => {
-      active = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    setReady(Boolean(selfHosted && params.get('token') && params.get('email')));
+    setMessage(selfHosted && params.get('token') && params.get('email') ? '' : 'Pautan pemulihan tidak sah atau telah tamat tempoh.');
+  }, [selfHosted]);
 
   async function handleUpdate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
     setSuccess(false);
 
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap.');
-      return;
-    }
-
+    if (!selfHosted) { setMessage('Backend Laravel belum dikonfigurasi.'); return; }
     if (password.length < 8) {
       setMessage('Kata laluan mesti sekurang-kurangnya 8 aksara.');
       return;
@@ -63,44 +40,12 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    const params = new URLSearchParams(window.location.search);
     setLoading(true);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      setLoading(false);
-      setMessage(`Gagal kemaskini kata laluan: ${error.message}`);
-      return;
-    }
-
-    const user = sessionData.session?.user;
-    let profileUpdateFailed = false;
-    if (user?.id) {
-      const { error: idError } = await supabase
-        .from('app_users')
-        .update({ must_change_password: false })
-        .eq('auth_user_id', user.id);
-      profileUpdateFailed = Boolean(idError);
-    }
-    if (user?.email) {
-      const { error: emailError } = await supabase
-        .from('app_users')
-        .update({ must_change_password: false })
-        .ilike('email', user.email);
-      profileUpdateFailed = profileUpdateFailed || Boolean(emailError);
-    }
-
-    await supabase.auth.signOut({ scope: 'global' });
-    await syncServerSession(null);
+    const response = await fetch(`${selfHosted}/api/auth/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: params.get('token'), email: params.get('email'), password, password_confirmation: confirmPassword }) });
     setLoading(false);
-    setReady(false);
-
-    setSuccess(true);
-    setMessage(
-      profileUpdateFailed
-        ? 'Kata laluan berjaya dikemaskini, tetapi status profil perlu disemak oleh Pentadbir Utama.'
-        : 'Kata laluan berjaya dikemaskini. Semua sesi lama telah ditamatkan. Sila log masuk semula.',
-    );
+    if (!response.ok) { setMessage('Pautan tidak sah atau password tidak dapat dikemaskini.'); return; }
+    setSuccess(true); setReady(false); setMessage('Kata laluan berjaya dikemaskini. Sila log masuk semula.');
     window.setTimeout(() => router.push('/login'), 1500);
   }
 

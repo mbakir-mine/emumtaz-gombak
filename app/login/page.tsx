@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { hasSupabaseEnv, supabase, syncServerSession } from '@/lib/supabase';
 import PasswordField from '../ui/PasswordField';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+
+const selfHostedAuthUrl = getTrustedSelfHostedUrl();
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,78 +17,32 @@ export default function LoginPage() {
     event.preventDefault();
     setMessage('');
 
-    if (!hasSupabaseEnv || !supabase) {
-      setMessage('Tetapan Supabase belum lengkap. Sila isi .env.local dahulu.');
-      return;
-    }
-
-    setLoading(true);
-    const cleanEmail = email.trim().toLowerCase();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
-
-    if (error) {
-      void fetch('/api/auth/login-attempt', {
+    if (selfHostedAuthUrl) {
+      setLoading(true);
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      const response = await fetch(`${selfHostedAuthUrl}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail }),
-        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        credentials: 'include',
+        mode: 'cors',
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         cache: 'no-store',
-      }).catch(() => undefined);
+        signal: controller.signal,
+      }).catch(() => null);
+      window.clearTimeout(timeout);
+      if (!response?.ok) {
+        setLoading(false);
+        setMessage('Login gagal. Semak email dan password.');
+        return;
+      }
       setLoading(false);
-      setMessage('Login gagal. Semak email dan password.');
+      window.localStorage.removeItem('emumtaz_selected_profile_id');
+      window.location.assign(new URL('/', window.location.origin).href);
       return;
     }
 
-    const user = data.user;
-    const profileFilter = user.id
-      ? `auth_user_id.eq.${user.id},email.ilike.${cleanEmail}`
-      : `email.ilike.${cleanEmail}`;
-    const { data: activeProfiles, error: activeError } = await supabase
-      .from('app_users')
-      .select('id')
-      .or(profileFilter)
-      .eq('status', 'AKTIF')
-      .limit(1);
-
-    if (activeError) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      setMessage('Ralat menyemak status akaun. Sila cuba semula.');
-      return;
-    }
-
-    if (!activeProfiles || activeProfiles.length === 0) {
-      const { data: pendingProfiles } = await supabase
-        .from('app_users')
-        .select('status')
-        .or(profileFilter)
-        .limit(1);
-
-      await supabase.auth.signOut();
-      setLoading(false);
-      setMessage(
-        pendingProfiles?.some((profile) => profile.status === 'MENUNGGU')
-          ? 'Akaun anda masih menunggu pengesahan Admin.'
-          : 'Akaun anda belum aktif. Sila hubungi Admin.',
-      );
-      return;
-    }
-
-    try {
-      await syncServerSession(data.session?.access_token ?? null, 'LOGIN');
-    } catch {
-      await supabase.auth.signOut();
-      setLoading(false);
-      setMessage('Sesi gagal disediakan. Sila cuba semula.');
-      return;
-    }
-    setLoading(false);
-    window.localStorage.removeItem('emumtaz_selected_profile_id');
-    // Avoid a prefetched page rendered before the HTTP-only session cookie existed.
-    window.location.assign(new URL('/', window.location.origin).href);
+    setMessage('Backend Laravel belum disambungkan.');
   }
 
   return (
@@ -134,11 +90,10 @@ export default function LoginPage() {
             Akaun baru hanya boleh masuk selepas status diaktifkan oleh Admin.
           </p>
 
-          {!hasSupabaseEnv && (
-            <div className="notice">
-              Supabase belum disambungkan. Isi fail <strong>.env.local</strong> dengan URL dan anon key
-              Supabase, kemudian restart server.
-            </div>
+          {selfHostedAuthUrl ? (
+            <div className="notice">Mod self-hosted aktif. Login menggunakan session Laravel.</div>
+          ) : (
+            <div className="notice">Backend Laravel belum disambungkan. Sila semak konfigurasi `NEXT_PUBLIC_SELF_HOSTED_URL`.</div>
           )}
 
           <form onSubmit={handleLogin} className="login-form">

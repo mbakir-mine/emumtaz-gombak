@@ -1,8 +1,3 @@
-import {
-  getSupabaseServerClient,
-  getVerifiedStudentScope,
-  hasSupabaseServerEnv as hasSupabaseEnv,
-} from './supabase-server';
 import { cache } from 'react';
 import { compareExamCode, isStandardExamCode } from './examOrdering';
 import {
@@ -15,6 +10,14 @@ import { sahsiahIhabGradeScale, type SahsiahIhabResult } from './sahsiahIhab';
 import type { OptionalSchoolModuleKey } from './schoolModules';
 import { mergeSubjectComponents, type SubjectComponentDefinition } from './subjectComponents';
 import { gradePointForMark } from './subjects';
+import { getTrustedSelfHostedUrl } from './trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
+
+// Legacy query branches remain only as compatibility code; self-hosted mode disables
+// their client so production data access cannot fall back to Supabase.
+const getSupabaseServerClient = async (): Promise<any> => null;
+const getVerifiedStudentScope = async (): Promise<any> => null;
+const hasSupabaseEnv = false;
 
 const PSRA_PAPER_CODES = new Set(['AS01', 'BA02', 'JIK03', 'TF04', 'TJ05']);
 
@@ -692,6 +695,14 @@ type SubjectGradeRule = {
 };
 
 async function countTable(table: string) {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/dashboard/counts`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return 0;
+    const counts = ((await response.json()).data ?? {}) as Record<string, unknown>;
+    const key = table === 'app_users' ? 'users' : table;
+    return Number(counts[key] ?? 0);
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return 0;
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
@@ -726,6 +737,13 @@ async function getStudentGenderCounts() {
 }
 
 async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/students?per_page=5000`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const rows = ((await response.json()).data?.data ?? []) as Array<Record<string, unknown>>;
+    return rows.map((row) => ({ id: String(row.id), mykid: String(row.mykid ?? ''), nama_murid: String(row.nama_murid ?? row.nama ?? ''), jantina: (row.jantina as string | null) ?? null, kod_sekolah: String(row.kod_sekolah ?? ''), class_id: (row.class_id as string | null) ?? null, status: String(row.status ?? 'AKTIF') }));
+  }
   const scope = await getVerifiedStudentScope();
   if (!scope || (scope.schoolCodes !== null && scope.schoolCodes.length === 0)) return [];
 
@@ -755,6 +773,12 @@ async function fetchStudentsInBatches(): Promise<StudentRecord[]> {
 }
 
 async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/individual`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data?.summaries ?? []) as StudentSummaryRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -782,6 +806,12 @@ async function fetchStudentSummariesInBatches(): Promise<StudentSummaryRecord[]>
 }
 
 async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && examId) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/individual`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return (((await response.json()).data?.marks ?? []) as MarkRecord[]).filter((row) => row.exam_id === examId);
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !examId) return [];
 
@@ -807,6 +837,12 @@ async function fetchMarksByExamInBatches(examId: string): Promise<MarkRecord[]> 
 }
 
 async function getSubjectGradeRules(): Promise<SubjectGradeRule[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/subject-grade-rules`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SubjectGradeRule[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -829,6 +865,18 @@ async function getTeacherDashboardRows(
   teacherClasses: TeacherDashboardClass[];
   teacherSubjects: TeacherDashboardSubject[];
 }> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assignments`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return { teacherClasses: [], teacherSubjects: [] };
+    const data = (await response.json()).data ?? {};
+    const classMap = new Map(classes.map((classRecord) => [classRecord.id, classRecord]));
+    const subjectMap = new Map(subjects.map((subject) => [subject.kod_subjek, subject]));
+    return {
+      teacherClasses: (data.class ?? []).map((assignment: any) => ({ ...assignment, classes: classMap.get(assignment.class_id) })).filter((row: any) => row.classes),
+      teacherSubjects: (data.subject ?? []).map((assignment: any) => ({ ...assignment, classes: classMap.get(assignment.class_id), subjects: subjectMap.get(assignment.kod_subjek) })).filter((row: any) => row.classes && row.subjects),
+    };
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return { teacherClasses: [], teacherSubjects: [] };
 
@@ -1058,6 +1106,12 @@ function matchesExamKey(item: { tahun_akademik: number; kod_peperiksaan: string 
 }
 
 async function getSetupCountsUncached(): Promise<SetupCounts> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/dashboard/counts`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return { schools: 0, users: 0, subjects: 0, exams: 0, classes: 0, students: 0, marks: 0, schoolCategories: {}, studentGender: { lelaki: 0, perempuan: 0 }, classesByYear: {} };
+    return (await response.json()).data as SetupCounts;
+  }
   if (!hasSupabaseEnv) {
     return {
       schools: 0,
@@ -1110,6 +1164,13 @@ async function getSetupCountsUncached(): Promise<SetupCounts> {
 export const getSetupCounts = cache(getSetupCountsUncached);
 
 async function getSchoolsUncached(): Promise<School[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/schools`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const result = await response.json();
+    return (result.data ?? []) as School[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1123,6 +1184,12 @@ async function getSchoolsUncached(): Promise<School[]> {
 export const getSchools = cache(getSchoolsUncached);
 
 export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/school-modules`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SchoolModuleAccess[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1137,6 +1204,12 @@ export async function getSchoolModuleAccesses(): Promise<SchoolModuleAccess[]> {
 }
 
 export async function getSchoolLicenses(): Promise<SchoolLicense[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/licenses`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SchoolLicense[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1148,6 +1221,12 @@ export async function getSchoolLicenses(): Promise<SchoolLicense[]> {
 }
 
 export async function getMarkSubmissionWorkflows(): Promise<MarkSubmissionWorkflow[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/workflows/marks`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as MarkSubmissionWorkflow[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1160,6 +1239,12 @@ export async function getMarkSubmissionWorkflows(): Promise<MarkSubmissionWorkfl
 }
 
 export async function getUserNotifications(limit = 100): Promise<UserNotification[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/notifications?limit=${Math.min(Math.max(limit, 1), 200)}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((row: Record<string, unknown>) => ({ id: String(row.id), kod_sekolah: (row.kod_sekolah as string | null) ?? null, type: row.type as UserNotification['type'], title: String(row.title ?? ''), message: String(row.message ?? ''), link: (row.link as string | null) ?? null, created_at: String(row.created_at ?? ''), read: Boolean(row.is_read) }));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 200));
@@ -1169,7 +1254,7 @@ export async function getUserNotifications(limit = 100): Promise<UserNotificatio
     .order('created_at', { ascending: false })
     .limit(safeLimit);
   if (error) return [];
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row: any) => ({
     id: row.id,
     kod_sekolah: row.kod_sekolah,
     type: row.type,
@@ -1182,6 +1267,13 @@ export async function getUserNotifications(limit = 100): Promise<UserNotificatio
 }
 
 async function getClassesUncached(): Promise<ClassRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/classes`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const result = await response.json();
+    return (result.data ?? []) as ClassRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1210,6 +1302,14 @@ async function getClassesUncached(): Promise<ClassRecord[]> {
 export const getClasses = cache(getClassesUncached);
 
 export async function getStudents(): Promise<StudentRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/students?per_page=1000`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const result = await response.json();
+    const page = result.data?.data ?? result.data ?? [];
+    return (page as Array<Record<string, unknown>>).map((row) => ({ id: String(row.id), mykid: String(row.mykid), nama_murid: String(row.nama ?? row.nama_murid ?? ''), jantina: (row.jantina as string | null) ?? null, kod_sekolah: String(row.kod_sekolah), class_id: (row.class_id as string | null) ?? null, status: String(row.status ?? 'AKTIF') }));
+  }
   return fetchStudentsInBatches();
 }
 
@@ -1257,6 +1357,12 @@ function normalizeUpkkRecord(row: any): UpkkAmaliSolatRecord {
 }
 
 export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assessments/upkk/practical/amali`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map(normalizeUpkkRecord);
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1271,6 +1377,12 @@ export async function getUpkkAmaliSolatMarks(): Promise<UpkkAmaliSolatRecord[]> 
 }
 
 export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assessments/upkk/practical/pchi`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map(normalizeUpkkRecord);
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1285,11 +1397,23 @@ export async function getUpkkPchiMarks(): Promise<UpkkPchiRecord[]> {
 }
 
 export async function getStudentsPage(options: StudentPageOptions = {}): Promise<StudentPageResult> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
   const supabase = await getSupabaseServerClient();
   const page = Math.max(1, options.page ?? 1);
   const pageSize = Math.min(500, Math.max(1, options.pageSize ?? 100));
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+
+  if (selfHostedUrl) {
+    const params = new URLSearchParams({ per_page: String(pageSize), page: String(page) });
+    if (options.kodSekolah) params.set('kod_sekolah', options.kodSekolah);
+    const response = await fetch(`${selfHostedUrl}/api/students?${params}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return { rows: [], count: 0, page, pageSize };
+    const result = await response.json();
+    const paginator = result.data ?? {};
+    const rawRows = paginator.data ?? [];
+    return { rows: rawRows.map((row: Record<string, unknown>) => ({ id: String(row.id), mykid: String(row.mykid), nama_murid: String(row.nama ?? row.nama_murid ?? ''), jantina: (row.jantina as string | null) ?? null, kod_sekolah: String(row.kod_sekolah), class_id: (row.class_id as string | null) ?? null, status: String(row.status ?? 'AKTIF') })), count: Number(paginator.total ?? rawRows.length), page, pageSize };
+  }
 
   if (!supabase) {
     return { rows: [], count: 0, page, pageSize };
@@ -1319,6 +1443,16 @@ export async function getStudentsPage(options: StudentPageOptions = {}): Promise
 export async function getStudentSchoolSummaries(
   options: StudentSchoolSummaryOptions = {},
 ): Promise<StudentSchoolSummary[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/students/school-summaries`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    let rows = ((await response.json()).data ?? []) as StudentSchoolSummary[];
+    if (options.kategori) rows = rows.filter((row) => row.kategori === options.kategori);
+    if (options.zon) rows = rows.filter((row) => row.zon === options.zon);
+    if (options.kodSekolah) rows = rows.filter((row) => row.kod_sekolah === options.kodSekolah);
+    return rows;
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1336,6 +1470,12 @@ export async function getStudentSchoolSummaries(
 }
 
 export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/enrollments`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as StudentEnrollmentDetail[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1352,6 +1492,12 @@ export async function getStudentEnrollments(): Promise<StudentEnrollmentDetail[]
 }
 
 export async function getSchoolUsers(): Promise<UserRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/admin/users`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((row: Record<string, unknown>) => ({ id: String(row.id), email: String(row.email ?? ''), nama: String(row.name ?? row.nama ?? ''), role: String(row.role ?? ''), kod_sekolah: (row.kod_sekolah as string | null) ?? null, daerah: (row.daerah as string | null) ?? null, zon: (row.zon as string | null) ?? null, status: String(row.status ?? ''), allowed_nav: (row.allowed_nav as string[] | null) ?? null })) as UserRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1381,6 +1527,12 @@ export async function getSchoolUsers(): Promise<UserRecord[]> {
 }
 
 export async function getAllAppUsers(): Promise<UserRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/admin/users`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((row: Record<string, unknown>) => ({ id: String(row.id), email: String(row.email ?? ''), nama: String(row.name ?? row.nama ?? ''), role: String(row.role ?? ''), kod_sekolah: (row.kod_sekolah as string | null) ?? null, daerah: (row.daerah as string | null) ?? null, zon: (row.zon as string | null) ?? null, status: String(row.status ?? ''), allowed_nav: (row.allowed_nav as string[] | null) ?? null })) as UserRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1409,6 +1561,13 @@ export async function getAllAppUsers(): Promise<UserRecord[]> {
 }
 
 export async function getAppUserById(id: string): Promise<UserRecord | null> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && id) {
+    const response = await fetch(`${selfHostedUrl}/api/admin/users`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return null;
+    const row = ((await response.json()).data ?? []).find((item: Record<string, unknown>) => String(item.id) === id);
+    return row ? ({ id: String(row.id), email: String(row.email ?? ''), nama: String(row.name ?? row.nama ?? ''), role: String(row.role ?? ''), kod_sekolah: (row.kod_sekolah as string | null) ?? null, daerah: (row.daerah as string | null) ?? null, zon: (row.zon as string | null) ?? null, status: String(row.status ?? ''), allowed_nav: (row.allowed_nav as string[] | null) ?? null } as UserRecord) : null;
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !id) return null;
   const { data, error } = await supabase
@@ -1422,6 +1581,13 @@ export async function getAppUserById(id: string): Promise<UserRecord | null> {
 }
 
 export async function getTeacherClassAssignments(): Promise<TeacherClassAssignment[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assignments`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const rows = ((await response.json()).data?.class ?? []) as Array<Record<string, unknown>>;
+    return rows.map((row) => ({ id: String(row.id), user_id: String(row.user_id), class_id: String(row.class_id) })) as TeacherClassAssignment[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1448,6 +1614,12 @@ export async function getTeacherClassAssignments(): Promise<TeacherClassAssignme
 }
 
 async function getSubjectsUncached(): Promise<SubjectRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/subjects`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SubjectRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1462,6 +1634,12 @@ async function getSubjectsUncached(): Promise<SubjectRecord[]> {
 export const getSubjects = cache(getSubjectsUncached);
 
 async function getExamsUncached(): Promise<ExamRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/exams`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as ExamRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1476,6 +1654,14 @@ async function getExamsUncached(): Promise<ExamRecord[]> {
 export const getExams = cache(getExamsUncached);
 
 export async function getStudentsByClass(classId: string): Promise<StudentRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && classId) {
+    const response = await fetch(`${selfHostedUrl}/api/students?class_id=${encodeURIComponent(classId)}&per_page=1000`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const result = await response.json();
+    const rows = result.data?.data ?? result.data ?? [];
+    return rows.map((row: Record<string, unknown>) => ({ id: String(row.id), mykid: String(row.mykid), nama_murid: String(row.nama ?? row.nama_murid ?? ''), jantina: (row.jantina as string | null) ?? null, kod_sekolah: String(row.kod_sekolah), class_id: (row.class_id as string | null) ?? null, status: String(row.status ?? 'AKTIF') }));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !classId) return [];
   const { data, error } = await supabase
@@ -1494,6 +1680,13 @@ export async function getMarksForSelection(
   classId: string,
   kodSubjek: string,
 ): Promise<MarkRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && examId && classId && kodSubjek) {
+    const params = new URLSearchParams({ exam_id: examId, class_id: classId, kod_subjek: kodSubjek });
+    const response = await fetch(`${selfHostedUrl}/api/marks?${params}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as MarkRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !examId || !classId || !kodSubjek) return [];
   const { data, error } = await supabase
@@ -1570,6 +1763,12 @@ export async function getMarksForSelection(
 }
 
 export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/subject-components`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return mergeSubjectComponents(((await response.json()).data ?? []) as SubjectComponentRecord[]);
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return mergeSubjectComponents([]);
   const { data, error } = await supabase
@@ -1584,6 +1783,12 @@ export async function getSubjectComponents(): Promise<SubjectComponentRecord[]> 
 }
 
 export async function getSubjectComponentMarkSettings(): Promise<SubjectComponentMarkSetting[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/mark-settings/components`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((item: any) => ({ ...item, markah_penuh: Number(item.markah_penuh) }));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1603,6 +1808,12 @@ export async function getSubjectComponentMarkSettings(): Promise<SubjectComponen
 }
 
 export async function getSchoolSubjectMarkSettings(): Promise<SchoolSubjectMarkSetting[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/mark-settings/subjects`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((item: any) => ({ ...item, markah_penuh: Number(item.markah_penuh) }));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1622,6 +1833,12 @@ export async function getSchoolSubjectMarkSettings(): Promise<SchoolSubjectMarkS
 }
 
 export async function getSchoolSubjectComponentMarkSettings(): Promise<SubjectComponentMarkSetting[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/mark-settings/school-components`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []).map((item: any) => ({ ...item, markah_penuh: Number(item.markah_penuh) }));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1645,6 +1862,13 @@ export async function getMarkComponentsForSelection(
   classId: string,
   kodSubjek: string,
 ): Promise<MarkComponentRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && examId && classId && kodSubjek) {
+    const params = new URLSearchParams({ exam_id: examId, class_id: classId, kod_subjek: kodSubjek });
+    const response = await fetch(`${selfHostedUrl}/api/marks/components?${params}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as MarkComponentRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !examId || !classId || !kodSubjek) return [];
   const { data, error } = await supabase
@@ -1659,6 +1883,13 @@ export async function getMarkComponentsForSelection(
 }
 
 export async function getAttendanceRecords(attendanceDate?: string): Promise<AttendanceRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const query = attendanceDate ? `?attendance_date=${encodeURIComponent(attendanceDate)}` : '';
+    const response = await fetch(`${selfHostedUrl}/api/attendance${query}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as AttendanceRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   let query = supabase
@@ -1674,6 +1905,12 @@ export async function getAttendanceRecords(attendanceDate?: string): Promise<Att
 }
 
 export async function getTakwimEvents(): Promise<TakwimEvent[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/takwim`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as TakwimEvent[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1687,6 +1924,12 @@ export async function getTakwimEvents(): Promise<TakwimEvent[]> {
 }
 
 export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/amal-khair/categories`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as AmalKhairCategory[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1700,6 +1943,12 @@ export async function getAmalKhairCategories(): Promise<AmalKhairCategory[]> {
 }
 
 export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/amal-khair`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as AmalKhairRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1733,6 +1982,12 @@ export async function getAmalKhairRecords(): Promise<AmalKhairRecord[]> {
 }
 
 export async function getKhalifahMudaRecords(): Promise<KhalifahMudaRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/character/khalifah-muda`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as KhalifahMudaRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -1784,6 +2039,12 @@ function defaultKhalifahMudaComponents(): KhalifahMudaComponent[] {
 }
 
 export async function getKhalifahMudaComponents(): Promise<KhalifahMudaComponent[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/character/khalifah-muda/components`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return defaultKhalifahMudaComponents();
+    return ((await response.json()).data ?? []) as KhalifahMudaComponent[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return defaultKhalifahMudaComponents();
 
@@ -1814,6 +2075,17 @@ export async function getSahsiahIhabAssessments(options?: {
   tahunAkademik?: number;
   bulan?: number;
 }): Promise<SahsiahIhabAssessment[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/character/sahsiah-ihab`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    let rows = ((await response.json()).data ?? []) as SahsiahIhabAssessment[];
+    if (options?.kodSekolah) rows = rows.filter((row) => row.kod_sekolah === options.kodSekolah);
+    if (options?.classId) rows = rows.filter((row) => row.class_id === options.classId);
+    if (options?.tahunAkademik) rows = rows.filter((row) => row.tahun_akademik === options.tahunAkademik);
+    if (options?.bulan) rows = rows.filter((row) => row.bulan === options.bulan);
+    return rows;
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   let query = supabase
@@ -1855,6 +2127,12 @@ export async function getSahsiahIhabAssessments(options?: {
 }
 
 export async function getTimetableSlots(): Promise<TimetableSlot[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/timetable/slots`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as TimetableSlot[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1870,6 +2148,12 @@ export async function getTimetableSlots(): Promise<TimetableSlot[]> {
 }
 
 export async function getTimetableEntries(): Promise<TimetableEntry[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/timetable/entries`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as TimetableEntry[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1892,6 +2176,12 @@ export async function getTimetableEntries(): Promise<TimetableEntry[]> {
 }
 
 export async function getTimetableRequirements(): Promise<TimetableRequirement[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/timetable/requirements`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as TimetableRequirement[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1916,6 +2206,12 @@ export async function getTimetableRequirements(): Promise<TimetableRequirement[]
 }
 
 export async function getRphRecords(): Promise<RphRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as RphRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1931,6 +2227,12 @@ export async function getRphRecords(): Promise<RphRecord[]> {
 }
 
 export async function getRphTopics(): Promise<RphTopic[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/topics`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as RphTopic[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1946,6 +2248,12 @@ export async function getRphTopics(): Promise<RphTopic[]> {
 }
 
 export async function getRphWeeklySubmissions(): Promise<RphWeeklySubmission[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/weekly/submissions`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as RphWeeklySubmission[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1959,6 +2267,12 @@ export async function getRphWeeklySubmissions(): Promise<RphWeeklySubmission[]> 
 }
 
 export async function getRphWeeklySubmissionItems(): Promise<RphWeeklySubmissionItem[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/weekly/items`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as RphWeeklySubmissionItem[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1971,6 +2285,12 @@ export async function getRphWeeklySubmissionItems(): Promise<RphWeeklySubmission
 }
 
 export async function getRphWeeklyReviews(): Promise<RphWeeklyReview[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/rph/weekly/reviews`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as RphWeeklyReview[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1983,6 +2303,12 @@ export async function getRphWeeklyReviews(): Promise<RphWeeklyReview[]> {
 }
 
 export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/individual`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data?.summaries ?? []) as StudentSummaryRecord[];
+  }
   const rows = await fetchStudentSummariesInBatches();
   return rows.sort((a, b) => {
     if (a.kod_sekolah !== b.kod_sekolah) return a.kod_sekolah.localeCompare(b.kod_sekolah);
@@ -1992,6 +2318,12 @@ export async function getStudentSummaries(): Promise<StudentSummaryRecord[]> {
 }
 
 export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: string): Promise<StudentSummaryRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl && mykid) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/individual`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return (((await response.json()).data?.summaries ?? []) as StudentSummaryRecord[]).filter((row) => row.mykid === mykid && (!kodSekolah || row.kod_sekolah === kodSekolah));
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase || !mykid) return [];
   let query = supabase
@@ -2012,6 +2344,12 @@ export async function getStudentSummariesByMykid(mykid: string, kodSekolah?: str
 }
 
 export async function getSchoolSummaries(): Promise<SchoolSummaryRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/schools`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SchoolSummaryRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -2396,6 +2734,12 @@ async function getDashboardInsightsUncached(selectedExamKey?: string): Promise<D
 export const getDashboardInsights = cache(getDashboardInsightsUncached);
 
 export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/subjects`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SubjectSummaryRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -2411,6 +2755,12 @@ export async function getSubjectSummaries(): Promise<SubjectSummaryRecord[]> {
 }
 
 export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/reports/individual`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data?.marks ?? []) as MarkDetailRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -2504,6 +2854,17 @@ export async function getMarkDetails(): Promise<MarkDetailRecord[]> {
 }
 
 export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/pbd/marks`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const rows = ((await response.json()).data ?? []) as Array<Record<string, any>>;
+    return rows.map((row) => ({
+      id: String(row.id), assessment_id: String(row.assessment_id), student_id: String(row.student_id), markah: row.markah === null ? null : Number(row.markah), tahap_penguasaan: row.tahap_penguasaan === null ? null : Number(row.tahap_penguasaan), catatan: row.catatan ?? null,
+      students: { id: String(row.student_id), mykid: String(row.mykid ?? ''), nama_murid: String(row.student_nama ?? ''), jantina: row.jantina ?? null, kod_sekolah: String(row.student_school ?? row.kod_sekolah ?? ''), class_id: row.student_class ?? null, status: String(row.student_status ?? 'AKTIF') },
+      pbd_assessments: { id: String(row.assessment_id), kod_sekolah: String(row.kod_sekolah ?? ''), class_id: String(row.class_id), tahun_akademik: Number(row.tahun_akademik), kod_subjek: String(row.kod_subjek), teacher_id: row.teacher_id ?? null, tarikh: String(row.tarikh), tajuk: String(row.tajuk), instrumen: String(row.instrumen), markah_penuh: Number(row.markah_penuh), status: String(row.assessment_status ?? 'AKTIF') },
+    })) as PbdMarkDetailRecord[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -2562,6 +2923,13 @@ export async function getPbdMarkDetails(): Promise<PbdMarkDetailRecord[]> {
 }
 
 export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssignment[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assignments`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const rows = ((await response.json()).data?.subject ?? []) as Array<Record<string, unknown>>;
+    return rows.map((row) => ({ id: String(row.id), user_id: String(row.user_id), class_id: String(row.class_id), kod_subjek: String(row.kod_subjek), assignment_label: (row.assignment_label as string | null) ?? null })) as TeacherSubjectAssignment[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -2594,6 +2962,13 @@ export async function getTeacherSubjectAssignments(): Promise<TeacherSubjectAssi
 }
 
 export async function getTeacherSubjectComponentAssignments(): Promise<TeacherSubjectComponentAssignment[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/assignments`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    const rows = ((await response.json()).data?.component ?? []) as Array<Record<string, unknown>>;
+    return rows.map((row) => ({ id: String(row.id), user_id: String(row.user_id), class_id: String(row.class_id), kod_subjek: String(row.kod_subjek), kod_komponen: String(row.kod_komponen) })) as TeacherSubjectComponentAssignment[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -2672,6 +3047,12 @@ export type AuthLoginFailureLog = {
 };
 
 export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLog[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/audit/security-logs?limit=${Math.min(Math.max(limit, 1), 500)}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as SecurityAuditLog[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -2687,6 +3068,12 @@ export async function getSecurityAuditLogs(limit = 200): Promise<SecurityAuditLo
 }
 
 export async function getAuthActivityLogs(limit = 200): Promise<AuthActivityLog[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/audit/activity-logs?limit=${Math.min(Math.max(limit, 1), 500)}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as AuthActivityLog[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
@@ -2702,6 +3089,12 @@ export async function getAuthActivityLogs(limit = 200): Promise<AuthActivityLog[
 }
 
 export async function getAuthLoginFailureLogs(limit = 200): Promise<AuthLoginFailureLog[]> {
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (selfHostedUrl) {
+    const response = await fetch(`${selfHostedUrl}/api/audit/login-failure-logs?limit=${Math.min(Math.max(limit, 1), 500)}`, { headers: { Cookie: (await cookies()).toString() }, cache: 'no-store' });
+    if (!response.ok) return [];
+    return ((await response.json()).data ?? []) as AuthLoginFailureLog[];
+  }
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 

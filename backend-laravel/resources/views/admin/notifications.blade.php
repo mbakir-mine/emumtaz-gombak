@@ -1,0 +1,3 @@
+@extends('layouts.app')
+@section('title','Notifikasi — e-Mumtaz')
+@section('content')<h1>Notifikasi</h1><p class="muted">Makluman workflow dan operasi sistem.</p><div class="card"><table><thead><tr><th>Tarikh</th><th>Tajuk</th><th>Mesej</th><th>Status</th><th></th></tr></thead><tbody>@forelse($notifications as $notification)<tr><td>{{ $notification->created_at }}</td><td>{{ $notification->title }}</td><td>{{ $notification->message }}</td><td>{{ $notification->is_read ? 'Dibaca' : 'Belum dibaca' }}</td><td>@if(!$notification->is_read)<form method="POST" action="{{ route('admin.notifications.read', $notification->id) }}">@csrf<button>Baca</button></form>@endif</td></tr>@empty<tr><td colspan="5">Tiada notifikasi.</td></tr>@endforelse</tbody></table></div>@endsection

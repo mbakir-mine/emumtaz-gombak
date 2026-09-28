@@ -7,8 +7,20 @@ import {
   getTeacherClassAssignments,
 } from '@/lib/data';
 import IndividualReportTable from './IndividualReportTable';
+import { getSelfHostedIndividualReport } from '@/lib/selfHostedIndividualReport';
 
 export default async function LaporanIndividuPage() {
+  const selfHosted = await getSelfHostedIndividualReport();
+  if (selfHosted) {
+    return (
+      <AppFrame title="Laporan Individu" active="reports">
+        <section className="panel report-page">
+          <IndividualReportTable {...selfHosted} />
+        </section>
+      </AppFrame>
+    );
+  }
+
   const [schools, classes, summaries, teacherClassAssignments, marks] = await Promise.all([
     getSchools(),
     getClasses(),

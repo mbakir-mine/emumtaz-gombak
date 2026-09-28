@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState, useEffect, useMemo, useState } from 'react';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
 import PasswordField from '../ui/PasswordField';
 import { registerPendingUser } from './actions';
 
@@ -27,15 +27,11 @@ export default function DaftarPage() {
 
   useEffect(() => {
     async function loadSchools() {
-      if (!supabase) return;
-
-      const { data } = await supabase
-        .from('schools')
-        .select('kod_sekolah,nama_sekolah')
-        .eq('status', 'AKTIF')
-        .order('kod_sekolah');
-
-      setSchools(data ?? []);
+      const selfHostedUrl = getTrustedSelfHostedUrl();
+      if (!selfHostedUrl) return;
+      const response = await fetch(`${selfHostedUrl}/api/public/schools`, { cache: 'no-store' }).catch(() => null);
+      const payload = await response?.json().catch(() => null) as { data?: SchoolOption[] } | null;
+      setSchools(payload?.data ?? []);
     }
 
     loadSchools();
@@ -60,9 +56,9 @@ export default function DaftarPage() {
           Tetapkan password semasa mendaftar. Admin perlu mengaktifkan akaun sebelum pengguna boleh masuk ke sistem.
         </p>
 
-        {!hasSupabaseEnv && (
+        {!getTrustedSelfHostedUrl() && (
           <div className="notice">
-            Supabase belum disambungkan. Isi fail <strong>.env.local</strong> dan restart server dahulu.
+            Backend Laravel belum dikonfigurasi. Isi <strong>EMUMTAZ_APP_URL</strong> dan restart server dahulu.
           </div>
         )}
 

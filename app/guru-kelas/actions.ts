@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getTrustedSelfHostedUrl } from '@/lib/trustedSelfHostedUrl';
+import { cookies } from 'next/headers';
 
 export type TeacherClassActionState = {
   ok: boolean;
@@ -12,11 +13,6 @@ export async function assignTeacherClass(
   _previousState: TeacherClassActionState,
   formData: FormData,
 ): Promise<TeacherClassActionState> {
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, message: 'Supabase belum disambungkan.' };
-  }
-
   const userId = String(formData.get('user_id') ?? '').trim();
   const classId = String(formData.get('class_id') ?? '').trim();
 
@@ -24,19 +20,10 @@ export async function assignTeacherClass(
     return { ok: false, message: 'Pilih guru dan kelas.' };
   }
 
-  const { error } = await supabase.from('teacher_class_assignments').upsert(
-    {
-      user_id: userId,
-      class_id: classId,
-    },
-    {
-      onConflict: 'user_id,class_id',
-    },
-  );
-
-  if (error) {
-    return { ok: false, message: `Gagal tetapkan guru kelas: ${error.message}` };
-  }
+  const selfHostedUrl = getTrustedSelfHostedUrl();
+  if (!selfHostedUrl) return { ok: false, message: 'Backend Laravel belum disambungkan.' };
+  const response = await fetch(`${selfHostedUrl}/api/assignments/class-teacher`, { method: 'POST', headers: { 'Content-Type': 'application/json', Cookie: (await cookies()).toString() }, body: JSON.stringify({ user_id: userId, class_id: classId }), cache: 'no-store' });
+  if (!response.ok) return { ok: false, message: `Gagal tetapkan guru kelas (${response.status}).` };
 
   revalidatePath('/guru-kelas');
   return { ok: true, message: 'Guru kelas berjaya ditetapkan.' };

@@ -21,6 +21,7 @@ import { examAccessStatus } from '@/lib/examAccess';
 import { isPsraExamCode, isUpkkTrialExamCode } from '@/lib/examOrdering';
 import { applySubjectComponentMarkSettings } from '@/lib/subjectComponents';
 import { resolveSubjectFullMark } from '@/lib/markSettings';
+import { getSelfHostedMarkahData } from '@/lib/selfHostedMarkah';
 
 export default async function MarkahPage({
   searchParams,
@@ -28,6 +29,11 @@ export default async function MarkahPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
+  const selfHosted = await getSelfHostedMarkahData(params.exam_id ?? '', params.class_id ?? '', params.kod_subjek ?? '');
+  if (selfHosted) {
+    return <SelfHostedMarkahPage params={params} data={selfHosted} />;
+  }
+
   const [
     schools,
     classes,
@@ -199,6 +205,31 @@ export default async function MarkahPage({
             isUpkkTrial={isUpkkTrialExamCode(selectedExam?.kod_peperiksaan)}
           />
         )}
+      </section>
+    </AppFrame>
+  );
+}
+
+async function SelfHostedMarkahPage({ params, data }: { params: Record<string, string | undefined>; data: Awaited<ReturnType<typeof getSelfHostedMarkahData>> & object }) {
+  const selectedSchool = params.kod_sekolah ?? '';
+  const selectedClassId = params.class_id ?? '';
+  const selectedExamId = params.exam_id ?? '';
+  const selectedSubject = params.kod_subjek ?? '';
+  const selectedClass = data.classes.find((item) => item.id === selectedClassId);
+  const selectedExam = data.exams.find((item) => item.id === selectedExamId);
+  const effectiveSchool = selectedClass?.kod_sekolah ?? selectedSchool;
+  const subjectFullMark = Number(data.subjects.find((item) => item.kod_subjek === selectedSubject)?.markah_penuh ?? 100);
+  const markAccess = examAccessStatus(selectedExam);
+  return (
+    <AppFrame title="Markah" subtitle="Kemasukan UPSA, UASA, UPKK dan PSRA." active="marks">
+      <section className="panel">
+        <div className="panel-head"><h2>Pilih Kelas dan Subjek</h2><span>Mod self-hosted</span></div>
+        <MarkSelectionForm schools={data.schools} classes={data.classes} exams={data.exams} subjects={data.subjects} subjectAssignments={data.subjectAssignments} componentAssignments={data.componentAssignments} moduleAccesses={data.moduleAccesses} initialYear={Number(params.tahun_akademik ?? new Date().getFullYear())} initialExamId={selectedExamId} initialSchool={selectedSchool} initialClassId={selectedClassId} initialSubject={selectedSubject} initialMode="school" />
+        {selectedExamId && <p className={markAccess.open ? 'form-success mark-notice' : 'notice mark-notice'}>{markAccess.label}</p>}
+      </section>
+      <section className="panel">
+        <div className="panel-head"><h2>Senarai Markah</h2><span>{data.students.length} murid</span></div>
+        {!selectedExamId || !selectedClassId || !selectedSubject ? <p className="empty">Pilih peperiksaan, sekolah, kelas dan subjek untuk mula isi markah.</p> : <MarkEntryForm examId={selectedExamId} classId={selectedClassId} kodSekolah={effectiveSchool} kodSubjek={selectedSubject} students={data.students} marks={data.marks} subjectFullMark={subjectFullMark} />}
       </section>
     </AppFrame>
   );
