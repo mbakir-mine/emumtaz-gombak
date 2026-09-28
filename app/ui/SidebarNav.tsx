@@ -27,27 +27,27 @@ const groupedMenu = [
     items: ['schools', 'teachers', 'teacherSubjects', 'classes', 'students', 'studentPromotion'],
   },
   {
-    key: 'optionalModules',
-    label: 'Modul Sekolah',
-    href: '/kehadiran',
-    items: ['calendar', 'attendance', 'parentAccess', 'amalKhair', 'pbd', 'upkkAssessment', 'upkkTrial', 'psraTrial', 'khalifahMuda', 'timetable', 'rph'],
-  },
-  {
     key: 'scoring',
     label: 'Pemarkahan',
     href: '/markah',
     items: ['marks', 'markApproval'],
   },
   {
+    key: 'optionalModules',
+    label: 'Modul Sekolah',
+    href: '/kehadiran',
+    items: ['calendar', 'attendance', 'timetable', 'rph', 'pbd', 'upkkAssessment', 'upkkTrial', 'psraTrial', 'khalifahMuda', 'parentAccess', 'amalKhair'],
+  },
+  {
     key: 'reports',
     label: 'Laporan',
     href: '/laporan',
     items: [
-      'reportIndividual',
-      'reportClass',
-      'reportBest',
       'reportSchool',
+      'reportClass',
+      'reportIndividual',
       'reportSubject',
+      'reportBest',
       'reportPbd',
       'reportPsra',
       'reportUpkk',
@@ -65,7 +65,7 @@ const groupedMenu = [
     key: 'settings',
     label: 'Tetapan',
     href: '/setup',
-    items: ['setup', 'componentMarks', 'khalifahMudaComponents', 'users', 'securityAudit', 'schoolModules', 'licenses', 'changePassword'],
+    items: ['setup', 'schoolModules', 'licenses', 'componentMarks', 'khalifahMudaComponents', 'users', 'securityAudit', 'changePassword'],
   },
 ];
 
