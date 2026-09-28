@@ -17,11 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check application and database
+      - name: Check Laravel application and database
         shell: bash
         run: |
-          health="$(curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/api/health)"
-          jq -e '.status == "ok" and .database == "connected" and (.responseTimeMs | type == "number")' <<< "$health"
-          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/manifest.webmanifest >/dev/null
-          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/sw.js >/dev/null
-          curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/offline >/dev/null
+          health="$(curl --fail --silent --show-error --retry 2 --max-time 20 https://emumtaz.ismp.my/health)"
+          jq -e '.status == "ok" and .database == "connected" and .schema == "ready" and (.responseTimeMs | type == "number")' <<< "$health"
