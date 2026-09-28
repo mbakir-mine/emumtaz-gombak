@@ -22,13 +22,13 @@ const groupedMenu = [
   },
   {
     key: 'schoolSetup',
-    label: 'Tetapan Sekolah',
+    label: 'Pengurusan Sekolah',
     href: '/sekolah',
     items: ['schools', 'teachers', 'teacherSubjects', 'classes', 'students', 'studentPromotion'],
   },
   {
     key: 'scoring',
-    label: 'Pemarkahan',
+    label: 'Akademik & Pemarkahan',
     href: '/markah',
     items: ['marks', 'markApproval'],
   },
@@ -40,7 +40,7 @@ const groupedMenu = [
   },
   {
     key: 'reports',
-    label: 'Laporan',
+    label: 'Laporan & Analisis',
     href: '/laporan',
     items: [
       'reportSchool',
@@ -53,17 +53,12 @@ const groupedMenu = [
       'reportUpkk',
       'comparison',
       'reportAnnual',
+      'analysis',
     ],
   },
   {
-    key: 'analysis',
-    label: 'Analisis',
-    href: '/analisis',
-    items: ['analysis'],
-  },
-  {
     key: 'settings',
-    label: 'Tetapan',
+    label: 'Tetapan Sistem',
     href: '/setup',
     items: ['setup', 'schoolModules', 'licenses', 'componentMarks', 'khalifahMudaComponents', 'users', 'securityAudit', 'changePassword'],
   },
