@@ -35,6 +35,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TakwimController;
 use App\Http\Controllers\TakwimPageController;
 use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\TimetablePageController;
 use App\Http\Controllers\UserAdminController;
 use App\Http\Controllers\WebAdminController;
 use App\Http\Controllers\WorkflowController;
@@ -62,6 +63,8 @@ Route::get('/analisis', [ReportPageController::class, 'index'])->middleware('aut
 Route::get('/takwim', [TakwimPageController::class, 'index'])->middleware('auth')->name('takwim.index');
 Route::post('/takwim', [TakwimPageController::class, 'store'])->middleware('auth')->name('takwim.store');
 Route::get('/rph', [RphPageController::class, 'index'])->middleware('auth')->name('rph.index');
+Route::get('/jadual-waktu', [TimetablePageController::class, 'index'])->middleware('auth')->name('timetable.index');
+Route::post('/jadual-waktu/generate', [TimetablePageController::class, 'generateSlots'])->middleware('auth')->name('timetable.generate');
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/schools', [WebAdminController::class, 'schools'])->name('schools');
