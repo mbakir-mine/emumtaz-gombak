@@ -24,6 +24,7 @@ use App\Http\Controllers\ParentAccessController;
 use App\Http\Controllers\ParentPortalController;
 use App\Http\Controllers\PbdController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportPageController;
 use App\Http\Controllers\ReportVerificationPageController;
 use App\Http\Controllers\RphController;
 use App\Http\Controllers\SchoolController;
@@ -54,6 +55,8 @@ Route::get('/change-password', [ChangePasswordController::class, 'create'])->mid
 Route::post('/change-password', [ChangePasswordController::class, 'store'])->middleware('auth')->name('password.change.store');
 
 Route::get('/dashboard', DashboardController::class)->middleware('auth')->name('dashboard');
+Route::get('/laporan', [ReportPageController::class, 'index'])->middleware('auth')->name('reports.index');
+Route::get('/analisis', [ReportPageController::class, 'index'])->middleware('auth')->name('reports.analysis');
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/schools', [WebAdminController::class, 'schools'])->name('schools');
