@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -41,7 +41,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', ['email' => $user->email, 'password' => 'Password!123'])
             ->assertRedirect('/dashboard');
         $this->assertAuthenticatedAs($user);
-        $this->get('/dashboard')->assertOk()->assertSee('Dashboard e-Mumtaz');
+        $this->get('/dashboard')->assertOk()->assertSee('Dashboard')->assertSee('Pengurusan sekolah yang lebih tersusun');
         $this->post('/logout')->assertRedirect('/login');
         $this->assertGuest();
         $this->assertDatabaseHas('auth_activity_logs', ['actor_profile_id' => $user->id, 'event_type' => 'LOGIN']);
