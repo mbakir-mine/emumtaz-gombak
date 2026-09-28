@@ -1,52 +1,50 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\ChangePasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\MarkController;
-use App\Http\Controllers\StudentController;
 use App\Http\Controllers\AcademicSetupController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\SchoolController;
-use App\Http\Controllers\ClassController;
-use App\Http\Controllers\AssignmentController;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\PbdController;
-use App\Http\Controllers\WorkflowController;
-use App\Http\Controllers\WebAdminController;
+use App\Http\Controllers\AmalKhairController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentPageController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendancePageController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ChangePasswordController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\CharacterAssessmentController;
+use App\Http\Controllers\ClassController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\LicensePageController;
+use App\Http\Controllers\MarkController;
+use App\Http\Controllers\MarkSettingsController;
 use App\Http\Controllers\NotificationPageController;
-use App\Http\Controllers\UserAdminController;
+use App\Http\Controllers\ParentAccessController;
+use App\Http\Controllers\ParentPortalController;
+use App\Http\Controllers\PbdController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportVerificationPageController;
+use App\Http\Controllers\RphController;
+use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\SchoolModuleController;
 use App\Http\Controllers\SchoolModulePageController;
-use App\Http\Controllers\ReportVerificationPageController;
-use App\Http\Controllers\ParentAccessController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\AttendancePageController;
-use App\Http\Controllers\ParentPortalController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TakwimController;
-use App\Http\Controllers\RphController;
-use App\Http\Controllers\AmalKhairController;
 use App\Http\Controllers\TimetableController;
-use App\Http\Controllers\MarkSettingsController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserAdminController;
+use App\Http\Controllers\WebAdminController;
+use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
 Route::redirect('/', '/dashboard');
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
-Route::post('/api/auth/register', [AuthenticatedSessionController::class, 'apiRegister'])->name('api.auth.register');
 Route::get('/api/public/schools', [SchoolController::class, 'publicIndex'])->name('api.public.schools');
 Route::post('/api/auth/forgot-password', [PasswordResetLinkController::class, 'apiStore'])->name('api.auth.forgot-password');
 Route::post('/api/auth/reset-password', [NewPasswordController::class, 'apiStore'])->name('api.auth.reset-password');
-Route::post('/api/auth/register', [AuthenticatedSessionController::class, 'apiRegister'])->name('api.auth.register');
 Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
@@ -86,7 +84,10 @@ Route::get('/health', function () {
         DB::select('select 1');
         $requiredTables = ['users', 'schools', 'classes', 'students', 'marks', 'daily_attendance', 'takwim_events'];
         $missingTables = array_values(array_filter($requiredTables, fn (string $table): bool => ! Schema::hasTable($table)));
-        if ($missingTables) return response()->json(['status' => 'degraded', 'database' => 'connected', 'missingTables' => $missingTables, 'responseTimeMs' => (int) ((microtime(true) - $started) * 1000)], 503);
+        if ($missingTables) {
+            return response()->json(['status' => 'degraded', 'database' => 'connected', 'missingTables' => $missingTables, 'responseTimeMs' => (int) ((microtime(true) - $started) * 1000)], 503);
+        }
+
         return response()->json(['status' => 'ok', 'database' => 'connected', 'schema' => 'ready', 'responseTimeMs' => (int) ((microtime(true) - $started) * 1000)]);
     } catch (Throwable) {
         return response()->json(['status' => 'degraded', 'database' => 'unavailable'], 503);
@@ -169,7 +170,6 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/licenses', [LicenseController::class, 'store']);
     Route::get('/school-modules', [SchoolModuleController::class, 'index']);
     Route::post('/school-modules', [SchoolModuleController::class, 'store']);
-    Route::get('/audit/export', [WorkflowController::class, 'auditExport']);
     Route::get('/audit/export', [WorkflowController::class, 'auditExport']);
     Route::post('/rph', [RphController::class, 'store']);
     Route::get('/rph', [RphController::class, 'index']);

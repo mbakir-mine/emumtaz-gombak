@@ -1,28 +1,83 @@
-# Deployment cPanel e-Mumtaz
+# Deployment cPanel e-Mumtaz (Laravel sahaja)
+
+Dokumen ini ialah laluan deployment production yang tidak menggunakan Node.js,
+Vercel atau `npm`. Aplikasi mesti dijalankan sebagai PHP/Laravel melalui Apache.
 
 ## Keperluan
 
 - PHP 8.3 atau lebih baharu
 - MySQL/MariaDB
 - Extensions `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `ctype`, `xml` dan `gd`
-- Composer 2
+- Composer 2 (diperlukan semasa pemasangan sahaja; vendor boleh dibina di server)
 - HTTPS
 - Document root domain menghala ke folder `public`
 - Cron Job untuk backup dan scheduler jika diperlukan
 
-## Upload dan konfigurasi
+## Kaedah paling selamat di cPanel
 
-1. Upload source project ke folder di luar `public_html`.
-2. Jalankan `composer install --no-dev --optimize-autoloader`.
-3. Salin `.env.example` kepada `.env` dan isi database production.
+1. Buat folder release di luar `public_html`, contohnya
+   `/home/USERNAME/emumtaz/releases/2026-09-29`.
+2. Upload kandungan folder `backend-laravel` ke folder release itu. Jangan upload
+   `.env` tempatan, `vendor` tempatan atau `node_modules`.
+3. Di Terminal cPanel, masuk ke folder release dan jalankan:
+
+   ```bash
+   composer install --no-dev --prefer-dist --optimize-autoloader
+   cp .env.production.example .env
+   ```
+
+4. Edit `.env` dan isi database sebenar cPanel. Jangan letakkan nilai rahsia dalam
+   GitHub. Pastikan:
+
+   ```env
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://emumtaz.ismp.my
+   APP_TIMEZONE=Asia/Kuala_Lumpur
+   DB_CONNECTION=mysql
+   SESSION_DRIVER=database
+   SESSION_SECURE_COOKIE=true
+   ```
+
+5. Jalankan arahan initialization berikut:
+
+   ```bash
+   php artisan key:generate --force
+   php artisan migrate --force
+   php artisan storage:link
+   php artisan optimize
+   php artisan emumtaz:check-production --strict
+   ```
+
+6. Di cPanel → Domains, set document root domain kepada:
+   `/home/USERNAME/emumtaz/releases/2026-09-29/public`.
+   Jika hosting tidak membenarkan document root di luar `public_html`, letakkan
+   hanya kandungan folder `public` dalam `public_html/emumtaz.ismp.my` dan ubah
+   `index.php` supaya merujuk kepada folder release `vendor/autoload.php` dan
+   `bootstrap/app.php`. Jangan letakkan `.env` di dalam `public_html`.
+7. Buka `https://emumtaz.ismp.my/health`. Respons mesti HTTP 200 dengan
+   `"status":"ok"` dan `"schema":"ready"` sebelum pengguna log masuk.
+
+## Urutan upload ringkas melalui File Manager
+
+Jika Terminal/Composer tidak tersedia, bina `vendor` di komputer dengan
+`composer install --no-dev --optimize-autoloader`, zip kandungan
+`backend-laravel` (termasuk `vendor`, tidak termasuk `.env`), kemudian upload dan
+extract ke folder release. Selepas itu jalankan sekurang-kurangnya `php artisan
+migrate --force` dan `php artisan optimize` melalui Terminal cPanel atau minta
+host menjalankannya sekali.
+
+## Konfigurasi aplikasi
+
+8. Salin `.env.example` kepada `.env` dan isi database production.
    Pastikan `APP_TIMEZONE=Asia/Kuala_Lumpur`.
-4. Jalankan `php artisan key:generate` sekali sahaja.
-5. Jalankan `php artisan migrate --force`.
-6. Jalankan `php artisan storage:link` jika fail public digunakan.
-7. Pastikan `APP_DEBUG=false`.
-8. Arahkan domain/subdomain ke folder `public`.
-9. Jalankan `php artisan optimize`.
-10. Jalankan `php artisan emumtaz:check-production --strict` dan pastikan semua semakan `PASS`.
+9. Jalankan `php artisan key:generate` sekali sahaja.
+10. Jalankan `php artisan migrate --force`.
+11. Jalankan `php artisan storage:link` jika fail public digunakan.
+12. Pastikan `APP_DEBUG=false`.
+13. Arahkan domain/subdomain ke folder `public`.
+14. Jalankan `php artisan optimize`.
+15. Jalankan `php artisan emumtaz:check-production --strict` dan pastikan semua semakan `PASS`.
 
 ## Cutover frontend Next.js berperingkat
 
