@@ -23,6 +23,7 @@ use App\Http\Controllers\NotificationPageController;
 use App\Http\Controllers\ParentAccessController;
 use App\Http\Controllers\ParentPortalController;
 use App\Http\Controllers\PbdController;
+use App\Http\Controllers\ProfilePageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportPageController;
 use App\Http\Controllers\ReportVerificationPageController;
@@ -65,6 +66,7 @@ Route::post('/takwim', [TakwimPageController::class, 'store'])->middleware('auth
 Route::get('/rph', [RphPageController::class, 'index'])->middleware('auth')->name('rph.index');
 Route::get('/jadual-waktu', [TimetablePageController::class, 'index'])->middleware('auth')->name('timetable.index');
 Route::post('/jadual-waktu/generate', [TimetablePageController::class, 'generateSlots'])->middleware('auth')->name('timetable.generate');
+Route::get('/profil', [ProfilePageController::class, 'index'])->middleware('auth')->name('profile');
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/schools', [WebAdminController::class, 'schools'])->name('schools');
