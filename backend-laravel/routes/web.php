@@ -32,6 +32,7 @@ use App\Http\Controllers\SchoolModuleController;
 use App\Http\Controllers\SchoolModulePageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TakwimController;
+use App\Http\Controllers\TakwimPageController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\UserAdminController;
 use App\Http\Controllers\WebAdminController;
@@ -57,6 +58,8 @@ Route::post('/change-password', [ChangePasswordController::class, 'store'])->mid
 Route::get('/dashboard', DashboardController::class)->middleware('auth')->name('dashboard');
 Route::get('/laporan', [ReportPageController::class, 'index'])->middleware('auth')->name('reports.index');
 Route::get('/analisis', [ReportPageController::class, 'index'])->middleware('auth')->name('reports.analysis');
+Route::get('/takwim', [TakwimPageController::class, 'index'])->middleware('auth')->name('takwim.index');
+Route::post('/takwim', [TakwimPageController::class, 'store'])->middleware('auth')->name('takwim.store');
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/schools', [WebAdminController::class, 'schools'])->name('schools');
